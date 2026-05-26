@@ -1,0 +1,180 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page__header h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.warn {
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.err {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--err);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.panel h3 {
+  margin: 16px 0 8px;
+  font-size: 0.95rem;
+}
+
+.form {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.form__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 200px;
+}
+
+.form input {
+  background: var(--panel-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 160px;
+}
+
+.form button {
+  background: var(--accent);
+  color: #082f49;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background: var(--accent-strong);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.kv dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kv dd {
+  margin: 0;
+  word-break: break-all;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--panel-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  margin-right: 6px;
+  text-transform: uppercase;
+}
+
+.badge--buy,
+.badge--run_succeeded,
+.badge--stage_succeeded,
+.badge--tool_succeeded,
+.badge--live {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: var(--ok);
+}
+
+.badge--sell,
+.badge--run_failed,
+.badge--stage_failed,
+.badge--tool_failed,
+.badge--error {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: var(--err);
+}
+
+.badge--hold,
+.badge--run_started,
+.badge--stage_started,
+.badge--tool_started,
+.badge--connecting {
+  background: rgba(250, 204, 21, 0.15);
+  border-color: rgba(250, 204, 21, 0.5);
+  color: var(--warn);
+}
+
+.chip {
+  display: inline-block;
+  background: var(--panel-elev);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0 6px 4px 0;
+  font-size: 0.8rem;
+}
+
+.events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.events__item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+}
