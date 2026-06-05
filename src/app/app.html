@@ -1,109 +1,258 @@
-<main class="page">
-  <header class="page__header">
-    <h1>CryptoBot — Market Review</h1>
-    <p class="muted">
-      Vertical UI for <code>{{ cryptobotApiBase }}/api/cryptobot/market-review</code>. Triggers
-      <code>crypto.market-review.v1</code> on <code>life-engine-runtime</code> and renders the SSE timeline.
-    </p>
-    @if (!hasToken()) {
-      <p class="warn">
-        No session token detected. Log in on
-        <a href="http://localhost:4201/auth/login">life-engine-auth-ui</a> first, then re-open this app via the
-        launcher link (the URL will include <code>?token=…</code> once).
-      </p>
-    }
-  </header>
+@if (!authed()) {
+  <main class="login">
+    <form
+      class="login__card"
+      (submit)="$event.preventDefault(); onLogin()"
+      aria-labelledby="login-title"
+    >
+      <h1 id="login-title">CryptoBot</h1>
+      <p class="muted">Sign in with your life-engine-auth account.</p>
 
-  <section class="panel">
-    <h2>Request</h2>
-    <form (submit)="$event.preventDefault(); onSubmit()" class="form">
       <label class="form__row">
-        <span>Symbol</span>
+        <span>Email</span>
         <input
-          type="text"
-          [value]="symbol()"
-          (input)="onSymbolChange($any($event.target).value)"
-          placeholder="BTCUSDT"
-          maxlength="16"
-          aria-label="Symbol to review"
+          type="email"
+          autocomplete="username"
+          [value]="email()"
+          (input)="onEmailChange($any($event.target).value)"
+          placeholder="you@example.com"
+          required
+          aria-label="Email"
         />
       </label>
-      <button type="submit" [disabled]="busy() || !hasToken()">
-        @if (busy()) {
-          Running…
+
+      <label class="form__row">
+        <span>Password</span>
+        <input
+          type="password"
+          autocomplete="current-password"
+          [value]="password()"
+          (input)="onPasswordChange($any($event.target).value)"
+          placeholder="••••••••"
+          required
+          aria-label="Password"
+        />
+      </label>
+
+      <button type="submit" [disabled]="loginBusy()">
+        @if (loginBusy()) {
+          Signing in…
         } @else {
-          Run market review
+          Sign in
         }
       </button>
-    </form>
-    @if (error()) {
-      <p class="err" role="alert">{{ error() }}</p>
-    }
-  </section>
 
-  @if (review(); as r) {
+      @if (loginError()) {
+        <p class="err" role="alert">{{ loginError() }}</p>
+      }
+
+      <p class="muted login__hint">
+        Local demo: <code>admin&#64;life-engine.local</code> / <code>admin123456</code>
+      </p>
+    </form>
+  </main>
+} @else {
+  <main class="page">
+    <header class="page__header">
+      <div class="page__title">
+        <h1>CryptoBot — Market Review</h1>
+        <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">
+          Sign out
+        </button>
+      </div>
+      <p class="muted">
+        Vertical UI for <code>{{ cryptobotApiBase }}/api/cryptobot/market-review</code>. Triggers
+        <code>crypto.market-review.v1</code> on <code>life-engine-runtime</code> and renders the SSE timeline.
+      </p>
+    </header>
+
     <section class="panel">
-      <h2>Review</h2>
-      <dl class="kv">
-        <dt>Market review ID</dt>
-        <dd><code>{{ r.marketReviewId }}</code></dd>
-        <dt>Symbol</dt>
-        <dd>{{ r.symbol }}</dd>
-        <dt>Snapshot</dt>
-        <dd>
-          {{ r.snapshot.source }} · price {{ formatNumber(r.snapshot.price) }} · 24h
-          {{ formatNumber(r.snapshot.priceChangePct24h) }}% · vol {{ formatNumber(r.snapshot.volumeBase24h, 0) }}
-        </dd>
-        <dt>Signal</dt>
-        <dd>
-          <span class="badge badge--{{ r.signal.signal.toLowerCase() }}">{{ r.signal.signal }}</span>
-          <span class="badge">{{ r.signal.strength }}</span>
-          — {{ r.signal.reason }}
-        </dd>
-        <dt>Indicators</dt>
-        <dd>
-          @for (entry of indicatorEntries(r.signal.indicators); track entry.key) {
-            <span class="chip">{{ entry.key }}: {{ formatNumber(entry.value, 4) }}</span>
-          }
-        </dd>
-      </dl>
+      <h2>API probes <span class="muted small">(authenticated cryptobot endpoints)</span></h2>
+      <ul class="probes">
+        <li>
+          <span class="badge badge--{{ snapshotProbe().status }}">snapshot</span>
+          <span class="muted">/api/cryptobot/snapshots/{{ symbol() }}</span>
+          <span class="probes__detail">{{ snapshotProbe().detail || '—' }}</span>
+        </li>
+        <li>
+          <span class="badge badge--{{ watchlistProbe().status }}">watchlist</span>
+          <span class="muted">/api/cryptobot/watchlist</span>
+          <span class="probes__detail">{{ watchlistProbe().detail || '—' }}</span>
+        </li>
+        <li>
+          <span class="badge badge--{{ indicatorsProbe().status }}">indicators</span>
+          <span class="muted">/api/cryptobot/indicators?symbol={{ symbol() }}</span>
+          <span class="probes__detail">{{ indicatorsProbe().detail || '—' }}</span>
+        </li>
+      </ul>
+      <button type="button" class="probes__reload" (click)="runProbes()">Re-run probes</button>
     </section>
 
     <section class="panel">
       <h2>
-        Linked runtime run
-        <span class="badge badge--{{ sseStatus() }}">SSE {{ sseStatus() }}</span>
+        Monitor
+        <span class="muted small">(BTCUSDT &amp; SOLUSDT — read-only)</span>
       </h2>
-      <dl class="kv">
-        <dt>Runtime base</dt>
-        <dd><code>{{ r.related.runtimeBaseUrl }}</code></dd>
-        <dt>Workflow</dt>
-        <dd><code>{{ r.related.runtimeWorkflowId }}</code></dd>
-        <dt>Run id</dt>
-        <dd>
-          <code>{{ r.related.runtimeRunId }}</code>
-          —
-          <a target="_blank" rel="noopener" [href]="'http://localhost:4202/?runId=' + r.related.runtimeRunId">
-            open in runtime-ui
-          </a>
-        </dd>
-      </dl>
-
-      <h3>Event timeline</h3>
-      @if (events().length === 0) {
-        <p class="muted">No events yet.</p>
+      <p class="muted">
+        Triggers <code>crypto.market-review.v1</code> on the runtime for each watched symbol.
+        Persists locally in <code>market_review_run</code>; Runtime remains the source of truth
+        for workflow execution. Live timelines appear in the Runtime UI's Crypto Watch panel.
+      </p>
+      <div class="monitor__bar">
+        <button
+          type="button"
+          class="monitor__trigger"
+          (click)="onTriggerMonitoring()"
+          [disabled]="monitorBusy()"
+        >
+          @if (monitorBusy()) {
+            Triggering…
+          } @else {
+            Run monitoring now
+          }
+        </button>
+        <button
+          type="button"
+          class="probes__reload"
+          (click)="refreshLatestReviews()"
+          [disabled]="monitorBusy()"
+        >
+          Refresh latest
+        </button>
+      </div>
+      @if (monitorError()) {
+        <p class="err" role="alert">{{ monitorError() }}</p>
       }
-      <ol class="events">
-        @for (ev of events(); track $index) {
-          <li class="events__item">
-            <span class="badge badge--{{ ev.type.toLowerCase() }}">{{ ev.type }}</span>
-            @if (ev.stageId) {
-              <span class="muted">stage={{ ev.stageId }}</span>
+      <div class="monitor__grid">
+        @for (entry of monitorEntries(); track entry.symbol) {
+          <article class="monitor__card">
+            <header class="monitor__card-head">
+              <strong class="monitor__symbol">{{ entry.symbol }}</strong>
+              @if (entry.review; as r) {
+                <span class="badge badge--{{ r.status.toLowerCase() }}">{{ r.status }}</span>
+                @if (r.verdict) {
+                  <span class="badge badge--{{ r.verdict.toLowerCase() }}">{{ r.verdict }}</span>
+                }
+              } @else {
+                <span class="badge">no runs yet</span>
+              }
+            </header>
+            @if (entry.review; as r) {
+              <p class="monitor__summary">
+                {{ r.summaryPreview || '—' }}
+              </p>
+              <dl class="monitor__meta">
+                <dt>Updated</dt>
+                <dd>{{ formatTime(r.updatedAt) }}</dd>
+                <dt>Runtime run</dt>
+                <dd>
+                  <a target="_blank" rel="noopener" [href]="runtimeUiLink(r.runtimeRunId)">
+                    open in runtime-ui
+                  </a>
+                  <code class="monitor__runid">{{ r.runtimeRunId }}</code>
+                </dd>
+              </dl>
+            } @else {
+              <p class="muted small">
+                Click <em>Run monitoring now</em> to trigger the first review.
+              </p>
             }
-            <span class="muted">{{ formatTime(ev.timestamp) }}</span>
-          </li>
+          </article>
         }
-      </ol>
+      </div>
     </section>
-  }
-</main>
+
+    <section class="panel">
+      <h2>Request</h2>
+      <form (submit)="$event.preventDefault(); onSubmit()" class="form">
+        <label class="form__row">
+          <span>Symbol</span>
+          <input
+            type="text"
+            [value]="symbol()"
+            (input)="onSymbolChange($any($event.target).value)"
+            placeholder="BTCUSDT"
+            maxlength="16"
+            aria-label="Symbol to review"
+          />
+        </label>
+        <button type="submit" [disabled]="busy()">
+          @if (busy()) {
+            Running…
+          } @else {
+            Run market review
+          }
+        </button>
+      </form>
+      @if (error()) {
+        <p class="err" role="alert">{{ error() }}</p>
+      }
+    </section>
+
+    @if (review(); as r) {
+      <section class="panel">
+        <h2>Review</h2>
+        <dl class="kv">
+          <dt>Market review ID</dt>
+          <dd><code>{{ r.marketReviewId }}</code></dd>
+          <dt>Symbol</dt>
+          <dd>{{ r.symbol }}</dd>
+          <dt>Snapshot</dt>
+          <dd>
+            {{ r.snapshot.source }} · price {{ formatNumber(r.snapshot.price) }} · 24h
+            {{ formatNumber(r.snapshot.priceChangePct24h) }}% · vol {{ formatNumber(r.snapshot.volumeBase24h, 0) }}
+          </dd>
+          <dt>Signal</dt>
+          <dd>
+            <span class="badge badge--{{ r.signal.signal.toLowerCase() }}">{{ r.signal.signal }}</span>
+            <span class="badge">{{ r.signal.strength }}</span>
+            — {{ r.signal.reason }}
+          </dd>
+          <dt>Indicators</dt>
+          <dd>
+            @for (entry of indicatorEntries(r.signal.indicators); track entry.key) {
+              <span class="chip">{{ entry.key }}: {{ formatNumber(entry.value, 4) }}</span>
+            }
+          </dd>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <h2>
+          Linked runtime run
+          <span class="badge badge--{{ sseStatus() }}">SSE {{ sseStatus() }}</span>
+        </h2>
+        <dl class="kv">
+          <dt>Runtime base</dt>
+          <dd><code>{{ r.related.runtimeBaseUrl }}</code></dd>
+          <dt>Workflow</dt>
+          <dd><code>{{ r.related.runtimeWorkflowId }}</code></dd>
+          <dt>Run id</dt>
+          <dd>
+            <code>{{ r.related.runtimeRunId }}</code>
+            —
+            <a target="_blank" rel="noopener" [href]="'http://localhost:4202/?runId=' + r.related.runtimeRunId">
+              open in runtime-ui
+            </a>
+          </dd>
+        </dl>
+
+        <h3>Event timeline</h3>
+        @if (events().length === 0) {
+          <p class="muted">No events yet.</p>
+        }
+        <ol class="events">
+          @for (ev of events(); track $index) {
+            <li class="events__item">
+              <span class="badge badge--{{ ev.type.toLowerCase() }}">{{ ev.type }}</span>
+              @if (ev.stageId) {
+                <span class="muted">stage={{ ev.stageId }}</span>
+              }
+              <span class="muted">{{ formatTime(ev.timestamp) }}</span>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+  </main>
+}

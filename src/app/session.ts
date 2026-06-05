@@ -95,6 +95,11 @@ export function getAccessToken(): string | null {
   return getCryptobotSession()?.accessToken ?? null;
 }
 
+export function setCryptobotSession(session: CryptobotSession): void {
+  cached = session;
+  persist(session);
+}
+
 export function clearCryptobotSession(): void {
   cached = null;
   persist(null);
