@@ -46,8 +46,8 @@ export class App implements OnInit, OnDestroy {
 
   // ---- auth state ----
   readonly authed = signal<boolean>(!!getAccessToken());
-  readonly email = signal('admin@life-engine.local');
-  readonly password = signal('admin123456');
+  readonly email = signal('');
+  readonly password = signal('');
   readonly loginBusy = signal(false);
   readonly loginError = signal<string | null>(null);
 
