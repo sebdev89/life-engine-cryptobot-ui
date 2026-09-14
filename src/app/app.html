@@ -1,254 +1,322 @@
 @if (!authed()) {
   <main class="login">
-    <form
-      class="login__card"
-      (submit)="$event.preventDefault(); onLogin()"
-      aria-labelledby="login-title"
-    >
+    <form class="login__card" (submit)="$event.preventDefault(); onLogin()" aria-labelledby="login-title">
       <h1 id="login-title">CryptoBot</h1>
-      <p class="muted">Sign in with your life-engine-auth account.</p>
+      <p class="muted">AI control plane for Solana wallets · sign in with your Life Engine account.</p>
 
       <label class="form__row">
         <span>Email</span>
-        <input
-          type="email"
-          autocomplete="username"
-          [value]="email()"
-          (input)="onEmailChange($any($event.target).value)"
-          placeholder="you@example.com"
-          required
-          aria-label="Email"
-        />
+        <input type="email" autocomplete="username" [value]="email()" (input)="onEmailChange($any($event.target).value)" placeholder="you@example.com" required aria-label="Email" />
       </label>
 
       <label class="form__row">
         <span>Password</span>
-        <input
-          type="password"
-          autocomplete="current-password"
-          [value]="password()"
-          (input)="onPasswordChange($any($event.target).value)"
-          placeholder="••••••••"
-          required
-          aria-label="Password"
-        />
+        <input type="password" autocomplete="current-password" [value]="password()" (input)="onPasswordChange($any($event.target).value)" placeholder="••••••••" required aria-label="Password" />
       </label>
 
       <button type="submit" [disabled]="loginBusy()">
-        @if (loginBusy()) {
-          Signing in…
-        } @else {
-          Sign in
-        }
+        @if (loginBusy()) { Signing in… } @else { Sign in }
       </button>
 
       @if (loginError()) {
         <p class="err" role="alert">{{ loginError() }}</p>
       }
-
     </form>
   </main>
 } @else {
   <main class="page">
     <header class="page__header">
       <div class="page__title">
-        <h1>CryptoBot — Market Review</h1>
-        <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">
-          Sign out
-        </button>
+        <div>
+          <h1>CryptoBot <span class="muted small">· AI control plane for Solana</span></h1>
+          <p class="muted">The agent proposes. You approve. An isolated signer executes — on devnet, under policy, with a full audit trail.</p>
+        </div>
+        <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
       </div>
-      <p class="muted">
-        Vertical UI for <code>{{ cryptobotApiBase }}/api/cryptobot/market-review</code>. Triggers
-        <code>crypto.market-review.v1</code> on <code>life-engine-runtime</code> and renders the SSE timeline.
-      </p>
     </header>
 
+    <!-- ── 1 · wallet ─────────────────────────────────────────────────────────────────── -->
     <section class="panel">
-      <h2>API probes <span class="muted small">(authenticated cryptobot endpoints)</span></h2>
-      <ul class="probes">
-        <li>
-          <span class="badge badge--{{ snapshotProbe().status }}">snapshot</span>
-          <span class="muted">/api/cryptobot/snapshots/{{ symbol() }}</span>
-          <span class="probes__detail">{{ snapshotProbe().detail || '—' }}</span>
-        </li>
-        <li>
-          <span class="badge badge--{{ watchlistProbe().status }}">watchlist</span>
-          <span class="muted">/api/cryptobot/watchlist</span>
-          <span class="probes__detail">{{ watchlistProbe().detail || '—' }}</span>
-        </li>
-        <li>
-          <span class="badge badge--{{ indicatorsProbe().status }}">indicators</span>
-          <span class="muted">/api/cryptobot/indicators?symbol={{ symbol() }}</span>
-          <span class="probes__detail">{{ indicatorsProbe().detail || '—' }}</span>
-        </li>
-      </ul>
-      <button type="button" class="probes__reload" (click)="runProbes()">Re-run probes</button>
-    </section>
-
-    <section class="panel">
-      <h2>
-        Monitor
-        <span class="muted small">(BTCUSDT &amp; SOLUSDT — read-only)</span>
-      </h2>
-      <p class="muted">
-        Triggers <code>crypto.market-review.v1</code> on the runtime for each watched symbol.
-        Persists locally in <code>market_review_run</code>; Runtime remains the source of truth
-        for workflow execution. Live timelines appear in the Runtime UI's Crypto Watch panel.
-      </p>
-      <div class="monitor__bar">
-        <button
-          type="button"
-          class="monitor__trigger"
-          (click)="onTriggerMonitoring()"
-          [disabled]="monitorBusy()"
-        >
-          @if (monitorBusy()) {
-            Triggering…
-          } @else {
-            Run monitoring now
-          }
-        </button>
-        <button
-          type="button"
-          class="probes__reload"
-          (click)="refreshLatestReviews()"
-          [disabled]="monitorBusy()"
-        >
-          Refresh latest
-        </button>
-      </div>
-      @if (monitorError()) {
-        <p class="err" role="alert">{{ monitorError() }}</p>
-      }
-      <div class="monitor__grid">
-        @for (entry of monitorEntries(); track entry.symbol) {
-          <article class="monitor__card">
-            <header class="monitor__card-head">
-              <strong class="monitor__symbol">{{ entry.symbol }}</strong>
-              @if (entry.review; as r) {
-                <span class="badge badge--{{ r.status.toLowerCase() }}">{{ r.status }}</span>
-                @if (r.verdict) {
-                  <span class="badge badge--{{ r.verdict.toLowerCase() }}">{{ r.verdict }}</span>
-                }
-              } @else {
-                <span class="badge">no runs yet</span>
-              }
-            </header>
-            @if (entry.review; as r) {
-              <p class="monitor__summary">
-                {{ r.summaryPreview || '—' }}
-              </p>
-              <dl class="monitor__meta">
-                <dt>Updated</dt>
-                <dd>{{ formatTime(r.updatedAt) }}</dd>
-                <dt>Runtime run</dt>
-                <dd>
-                  <a target="_blank" rel="noopener" [href]="runtimeUiLink(r.runtimeRunId)">
-                    open in runtime-ui
-                  </a>
-                  <code class="monitor__runid">{{ r.runtimeRunId }}</code>
-                </dd>
-              </dl>
-            } @else {
-              <p class="muted small">
-                Click <em>Run monitoring now</em> to trigger the first review.
-              </p>
-            }
-          </article>
-        }
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>Request</h2>
-      <form (submit)="$event.preventDefault(); onSubmit()" class="form">
-        <label class="form__row">
-          <span>Symbol</span>
-          <input
-            type="text"
-            [value]="symbol()"
-            (input)="onSymbolChange($any($event.target).value)"
-            placeholder="BTCUSDT"
-            maxlength="16"
-            aria-label="Symbol to review"
-          />
-        </label>
-        <button type="submit" [disabled]="busy()">
-          @if (busy()) {
-            Running…
-          } @else {
-            Run market review
-          }
+      <h2>1 · Wallet</h2>
+      <form class="wallet__form" (submit)="$event.preventDefault(); onTrackWallet()">
+        <input class="wallet__address" [value]="addressInput()" (input)="addressInput.set($any($event.target).value)" placeholder="Solana public key (base58)" aria-label="Wallet address" spellcheck="false" />
+        <select [value]="clusterInput()" (change)="clusterInput.set($any($event.target).value)" aria-label="Cluster">
+          <option value="devnet">devnet</option>
+          <option value="mainnet-beta">mainnet-beta (read-only)</option>
+        </select>
+        <button type="submit" [disabled]="walletBusy()">
+          @if (walletBusy()) { Reading chain… } @else { Track wallet }
         </button>
       </form>
-      @if (error()) {
-        <p class="err" role="alert">{{ error() }}</p>
+      @if (wallets().length) {
+        <div class="chips">
+          @for (w of wallets(); track w.id) {
+            <button type="button" class="chip" [class.chip--active]="wallet()?.id === w.id" (click)="selectWallet(w)">
+              {{ w.label || (w.address | slice: 0 : 4) + '…' + (w.address | slice: -4) }} <span class="muted">· {{ w.cluster }}</span>
+            </button>
+          }
+        </div>
+      }
+      @if (walletError()) {
+        <p class="err" role="alert">{{ walletError() }}</p>
       }
     </section>
 
-    @if (review(); as r) {
-      <section class="panel">
-        <h2>Review</h2>
-        <dl class="kv">
-          <dt>Market review ID</dt>
-          <dd><code>{{ r.marketReviewId }}</code></dd>
-          <dt>Symbol</dt>
-          <dd>{{ r.symbol }}</dd>
-          <dt>Snapshot</dt>
-          <dd>
-            {{ r.snapshot.source }} · price {{ formatNumber(r.snapshot.price) }} · 24h
-            {{ formatNumber(r.snapshot.priceChangePct24h) }}% · vol {{ formatNumber(r.snapshot.volumeBase24h, 0) }}
-          </dd>
-          <dt>Signal</dt>
-          <dd>
-            <span class="badge badge--{{ r.signal.signal.toLowerCase() }}">{{ r.signal.signal }}</span>
-            <span class="badge">{{ r.signal.strength }}</span>
-            — {{ r.signal.reason }}
-          </dd>
-          <dt>Indicators</dt>
-          <dd>
-            @for (entry of indicatorEntries(r.signal.indicators); track entry.key) {
-              <span class="chip">{{ entry.key }}: {{ formatNumber(entry.value, 4) }}</span>
+    @if (portfolio(); as pf) {
+      <div class="grid">
+        <!-- ── 2 · portfolio + risk ──────────────────────────────────────────────────── -->
+        <section class="panel">
+          <div class="panel__head">
+            <h2>2 · Portfolio <span class="muted small">{{ pf.wallet.cluster }}</span></h2>
+            <div class="panel__actions">
+              <a [href]="pf.wallet.explorerUrl" target="_blank" rel="noopener" class="muted small">explorer ↗</a>
+              <button type="button" class="ghost" (click)="onRefresh()" [disabled]="refreshing()">
+                @if (refreshing()) { Refreshing… } @else { Refresh }
+              </button>
+            </div>
+          </div>
+
+          <div class="total">
+            <span class="total__value">{{ fmtUsd(pf.snapshot.totalUsd) }}</span>
+            <span class="muted small">{{ pf.snapshot.priceSource }} · {{ pf.snapshot.capturedAt | slice: 11 : 19 }} UTC</span>
+            @if (pf.changes?.totalUsdDeltaPct !== null && pf.changes?.totalUsdDeltaPct !== undefined) {
+              <span class="delta" [class.ok]="pf.changes!.totalUsdDeltaPct! >= 0" [class.err]="pf.changes!.totalUsdDeltaPct! < 0">
+                {{ pf.changes!.totalUsdDeltaPct! >= 0 ? '+' : '' }}{{ fmtPct(pf.changes!.totalUsdDeltaPct, 2) }} since last snapshot
+              </span>
             }
-          </dd>
-        </dl>
-      </section>
+          </div>
 
-      <section class="panel">
-        <h2>
-          Linked runtime run
-          <span class="badge badge--{{ sseStatus() }}">SSE {{ sseStatus() }}</span>
-        </h2>
-        <dl class="kv">
-          <dt>Runtime base</dt>
-          <dd><code>{{ r.related.runtimeBaseUrl }}</code></dd>
-          <dt>Workflow</dt>
-          <dd><code>{{ r.related.runtimeWorkflowId }}</code></dd>
-          <dt>Run id</dt>
-          <dd>
-            <code>{{ r.related.runtimeRunId }}</code>
-            —
-            <a target="_blank" rel="noopener" [href]="'http://localhost:4202/?runId=' + r.related.runtimeRunId">
-              open in runtime-ui
-            </a>
-          </dd>
-        </dl>
+          <div class="bar" role="img" aria-label="Exposure by asset">
+            @for (p of pricedPositions(); track p.mint; let i = $index) {
+              <span class="bar__seg" [style.width.%]="p.weightPct ?? 0" [style.background]="barColor(p, i)" [title]="p.symbol + ' ' + fmtPct(p.weightPct)"></span>
+            }
+          </div>
 
-        <h3>Event timeline</h3>
-        @if (events().length === 0) {
-          <p class="muted">No events yet.</p>
-        }
-        <ol class="events">
-          @for (ev of events(); track $index) {
-            <li class="events__item">
-              <span class="badge badge--{{ ev.type.toLowerCase() }}">{{ ev.type }}</span>
-              @if (ev.stageId) {
-                <span class="muted">stage={{ ev.stageId }}</span>
+          <table class="positions">
+            <thead>
+              <tr><th>Asset</th><th class="num">Amount</th><th class="num">Price</th><th class="num">Value</th><th class="num">Weight</th></tr>
+            </thead>
+            <tbody>
+              @for (p of pricedPositions(); track p.mint; let i = $index) {
+                <tr>
+                  <td><span class="dot" [style.background]="barColor(p, i)"></span>{{ p.symbol }} @if (p.stable) { <span class="tag">stable</span> }</td>
+                  <td class="num">{{ fmtAmount(p.amount) }}</td>
+                  <td class="num">{{ fmtUsd(p.priceUsd) }}</td>
+                  <td class="num">{{ fmtUsd(p.valueUsd) }}</td>
+                  <td class="num"><strong>{{ fmtPct(p.weightPct) }}</strong></td>
+                </tr>
               }
-              <span class="muted">{{ formatTime(ev.timestamp) }}</span>
-            </li>
+            </tbody>
+          </table>
+          @if (unpricedCount() > 0) {
+            <p class="muted small">+ {{ unpricedCount() }} token(s) without a price — excluded from the valuation and flagged as a risk.</p>
           }
-        </ol>
+
+          <h3>Risk <span class="badge badge--{{ severityClass(pf.risk.overall) }}">{{ pf.risk.overall }}</span> <span class="muted small">score {{ pf.risk.score }}/100 · deterministic rules, not the model</span></h3>
+          @if (!pf.risk.findings.length) {
+            <p class="muted">No findings. Nothing to worry about right now.</p>
+          }
+          <ul class="findings">
+            @for (f of pf.risk.findings; track f.code + f.asset) {
+              <li>
+                <span class="badge badge--{{ severityClass(f.severity) }}">{{ f.severity }}</span>
+                <div>
+                  <strong>{{ f.title }}</strong>
+                  <p class="muted small">{{ f.detail }}</p>
+                </div>
+              </li>
+            }
+          </ul>
+
+          @if (pf.changes?.changes?.length) {
+            <h3>What changed</h3>
+            <ul class="changes">
+              @for (c of pf.changes!.changes; track c.symbol) {
+                <li><strong>{{ c.symbol }}</strong> <span class="muted">{{ fmtAmount(c.amountBefore) }} → {{ fmtAmount(c.amountAfter) }}</span> <span [class.ok]="c.weightPctDelta >= 0" [class.err]="c.weightPctDelta < 0">{{ c.weightPctDelta >= 0 ? '+' : '' }}{{ fmtPct(c.weightPctDelta, 2) }} weight</span></li>
+              }
+            </ul>
+          }
+
+          @if (activity().length) {
+            <h3>Recent activity</h3>
+            <ul class="activity">
+              @for (a of activity(); track a.signature) {
+                <li><a [href]="a.explorerUrl" target="_blank" rel="noopener">{{ shortSig(a.signature) }}</a> <span class="muted small">{{ a.blockTime ? (a.blockTime | slice: 0 : 16) : 'slot ' + a.slot }}</span> @if (a.failed) { <span class="badge badge--err">failed</span> }</li>
+              }
+            </ul>
+          }
+        </section>
+
+        <!-- ── 3 · advisor ───────────────────────────────────────────────────────────── -->
+        <section class="panel">
+          <div class="panel__head">
+            <h2>3 · Ask the advisor</h2>
+            <span class="muted small">Life Engine Runtime · crypto.portfolio-advisor.v1</span>
+          </div>
+          <div class="chips">
+            @for (q of quickPrompts; track q) {
+              <button type="button" class="chip" (click)="onAsk(q)" [disabled]="asking()">{{ q }}</button>
+            }
+          </div>
+          <div class="chat">
+            @if (!chat().length) {
+              <p class="muted">Ask anything about this wallet. The model only sees the valued positions and the risk findings above — never a key, never a transaction.</p>
+            }
+            @for (t of chat(); track $index) {
+              <div class="turn turn--{{ t.role }}">
+                <p>{{ t.content }}</p>
+                @if (t.role === 'assistant') {
+                  <div class="turn__meta muted small">
+                    @if (t.model) { {{ t.model }} · }
+                    @if (t.confidence !== null && t.confidence !== undefined) { confidence {{ (t.confidence * 100).toFixed(0) }}% }
+                    @if (t.runtimeRunId) { · run {{ t.runtimeRunId | slice: 0 : 8 }} }
+                  </div>
+                  @for (a of t.actions; track $index) {
+                    <div class="suggestion">
+                      <span class="tag">{{ a.action }}</span>
+                      <span>{{ a.asset || '' }} @if (a.targetWeightPct !== null) { → {{ fmtPct(a.targetWeightPct, 0) }} } <span class="muted small">{{ a.rationale }}</span></span>
+                      @if (a.action === 'REBALANCE' && a.asset && a.targetWeightPct !== null) {
+                        <button type="button" class="mini" (click)="onSimulate(a, t.runtimeRunId)" [disabled]="proposalBusy()">Simulate</button>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+            @if (asking()) {
+              <div class="turn turn--assistant"><p class="muted">Thinking… (the run is live below)</p></div>
+            }
+          </div>
+          <form class="ask" (submit)="$event.preventDefault(); onAsk()">
+            <input [value]="question()" (input)="question.set($any($event.target).value)" placeholder="e.g. Simulá bajar SOL de 70% a 50%" aria-label="Question" [disabled]="asking()" />
+            <button type="submit" [disabled]="asking() || !question().trim()">Ask</button>
+          </form>
+          @if (askError()) {
+            <p class="err" role="alert">{{ askError() }}</p>
+          }
+
+          <details class="events" [open]="sseStatus() === 'live'">
+            <summary>Runtime events <span class="badge">{{ sseStatus() }}</span> <span class="muted small">{{ events().length }} frames</span></summary>
+            <ul>
+              @for (e of events(); track $index) {
+                <li><code>{{ eventLabel(e) }}</code></li>
+              }
+            </ul>
+          </details>
+        </section>
+      </div>
+
+      <!-- ── 4 · proposal ─────────────────────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel__head">
+          <h2>4 · Propose · simulate · approve · execute</h2>
+          <form class="simulate" (submit)="$event.preventDefault(); onSimulate()">
+            <label>SOL target <input type="number" min="0" max="100" step="1" [value]="targetSol()" (input)="targetSol.set(+$any($event.target).value)" aria-label="SOL target weight" /> %</label>
+            <span class="muted small">now {{ fmtPct(solWeight()) }}</span>
+            <button type="submit" [disabled]="proposalBusy()">
+              @if (proposalBusy()) { Working… } @else { Simulate rebalance }
+            </button>
+          </form>
+        </div>
+        @if (proposalError()) {
+          <p class="err" role="alert">{{ proposalError() }}</p>
+        }
+
+        @if (proposals().length) {
+          <div class="chips">
+            @for (p of proposals(); track p.id) {
+              <button type="button" class="chip" [class.chip--active]="selected()?.id === p.id" (click)="selectProposal(p)">
+                {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol }} {{ fmtPct(p.plan.legs[0]?.weightPctBefore, 0) }}→{{ fmtPct(p.plan.legs[0]?.weightPctAfter, 0) }}
+                <span class="badge badge--{{ statusClass(p.status) }}">{{ p.status }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        @if (selected(); as p) {
+          <article class="proposal">
+            <header class="proposal__head">
+              <div>
+                <span class="badge badge--{{ statusClass(p.status) }} badge--lg">{{ p.status }}</span>
+                <strong>{{ p.plan.summary }}</strong>
+                @if (p.reasoningSummary) { <p class="muted small">Why: {{ p.reasoningSummary }}</p> }
+              </div>
+              <div class="proposal__actions">
+                <button type="button" class="ok-btn" (click)="onDecide('approve')" [disabled]="!canApprove(p) || proposalBusy()">Approve</button>
+                <button type="button" class="ghost" (click)="onDecide('reject')" [disabled]="!canApprove(p) || proposalBusy()">Reject</button>
+                <button type="button" class="exec-btn" (click)="onExecute()" [disabled]="!canExecute(p) || proposalBusy()" [title]="canExecute(p) ? 'Sign in the isolated signer and broadcast on devnet' : 'Requires APPROVED + executable policy'">Execute on devnet</button>
+              </div>
+            </header>
+
+            <div class="proposal__grid">
+              <div class="card">
+                <h4>Plan</h4>
+                @for (leg of p.plan.legs; track $index) {
+                  <p><span class="tag">{{ leg.action }}</span> {{ fmtAmount(leg.amount) }} {{ leg.symbol }} <span class="muted">≈ {{ fmtUsd(leg.estimatedUsd) }} → {{ leg.counterAsset }}</span></p>
+                }
+                <table class="mini-table">
+                  @for (w of weightsAfterEntries(p); track w.symbol) {
+                    <tr><td>{{ w.symbol }}</td><td class="num">{{ fmtPct(w.before) }}</td><td class="muted">→</td><td class="num"><strong>{{ fmtPct(w.after) }}</strong></td></tr>
+                  }
+                </table>
+                <p class="muted small">Risk <span class="badge badge--{{ severityClass(p.riskBefore?.overall || 'LOW') }}">{{ p.riskBefore?.overall }}</span> → <span class="badge badge--{{ severityClass(p.riskAfter?.overall || 'LOW') }}">{{ p.riskAfter?.overall }}</span></p>
+              </div>
+
+              <div class="card">
+                <h4>Simulation</h4>
+                @if (p.simulation?.economic; as ec) {
+                  <p>Sell {{ fmtAmount(ec.sellAmount) }} {{ ec.sellSymbol }} @ {{ fmtUsd(ec.priceUsd) }} → <strong>{{ fmtAmount(ec.expectedBuyAmount) }} {{ ec.buySymbol }}</strong> <span class="muted small">fee {{ ec.estimatedFeeSol }} SOL · {{ ec.source }}</span></p>
+                }
+                @if (p.simulation?.onchain; as oc) {
+                  <p>On-chain ({{ oc.cluster }}): <span class="badge badge--{{ oc.ok ? 'ok' : 'err' }}">{{ oc.ok ? 'would succeed' : 'would fail' }}</span> @if (oc.unitsConsumed) { <span class="muted small">{{ oc.unitsConsumed }} CU</span> }</p>
+                  @if (!oc.ok && oc.error) { <p class="err small">{{ oc.error }}</p> }
+                  @if (oc.logs.length) {
+                    <button type="button" class="mini" (click)="showLogs.set(!showLogs())">{{ showLogs() ? 'Hide' : 'Show' }} program logs</button>
+                    @if (showLogs()) { <pre class="logs">@for (l of oc.logs; track $index) {{{ l }}
+}</pre> }
+                  }
+                }
+                @if (p.transaction; as tx) {
+                  <p class="muted small">{{ tx.instructionSummary }}</p>
+                  <button type="button" class="mini" (click)="showTx.set(!showTx())">{{ showTx() ? 'Hide' : 'Show' }} unsigned tx</button>
+                  @if (showTx()) { <pre class="logs">{{ tx.unsignedTransactionBase64 }}</pre> }
+                } @else {
+                  <p class="muted small">No executable transaction for this plan (paper trade).</p>
+                }
+              </div>
+
+              <div class="card">
+                <h4>Policy</h4>
+                @if (p.policy; as pol) {
+                  <p><span class="badge badge--{{ pol.allowed ? 'ok' : 'err' }}">{{ pol.allowed ? 'allowed' : 'blocked' }}</span> <span class="badge badge--{{ pol.executable ? 'ok' : 'warn' }}">{{ pol.executable ? 'executable' : 'paper trade' }}</span> <span class="muted small">{{ pol.rulesApplied.length }} rules</span></p>
+                  @for (v of pol.violations; track v.rule) { <p class="err small"><code>{{ v.rule }}</code> {{ v.message }}</p> }
+                  @for (v of pol.executionViolations; track v.rule) { <p class="warn small"><code>{{ v.rule }}</code> {{ v.message }}</p> }
+                }
+                @if (p.approval; as ap) {
+                  <p><strong>{{ ap.decision }}</strong> by {{ ap.by }} <span class="muted small">{{ ap.at | slice: 0 : 19 }}</span> @if (ap.note) { <span class="muted small">— {{ ap.note }}</span> }</p>
+                }
+                @if (p.execution; as ex) {
+                  <p>Execution: <span class="badge badge--{{ ex.status === 'EXECUTED' ? 'ok' : ex.status === 'FAILED' ? 'err' : 'warn' }}">{{ ex.status }}</span>
+                    @if (ex.signature) { <a [href]="ex.explorerUrl" target="_blank" rel="noopener">{{ shortSig(ex.signature) }} ↗</a> }
+                    @if (ex.confirmationStatus) { <span class="muted small">{{ ex.confirmationStatus }}</span> }
+                  </p>
+                  @if (ex.error) { <p class="err small">{{ ex.error }}</p> }
+                }
+              </div>
+            </div>
+
+            <h4>Audit trail</h4>
+            <ol class="timeline">
+              @for (e of audit(); track e.id) {
+                <li>
+                  <span class="timeline__time muted small">{{ e.createdAt | slice: 11 : 19 }}</span>
+                  <strong>{{ e.eventType }}</strong>
+                  <span class="muted small">by {{ e.actor }}</span>
+                </li>
+              }
+            </ol>
+          </article>
+        }
       </section>
     }
   </main>

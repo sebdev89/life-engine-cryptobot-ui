@@ -10,7 +10,9 @@
 
 import { authorizationHeaders, clearCryptobotSession, getAccessToken } from './session';
 
-export const CRYPTOBOT_API_BASE = 'http://localhost:8091';
+import { uiConfig } from './config';
+
+export const CRYPTOBOT_API_BASE = uiConfig().cryptobotBase;
 
 export interface MarketReviewRequest {
   symbol: string;
@@ -97,7 +99,7 @@ export class AuthRequiredError extends Error {
 }
 
 function apiRoot(): string {
-  return `${CRYPTOBOT_API_BASE.replace(/\/$/, '')}/api/cryptobot`;
+  return `${uiConfig().cryptobotBase}/api/cryptobot`;
 }
 
 export function parseApiError(status: number, raw: string): ApiErrorBody & { status: number } {
@@ -114,7 +116,7 @@ export function parseApiError(status: number, raw: string): ApiErrorBody & { sta
  * headers with the current `Authorization: Bearer …` (if any) and converts a 401
  * into AuthRequiredError + a cleared session.
  */
-async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const headers: Record<string, string> = {
     ...((init.headers as Record<string, string>) ?? {}),
     ...authorizationHeaders(),
@@ -127,7 +129,7 @@ async function apiFetch(path: string, init: RequestInit = {}): Promise<Response>
   return res;
 }
 
-async function throwHttp(res: Response): Promise<never> {
+export async function throwHttp(res: Response): Promise<never> {
   const body = await res.text();
   const err = parseApiError(res.status, body);
   throw Object.assign(new Error(formatApiError(err)), { apiError: err });
