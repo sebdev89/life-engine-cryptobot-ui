@@ -21,6 +21,7 @@
       @if (loginError()) {
         <p class="err" role="alert">{{ loginError() }}</p>
       }
+      <button type="button" class="link" (click)="glossaryOpen.set(true)">¿Nuevo en Solana? Abrí el glosario</button>
     </form>
   </main>
 } @else {
@@ -31,7 +32,10 @@
           <h1>CryptoBot <span class="muted small">· AI control plane for Solana</span></h1>
           <p class="muted">The agent proposes. You approve. An isolated signer executes — on devnet, under policy, with a full audit trail.</p>
         </div>
-        <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
+        <div class="page__tools">
+          <button type="button" class="ghost" (click)="glossaryOpen.set(true)" aria-haspopup="dialog" title="Glosario de términos (Solana, DeFi, cripto, bots)">📖 Glosario</button>
+          <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
+        </div>
       </div>
     </header>
 
@@ -321,3 +325,5 @@
     }
   </main>
 }
+
+<app-glossary [open]="glossaryOpen()" (closed)="glossaryOpen.set(false)" />

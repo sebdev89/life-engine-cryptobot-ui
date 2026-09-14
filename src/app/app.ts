@@ -27,6 +27,7 @@ import {
 } from './control-plane-api';
 import { AuthRequiredError, runtimeSseUrl } from './cryptobot-api';
 import { clearCryptobotSession, getAccessToken, setCryptobotSession } from './session';
+import { Glossary } from './glossary/glossary';
 
 interface RuntimeEventFrame {
   type: string;
@@ -55,13 +56,16 @@ const QUICK_PROMPTS = [
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, SlicePipe],
+  imports: [FormsModule, SlicePipe, Glossary],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit, OnDestroy {
   readonly config = uiConfig();
   readonly quickPrompts = QUICK_PROMPTS;
+
+  // ---- glossary (drawer, available before and after login) ----
+  readonly glossaryOpen = signal(false);
 
   // ---- auth ----
   readonly authed = signal<boolean>(!!getAccessToken());

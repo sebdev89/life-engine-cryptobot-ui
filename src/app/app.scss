@@ -25,6 +25,29 @@
   gap: 16px;
 }
 
+.page__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+// Text-only button (used for the glossary link on the login card).
+button.link {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  font-weight: 500;
+  text-decoration: underline;
+  align-self: flex-start;
+
+  &:hover:not(:disabled) {
+    background: transparent;
+    color: var(--accent-strong);
+  }
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1.15fr 1fr;
