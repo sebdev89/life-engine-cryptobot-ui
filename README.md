@@ -36,6 +36,16 @@ Covers:
 - API error parsing + formatter.
 - `postMarketReview` sends/omits `Authorization` depending on session state.
 - `runtimeSseUrl` appends `?access_token=` only when a session is present.
+- Glossary data sanity (no empty/duplicate terms, known categories) and the
+  accent-insensitive search/ranking in `filterGlossary`.
+
+## Glossary
+
+`src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the
+header, plus a link on the login card) with the Spanish CryptoBot glossary:
+~860 Solana / DeFi / cryptography / bots-and-agents terms, searchable and
+filterable by category. Data lives in `glossary-data.ts`; to add a term, append
+an entry to the closest thematic block with one of the existing categories.
 
 ## Phase 2 (deferred)
 

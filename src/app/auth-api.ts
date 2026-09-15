@@ -5,8 +5,10 @@
  * `CryptobotSession` shape that session.ts persists.
  */
 import type { CryptobotSession } from './session';
+import { uiConfig } from './config';
 
-export const AUTH_API_BASE = 'http://localhost:8081';
+/** Kept for callers that display it; the live value always comes from uiConfig(). */
+export const AUTH_API_BASE = uiConfig().authBase;
 
 interface AuthLoginResponseDto {
   accessToken: string;
@@ -31,7 +33,7 @@ export async function loginWithPassword(
   email: string,
   password: string,
 ): Promise<CryptobotSession> {
-  const res = await fetch(`${AUTH_API_BASE}/api/auth/login`, {
+  const res = await fetch(`${uiConfig().authBase}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),

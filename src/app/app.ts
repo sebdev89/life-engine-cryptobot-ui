@@ -1,23 +1,33 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { loginWithPassword } from './auth-api';
+import { uiConfig } from './config';
 import {
-  ApiErrorBody,
-  AuthRequiredError,
-  CRYPTOBOT_API_BASE,
-  MarketReviewResponse,
-  MarketReviewSummary,
-  MarketSnapshotDto,
-  MonitoringRunOnceResponse,
-  getLatestReviews,
-  getMarketSnapshot,
-  listIndicators,
-  listWatchlist,
-  postMarketReview,
-  runtimeSseUrl,
-  triggerMonitoringRunOnce,
-} from './cryptobot-api';
+  ActionProposal,
+  ActivityItem,
+  AuditEvent,
+  MessageView,
+  PortfolioResponse,
+  Position,
+  SuggestedAction,
+  WalletView,
+  askAdvisor,
+  createRebalance,
+  decideProposal,
+  executeProposal,
+  getActivity,
+  getPortfolio,
+  getProposal,
+  listMessages,
+  listProposals,
+  listWallets,
+  refreshPortfolio,
+  registerWallet,
+} from './control-plane-api';
+import { AuthRequiredError, runtimeSseUrl } from './cryptobot-api';
 import { clearCryptobotSession, getAccessToken, setCryptobotSession } from './session';
+import { Glossary } from './glossary/glossary';
 
 interface RuntimeEventFrame {
   type: string;
@@ -27,76 +37,105 @@ interface RuntimeEventFrame {
   payload?: Record<string, string>;
 }
 
-interface ProbeState {
-  status: 'idle' | 'loading' | 'ok' | 'err';
-  detail: string;
+/** Chat turn as rendered; assistant turns carry the structured suggestions for one-click simulate. */
+interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+  actions: SuggestedAction[];
+  runtimeRunId: string | null;
+  model?: string | null;
+  confidence?: number | null;
 }
 
-const EMPTY_PROBE: ProbeState = { status: 'idle', detail: '' };
+const QUICK_PROMPTS = [
+  '¿Qué cambió en mi wallet?',
+  '¿Cuál es mi mayor riesgo?',
+  '¿Qué pasa si vendo 20% de SOL?',
+];
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SlicePipe, Glossary],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit, OnDestroy {
-  readonly cryptobotApiBase = CRYPTOBOT_API_BASE;
+  readonly config = uiConfig();
+  readonly quickPrompts = QUICK_PROMPTS;
 
-  // ---- auth state ----
+  // ---- glossary (drawer, available before and after login) ----
+  readonly glossaryOpen = signal(false);
+
+  // ---- auth ----
   readonly authed = signal<boolean>(!!getAccessToken());
   readonly email = signal('');
   readonly password = signal('');
   readonly loginBusy = signal(false);
   readonly loginError = signal<string | null>(null);
 
-  // ---- market-review state ----
-  readonly symbol = signal('BTCUSDT');
-  readonly busy = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly review = signal<MarketReviewResponse | null>(null);
+  // ---- wallets ----
+  readonly wallets = signal<WalletView[]>([]);
+  readonly addressInput = signal(this.config.demoWallet ?? '');
+  readonly clusterInput = signal(this.config.demoCluster ?? 'devnet');
+  readonly walletBusy = signal(false);
+  readonly walletError = signal<string | null>(null);
+
+  // ---- portfolio ----
+  readonly portfolio = signal<PortfolioResponse | null>(null);
+  readonly activity = signal<ActivityItem[]>([]);
+  readonly refreshing = signal(false);
+
+  // ---- advisor ----
+  readonly chat = signal<ChatTurn[]>([]);
+  readonly question = signal('');
+  readonly asking = signal(false);
+  readonly askError = signal<string | null>(null);
   readonly events = signal<RuntimeEventFrame[]>([]);
   readonly sseStatus = signal<'idle' | 'connecting' | 'live' | 'closed' | 'error'>('idle');
 
-  // ---- post-login API probes (snapshot + watchlist + indicators) ----
-  readonly snapshotProbe = signal<ProbeState>(EMPTY_PROBE);
-  readonly watchlistProbe = signal<ProbeState>(EMPTY_PROBE);
-  readonly indicatorsProbe = signal<ProbeState>(EMPTY_PROBE);
-  readonly snapshot = signal<MarketSnapshotDto | null>(null);
+  // ---- proposals ----
+  readonly proposals = signal<ActionProposal[]>([]);
+  readonly selected = signal<ActionProposal | null>(null);
+  readonly audit = signal<AuditEvent[]>([]);
+  readonly targetSol = signal<number>(50);
+  readonly proposalBusy = signal(false);
+  readonly proposalError = signal<string | null>(null);
+  readonly showLogs = signal(false);
+  readonly showTx = signal(false);
 
-  // ---- monitor panel state ----
-  readonly monitorSymbols = signal<string[]>(['BTCUSDT', 'SOLUSDT']);
-  readonly monitorBusy = signal(false);
-  readonly monitorError = signal<string | null>(null);
-  readonly monitorReviews = signal<Record<string, MarketReviewSummary | null>>({
-    BTCUSDT: null,
-    SOLUSDT: null,
+  readonly wallet = computed(() => this.portfolio()?.wallet ?? null);
+  readonly pricedPositions = computed(() =>
+    (this.portfolio()?.snapshot.positions ?? []).filter((p) => p.priceUsd !== null).slice(0, 8),
+  );
+  readonly unpricedCount = computed(
+    () => (this.portfolio()?.snapshot.positions ?? []).filter((p) => p.priceUsd === null).length,
+  );
+  readonly solWeight = computed(() => {
+    const sol = this.portfolio()?.snapshot.positions.find((p) => p.symbol === 'SOL');
+    return sol?.weightPct ?? null;
   });
-  readonly lastMonitorTrigger = signal<MonitoringRunOnceResponse | null>(null);
 
   private es: EventSource | null = null;
-  private monitorPollTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     if (this.authed()) {
-      void this.runProbes();
-      void this.refreshLatestReviews();
+      void this.loadWallets();
     }
   }
 
   ngOnDestroy(): void {
-    this.teardownStream();
-    this.stopMonitorPolling();
+    this.closeSse();
   }
 
-  // ----------------------------------------------------------- login flow ----
-  onEmailChange(value: string): void {
-    this.email.set(value);
+  // ---- auth --------------------------------------------------------------------------------
+
+  onEmailChange(v: string): void {
+    this.email.set(v);
   }
 
-  onPasswordChange(value: string): void {
-    this.password.set(value);
+  onPasswordChange(v: string): void {
+    this.password.set(v);
   }
 
   async onLogin(): Promise<void> {
@@ -104,11 +143,10 @@ export class App implements OnInit, OnDestroy {
     this.loginBusy.set(true);
     this.loginError.set(null);
     try {
-      const session = await loginWithPassword(this.email().trim(), this.password());
-      setCryptobotSession(session);
-      this.password.set(''); // never keep the plaintext password resident
+      setCryptobotSession(await loginWithPassword(this.email().trim(), this.password()));
       this.authed.set(true);
-      void this.runProbes();
+      this.password.set(''); // never keep the plaintext password resident
+      await this.loadWallets();
     } catch (e) {
       const err = e as Error & { loginError?: { message: string } };
       this.loginError.set(err.loginError?.message ?? err.message ?? 'Login failed');
@@ -119,272 +157,353 @@ export class App implements OnInit, OnDestroy {
 
   onLogout(): void {
     clearCryptobotSession();
-    this.teardownStream();
-    this.stopMonitorPolling();
+    this.closeSse();
     this.authed.set(false);
-    this.review.set(null);
-    this.events.set([]);
-    this.sseStatus.set('idle');
-    this.error.set(null);
-    this.snapshot.set(null);
-    this.snapshotProbe.set(EMPTY_PROBE);
-    this.watchlistProbe.set(EMPTY_PROBE);
-    this.indicatorsProbe.set(EMPTY_PROBE);
-    this.monitorReviews.set({ BTCUSDT: null, SOLUSDT: null });
-    this.lastMonitorTrigger.set(null);
-    this.monitorError.set(null);
+    this.portfolio.set(null);
+    this.wallets.set([]);
+    this.proposals.set([]);
+    this.selected.set(null);
+    this.chat.set([]);
   }
 
-  // -------------------------------------------------------- market-review ----
-  onSymbolChange(value: string): void {
-    this.symbol.set(value.trim().toUpperCase());
-  }
+  // ---- wallets -----------------------------------------------------------------------------
 
-  async onSubmit(): Promise<void> {
-    if (!this.authed()) return;
-    this.busy.set(true);
-    this.error.set(null);
-    this.review.set(null);
-    this.events.set([]);
-    this.teardownStream();
+  async loadWallets(): Promise<void> {
     try {
-      const response = await postMarketReview({ symbol: this.symbol() });
-      this.review.set(response);
-      this.connectSse(response);
+      const ws = await listWallets();
+      this.wallets.set(ws);
+      if (ws.length && !this.portfolio()) {
+        // Deep link for demos: ?wallet=<id> opens straight on that wallet.
+        const wanted = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('wallet') : null;
+        await this.selectWallet(ws.find((w) => w.id === wanted) ?? ws[0]);
+      }
     } catch (e) {
-      if (this.handleAuthRequired(e)) return;
-      const err = e as Error & { apiError?: ApiErrorBody & { status?: number } };
-      this.error.set(err.apiError?.message ?? err.message ?? String(e));
+      this.handleAuth(e);
+    }
+  }
+
+  async onTrackWallet(): Promise<void> {
+    const address = this.addressInput().trim();
+    if (!address) {
+      return;
+    }
+    this.walletBusy.set(true);
+    this.walletError.set(null);
+    try {
+      const view = await registerWallet(address, this.clusterInput());
+      this.portfolio.set(view);
+      this.wallets.set(await listWallets().catch(() => this.wallets()));
+      await this.afterWalletSelected(view.wallet.id);
+    } catch (e) {
+      this.walletError.set(this.message(e));
+      this.handleAuth(e);
     } finally {
-      this.busy.set(false);
+      this.walletBusy.set(false);
     }
   }
 
-  // -------------------------------------------------------- API probes ----
-  /**
-   * Hits snapshot + watchlist + indicators in parallel after login so the
-   * operator can verify the Bearer token is working across multiple cryptobot
-   * endpoints, not just /market-review.
-   */
-  async runProbes(): Promise<void> {
-    const symbol = this.symbol();
-    this.snapshotProbe.set({ status: 'loading', detail: '' });
-    this.watchlistProbe.set({ status: 'loading', detail: '' });
-    this.indicatorsProbe.set({ status: 'loading', detail: '' });
-
-    void this.probe('snapshot', this.snapshotProbe, async () => {
-      const snap = await getMarketSnapshot(symbol);
-      this.snapshot.set(snap);
-      return `price=${snap.price} (source ${snap.source})`;
-    });
-    void this.probe('watchlist', this.watchlistProbe, async () => {
-      const items = await listWatchlist();
-      return `${items.length} entr${items.length === 1 ? 'y' : 'ies'}`;
-    });
-    void this.probe('indicators', this.indicatorsProbe, async () => {
-      const items = await listIndicators(symbol, 5);
-      return `${items.length} sample${items.length === 1 ? '' : 's'}`;
-    });
-  }
-
-  private async probe(
-    label: string,
-    target: { set: (s: ProbeState) => void },
-    work: () => Promise<string>,
-  ): Promise<void> {
+  async selectWallet(w: WalletView): Promise<void> {
+    this.walletError.set(null);
     try {
-      const detail = await work();
-      target.set({ status: 'ok', detail });
+      this.portfolio.set(await getPortfolio(w.id));
+      await this.afterWalletSelected(w.id);
     } catch (e) {
-      if (this.handleAuthRequired(e)) return;
-      const err = e as Error & { apiError?: ApiErrorBody };
-      target.set({
-        status: 'err',
-        detail: err.apiError?.message ?? err.message ?? `${label} failed`,
-      });
+      this.walletError.set(this.message(e));
+      this.handleAuth(e);
     }
   }
 
-  // -------------------------------------------------------- monitor panel ----
-  /**
-   * Triggers a one-shot monitoring run for BTCUSDT and SOLUSDT, then polls the latest endpoint
-   * a few times so the UI reflects PENDING → RUNNING → SUCCEEDED as the runtime reconciles.
-   */
-  async onTriggerMonitoring(): Promise<void> {
-    if (this.monitorBusy()) return;
-    this.monitorBusy.set(true);
-    this.monitorError.set(null);
+  private async afterWalletSelected(walletId: string): Promise<void> {
+    this.selected.set(null);
+    this.audit.set([]);
+    this.chat.set([]);
+    this.events.set([]);
+    const [acts, msgs, props] = await Promise.all([
+      getActivity(walletId).catch(() => [] as ActivityItem[]),
+      listMessages(walletId).catch(() => [] as MessageView[]),
+      listProposals(walletId).catch(() => [] as ActionProposal[]),
+    ]);
+    this.activity.set(acts);
+    this.chat.set(msgs.map((m) => this.turnFromMessage(m)));
+    this.proposals.set(props);
+    if (props.length) {
+      await this.selectProposal(props[0]);
+    }
+  }
+
+  async onRefresh(): Promise<void> {
+    const w = this.wallet();
+    if (!w) {
+      return;
+    }
+    this.refreshing.set(true);
     try {
-      const response = await triggerMonitoringRunOnce();
-      this.lastMonitorTrigger.set(response);
-      this.monitorSymbols.set(response.configuredSymbols);
-      // Optimistically seed PENDING rows for each triggered run so the cards
-      // change colour even before the first poll completes.
-      const optimistic: Record<string, MarketReviewSummary | null> = { ...this.monitorReviews() };
-      for (const triggered of response.triggered) {
-        optimistic[triggered.symbol] = {
-          id: triggered.marketReviewRunId ?? triggered.runtimeRunId,
-          symbol: triggered.symbol,
-          runtimeRunId: triggered.runtimeRunId,
-          workflowId: 'crypto.market-review.v1',
-          status: 'RUNNING',
-          verdict: null,
-          summaryPreview: null,
-          requestedBy: null,
-          startedAt: response.startedAt,
-          finishedAt: null,
-          updatedAt: response.startedAt,
-        };
-      }
-      this.monitorReviews.set(optimistic);
-      this.startMonitorPolling();
+      this.portfolio.set(await refreshPortfolio(w.id));
+      this.activity.set(await getActivity(w.id).catch(() => []));
     } catch (e) {
-      if (this.handleAuthRequired(e)) return;
-      const err = e as Error & { apiError?: ApiErrorBody };
-      this.monitorError.set(err.apiError?.message ?? err.message ?? 'Monitoring trigger failed');
+      this.walletError.set(this.message(e));
+      this.handleAuth(e);
     } finally {
-      this.monitorBusy.set(false);
+      this.refreshing.set(false);
     }
   }
 
-  async refreshLatestReviews(): Promise<void> {
+  // ---- advisor -----------------------------------------------------------------------------
+
+  async onAsk(text?: string): Promise<void> {
+    const w = this.wallet();
+    const q = (text ?? this.question()).trim();
+    if (!w || !q || this.asking()) {
+      return;
+    }
+    this.asking.set(true);
+    this.askError.set(null);
+    this.question.set('');
+    this.chat.update((c) => [...c, { role: 'user', content: q, actions: [], runtimeRunId: null }]);
+    this.events.set([]);
     try {
-      const latest = await getLatestReviews(this.monitorSymbols());
-      const byKey: Record<string, MarketReviewSummary | null> = {};
-      for (const symbol of this.monitorSymbols()) {
-        byKey[symbol] = null;
-      }
-      for (const row of latest) {
-        byKey[row.symbol] = row;
-      }
-      this.monitorReviews.set(byKey);
+      const res = await askAdvisor(w.id, q, this.selected()?.id ?? null);
+      this.chat.update((c) => [
+        ...c,
+        {
+          role: 'assistant',
+          content: res.answer.answer,
+          actions: res.answer.suggestedActions,
+          runtimeRunId: res.runtimeRunId,
+          model: res.answer.model,
+          confidence: res.answer.confidence,
+        },
+      ]);
+      this.openSse(runtimeSseUrl({ runtimeBaseUrl: res.runtimeBaseUrl, ssePath: res.ssePath }));
     } catch (e) {
-      if (this.handleAuthRequired(e)) return;
-      const err = e as Error & { apiError?: ApiErrorBody };
-      this.monitorError.set(err.apiError?.message ?? err.message ?? 'Could not load monitor history');
+      this.askError.set(this.message(e));
+      this.handleAuth(e);
+    } finally {
+      this.asking.set(false);
     }
   }
 
-  private startMonitorPolling(): void {
-    this.stopMonitorPolling();
-    let ticks = 0;
-    const maxTicks = 30; // ~90s @ 3s interval — plenty for crypto.market-review.v1
-    const tick = async () => {
-      ticks++;
-      await this.refreshLatestReviews();
-      const allTerminal = this.monitorSymbols().every((sym) => {
-        const row = this.monitorReviews()[sym];
-        return row && row.status !== 'RUNNING' && row.status !== 'PENDING';
-      });
-      if (allTerminal || ticks >= maxTicks) {
-        this.stopMonitorPolling();
-      }
+  // ---- proposals ---------------------------------------------------------------------------
+
+  async onSimulate(action?: SuggestedAction, runtimeRunId?: string | null): Promise<void> {
+    const w = this.wallet();
+    if (!w) {
+      return;
+    }
+    const asset = action?.asset ?? 'SOL';
+    const target = action?.targetWeightPct ?? this.targetSol();
+    this.proposalBusy.set(true);
+    this.proposalError.set(null);
+    try {
+      const created = await createRebalance(
+        w.id,
+        { [asset]: target },
+        action ? `advisor: ${action.rationale}` : `operator asked for ${asset} at ${target}%`,
+        runtimeRunId ?? null,
+      );
+      this.proposals.update((p) => [created.proposal, ...p]);
+      await this.selectProposal(created.proposal);
+    } catch (e) {
+      this.proposalError.set(this.message(e));
+      this.handleAuth(e);
+    } finally {
+      this.proposalBusy.set(false);
+    }
+  }
+
+  async selectProposal(p: ActionProposal): Promise<void> {
+    this.selected.set(p);
+    this.showLogs.set(false);
+    this.showTx.set(false);
+    try {
+      const full = await getProposal(p.id);
+      this.selected.set(full.proposal);
+      this.audit.set(full.audit);
+    } catch (e) {
+      this.handleAuth(e);
+    }
+  }
+
+  async onDecide(decision: 'approve' | 'reject'): Promise<void> {
+    const p = this.selected();
+    if (!p) {
+      return;
+    }
+    this.proposalBusy.set(true);
+    this.proposalError.set(null);
+    try {
+      const updated = await decideProposal(
+        p.id,
+        decision,
+        decision === 'approve' ? 'Approved from CryptoBot UI' : 'Rejected from CryptoBot UI',
+      );
+      await this.replaceProposal(updated);
+    } catch (e) {
+      this.proposalError.set(this.message(e));
+      this.handleAuth(e);
+    } finally {
+      this.proposalBusy.set(false);
+    }
+  }
+
+  async onExecute(): Promise<void> {
+    const p = this.selected();
+    if (!p) {
+      return;
+    }
+    this.proposalBusy.set(true);
+    this.proposalError.set(null);
+    try {
+      const updated = await executeProposal(p.id);
+      await this.replaceProposal(updated);
+      await this.onRefresh();
+    } catch (e) {
+      this.proposalError.set(this.message(e));
+      this.handleAuth(e);
+    } finally {
+      this.proposalBusy.set(false);
+    }
+  }
+
+  private async replaceProposal(updated: ActionProposal): Promise<void> {
+    this.proposals.update((list) => list.map((x) => (x.id === updated.id ? updated : x)));
+    await this.selectProposal(updated);
+  }
+
+  // ---- helpers -----------------------------------------------------------------------------
+
+  weightsAfterEntries(p: ActionProposal): { symbol: string; before: number; after: number }[] {
+    const keys = new Set([...Object.keys(p.plan.weightsBefore), ...Object.keys(p.plan.weightsAfter)]);
+    return [...keys]
+      .map((symbol) => ({
+        symbol,
+        before: p.plan.weightsBefore[symbol] ?? 0,
+        after: p.plan.weightsAfter[symbol] ?? 0,
+      }))
+      .filter((e) => Math.abs(e.before - e.after) > 0.01)
+      .sort((a, b) => b.before - a.before);
+  }
+
+  canApprove(p: ActionProposal | null): boolean {
+    return !!p && p.status === 'AWAITING_APPROVAL';
+  }
+
+  canExecute(p: ActionProposal | null): boolean {
+    return !!p && p.status === 'APPROVED' && !!p.policy?.executable;
+  }
+
+  statusClass(status: string): string {
+    switch (status) {
+      case 'EXECUTED':
+      case 'APPROVED':
+        return 'ok';
+      case 'AWAITING_APPROVAL':
+      case 'EXECUTING':
+        return 'warn';
+      case 'BLOCKED_BY_POLICY':
+      case 'REJECTED':
+      case 'FAILED':
+      case 'EXPIRED':
+        return 'err';
+      default:
+        return '';
+    }
+  }
+
+  severityClass(sev: string): string {
+    return sev === 'HIGH' ? 'err' : sev === 'MEDIUM' ? 'warn' : 'ok';
+  }
+
+  barColor(p: Position, i: number): string {
+    if (p.stable) {
+      return '#4ade80';
+    }
+    const palette = ['#38bdf8', '#a78bfa', '#f472b6', '#fb923c', '#facc15', '#2dd4bf', '#94a3b8'];
+    return palette[i % palette.length];
+  }
+
+  fmtUsd(v: number | null | undefined): string {
+    if (v === null || v === undefined) {
+      return '—';
+    }
+    return v.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+  }
+
+  fmtPct(v: number | null | undefined, digits = 1): string {
+    return v === null || v === undefined ? '—' : `${v.toFixed(digits)}%`;
+  }
+
+  fmtAmount(v: number | null | undefined): string {
+    if (v === null || v === undefined) {
+      return '—';
+    }
+    return v >= 1 ? v.toLocaleString(undefined, { maximumFractionDigits: 4 }) : v.toPrecision(3);
+  }
+
+  fmtLamports(l: number | null | undefined): string {
+    return l === null || l === undefined ? '—' : `${(l / 1_000_000_000).toFixed(4)} SOL`;
+  }
+
+  shortSig(s: string | null): string {
+    return s ? `${s.slice(0, 8)}…${s.slice(-6)}` : '—';
+  }
+
+  eventLabel(e: RuntimeEventFrame): string {
+    return e.type + (e.stageId ? ` · ${e.stageId}` : '');
+  }
+
+  private turnFromMessage(m: MessageView): ChatTurn {
+    const structured = m.structured as { suggestedActions?: SuggestedAction[]; model?: string; confidence?: number };
+    return {
+      role: m.role,
+      content: m.content,
+      actions: structured?.suggestedActions ?? [],
+      runtimeRunId: m.runtimeRunId,
+      model: structured?.model ?? null,
+      confidence: structured?.confidence ?? null,
     };
-    this.monitorPollTimer = setInterval(() => void tick(), 3000);
-    void tick();
   }
 
-  private stopMonitorPolling(): void {
-    if (this.monitorPollTimer != null) {
-      clearInterval(this.monitorPollTimer);
-      this.monitorPollTimer = null;
-    }
-  }
-
-  runtimeUiLink(runtimeRunId: string): string {
-    return `http://localhost:4202/?runId=${encodeURIComponent(runtimeRunId)}`;
-  }
-
-  monitorEntries(): { symbol: string; review: MarketReviewSummary | null }[] {
-    const map = this.monitorReviews();
-    return this.monitorSymbols().map((symbol) => ({ symbol, review: map[symbol] ?? null }));
-  }
-
-  // -------------------------------------------------------- SSE plumbing ----
-  connectSse(response: MarketReviewResponse): void {
-    this.teardownStream();
-    const url = runtimeSseUrl(response.related);
+  private openSse(url: string): void {
+    this.closeSse();
     this.sseStatus.set('connecting');
-    const es = new EventSource(url);
-    this.es = es;
-
-    es.onopen = () => this.sseStatus.set('live');
-
-    const handle = (msg: MessageEvent) => {
-      if (!msg.data || msg.data.startsWith(':')) return;
-      try {
-        const ev = JSON.parse(msg.data) as RuntimeEventFrame;
-        this.events.update((list) => [...list, ev]);
-        if (ev.terminal) {
-          this.sseStatus.set('closed');
-          this.teardownStream();
-        }
-      } catch (parseErr) {
-        console.error('cryptobot-ui: SSE parse error', parseErr, msg.data);
-      }
-    };
-
-    es.onmessage = handle;
-    [
-      'RUN_STARTED',
-      'RUN_SUCCEEDED',
-      'RUN_FAILED',
-      'RUN_CANCELLED',
-      'STAGE_STARTED',
-      'STAGE_SUCCEEDED',
-      'STAGE_FAILED',
-      'TOOL_STARTED',
-      'TOOL_SUCCEEDED',
-      'TOOL_FAILED',
-    ].forEach((type) => es.addEventListener(type, handle));
-
-    es.onerror = () => {
-      if (this.sseStatus() === 'closed') return;
-      this.sseStatus.set('error');
-    };
-  }
-
-  // -------------------------------------------------------- formatting ----
-  formatNumber(value: number | undefined | null, digits = 2): string {
-    if (value == null || !Number.isFinite(value)) return '—';
-    return value.toLocaleString(undefined, { maximumFractionDigits: digits });
-  }
-
-  indicatorEntries(indicators: Record<string, number> | undefined): { key: string; value: number }[] {
-    if (!indicators) return [];
-    return Object.entries(indicators).map(([key, value]) => ({ key, value }));
-  }
-
-  formatTime(iso: string | undefined): string {
-    if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleTimeString(undefined, { hour12: false });
+      const es = new EventSource(url);
+      this.es = es;
+      es.onopen = () => this.sseStatus.set('live');
+      es.onmessage = (ev) => {
+        try {
+          const frame = JSON.parse(ev.data) as RuntimeEventFrame;
+          this.events.update((list) => [...list.slice(-40), frame]);
+          if (frame.terminal) {
+            this.sseStatus.set('closed');
+            this.closeSse();
+          }
+        } catch {
+          /* ignore malformed frames */
+        }
+      };
+      es.onerror = () => {
+        this.sseStatus.set(this.events().length ? 'closed' : 'error');
+        this.closeSse();
+      };
     } catch {
-      return iso;
+      this.sseStatus.set('error');
     }
   }
 
-  // -------------------------------------------------------- helpers ----
-  /**
-   * If `e` is AuthRequiredError, the cryptobot-api layer has already cleared
-   * the session — we just flip the auth signal so the template re-renders the
-   * login screen. Returns true when the error was an auth one (so the caller
-   * can short-circuit its own error path).
-   */
-  private handleAuthRequired(e: unknown): boolean {
+  private closeSse(): void {
+    this.es?.close();
+    this.es = null;
+  }
+
+  private message(e: unknown): string {
+    return e instanceof Error ? e.message : String(e);
+  }
+
+  private handleAuth(e: unknown): void {
     if (e instanceof AuthRequiredError) {
-      this.teardownStream();
-      this.authed.set(false);
-      this.loginError.set('Session expired, please sign in again.');
-      return true;
-    }
-    return false;
-  }
-
-  private teardownStream(): void {
-    if (this.es) {
-      this.es.close();
-      this.es = null;
+      this.onLogout();
     }
   }
 }

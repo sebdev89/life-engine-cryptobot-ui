@@ -1,0 +1,60 @@
+@if (open()) {
+  <div class="glossary__backdrop" (click)="close()" aria-hidden="true"></div>
+  <aside class="glossary" role="dialog" aria-modal="true" aria-labelledby="glossary-title" (keydown)="onKeydown($event)">
+    <header class="glossary__head">
+      <div>
+        <h2 id="glossary-title">Glosario</h2>
+        <p class="muted small">{{ total }} términos · Solana, DeFi, criptografía, bots y agentes. Esc para cerrar.</p>
+      </div>
+      <button type="button" class="ghost" (click)="close()" aria-label="Cerrar glosario">✕</button>
+    </header>
+
+    <div class="glossary__search">
+      <input
+        #searchBox
+        type="search"
+        [value]="query()"
+        (input)="onQuery($any($event.target).value)"
+        placeholder="Buscar término o definición… (PDA, slippage, blockhash)"
+        aria-label="Buscar en el glosario"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      @if (query() || category()) {
+        <button type="button" class="mini" (click)="clear()">Limpiar</button>
+      }
+    </div>
+
+    <div class="chips glossary__chips" role="group" aria-label="Filtrar por categoría">
+      <button type="button" class="chip" [class.chip--active]="category() === null" (click)="pickCategory(null)">Todo</button>
+      @for (c of categories; track c) {
+        <button type="button" class="chip" [class.chip--active]="category() === c" (click)="pickCategory(c)">
+          {{ c }} <span class="muted">{{ counts().get(c) }}</span>
+        </button>
+      }
+    </div>
+
+    <p class="muted small glossary__count" aria-live="polite">
+      {{ results().length }} de {{ total }}
+      @if (category()) { · {{ category() }} }
+      @if (query()) { · “{{ query() }}” }
+    </p>
+
+    <div class="glossary__list">
+      @if (!results().length) {
+        <p class="muted">Sin resultados. Probá con otra palabra o sacá el filtro de categoría.</p>
+      }
+      <dl>
+        @for (e of results(); track e.term) {
+          <div class="entry">
+            <dt>
+              <strong>{{ e.term }}</strong>
+              <button type="button" class="tag tag--btn" (click)="pickCategory(e.category)" [title]="'Filtrar: ' + e.category">{{ e.category }}</button>
+            </dt>
+            <dd>{{ e.definition }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+  </aside>
+}
