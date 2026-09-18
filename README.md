@@ -38,6 +38,9 @@ Covers:
 - `runtimeSseUrl` appends `?access_token=` only when a session is present.
 - Glossary data sanity (no empty/duplicate terms, known categories) and the
   accent-insensitive search/ranking in `filterGlossary`.
+- Lineage layout (`layoutLineage`: parents strictly above children, longest-path
+  layering, no overlaps, one path per edge, deterministic) and the receipt
+  formatting helpers (KAN-393).
 
 ## Glossary
 
@@ -46,6 +49,22 @@ header, plus a link on the login card) with the Spanish CryptoBot glossary:
 ~860 Solana / DeFi / cryptography / bots-and-agents terms, searchable and
 filterable by category. Data lives in `glossary-data.ts`; to add a term, append
 an entry to the closest thematic block with one of the existing categories.
+
+## Lineage panel (KAN-393)
+
+`src/app/lineage/` renders, under the selected proposal, the **provenance DAG**
+of its decision receipts from `GET /api/cryptobot/proposals/{id}/lineage`
+(`lineage-api.ts` mirrors the service records). Each node shows the receipt
+kind, its reproducibility level (`L0` signed / `L1` deterministic), the short
+hash, what produced it (model ref or engine@version) and ⚓ when it is anchored
+on Solana; edges are typed — dashed teal `reuses`, purple `validates`, orange
+`executes`, grey derives-from. The header sums measured compute (tokens, units),
+cost only when the service priced it, anchored count and reuse count; a
+`truncated` flag says the depth cap cut the walk. Clicking a node loads the
+stored receipt (parents with roles, inputs, prompt commitment) and calls
+`POST /receipts/{hash}/verify` live, one line per check (hash, body, signature,
+parents, L1 re-execution). Nothing is computed client-side except the layout;
+the SVG is plain — no graph library.
 
 ## Phase 2 (deferred)
 
