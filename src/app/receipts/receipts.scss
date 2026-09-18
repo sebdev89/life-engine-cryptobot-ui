@@ -1,0 +1,107 @@
+// Mirrors the app's badge/mini/muted vocabulary (component styles are encapsulated, so they are repeated here).
+.receipts {
+  margin-top: 18px;
+}
+
+.receipts__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.receipts__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 0.86rem;
+
+  th,
+  td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.small {
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.err {
+  color: var(--err);
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: var(--panel-elev);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.badge--ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge--warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.badge--err {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+.explorer {
+  margin-left: 6px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+button.mini {
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.verify {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}

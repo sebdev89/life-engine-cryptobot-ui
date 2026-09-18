@@ -321,6 +321,8 @@
             </ol>
           </article>
         }
+        <!-- KAN-394: signed receipts of the selected proposal (or the wallet), each with its devnet anchor and explorer link -->
+        <app-receipts [walletId]="wallet()?.id ?? null" [proposalId]="selected()?.id ?? null" [version]="receiptsVersion()" />
       </section>
     }
   </main>

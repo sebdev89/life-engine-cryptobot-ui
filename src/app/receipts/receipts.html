@@ -1,0 +1,68 @@
+<section class="receipts">
+  <header class="receipts__head">
+    <h4>Decision receipts</h4>
+    <span class="muted small">
+      {{ receipts().length }} signed · {{ anchoredCount() }} anchored on devnet
+      @if (proposalId()) { · this proposal } @else { · latest of this wallet }
+    </span>
+  </header>
+
+  @if (error(); as err) { <p class="err small">{{ err }}</p> }
+  @if (loading() && receipts().length === 0) { <p class="muted small">Loading receipts…</p> }
+  @if (!loading() && receipts().length === 0 && !error()) { <p class="muted small">No receipts yet.</p> }
+
+  @if (receipts().length > 0) {
+    <table class="receipts__table">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Receipt</th>
+          <th>Level</th>
+          <th>Anchor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of receipts(); track r.receiptHash) {
+          <tr>
+            <td>
+              <strong>{{ r.body.kind }}</strong>
+              <div class="muted small">{{ r.body.agentId }}</div>
+            </td>
+            <td>
+              <code title="{{ r.receiptHash }}">{{ shortHash(r.receiptHash) }}</code>
+              <div class="muted small">key {{ r.signature.keyId }} · {{ r.createdAt | slice: 0 : 19 }}</div>
+            </td>
+            <td><span class="badge badge--{{ r.body.reproducibility === 'L1_REPRODUCIBLE' ? 'ok' : 'warn' }}">{{ r.body.reproducibility.replace('_', ' ') }}</span></td>
+            <td>
+              @if (r.anchor?.tx; as tx) {
+                <span class="badge badge--ok">{{ anchorLabel(r.anchor) }}</span>
+                <a class="explorer" [href]="explorerTxUrl(r.anchor!.chain, tx)" target="_blank" rel="noopener" title="Memo transaction on Solana explorer">{{ shortSig(tx) }} ↗</a>
+                <div class="muted small" title="{{ r.anchor!.root }}">root {{ shortHash(r.anchor!.root) }} · proof {{ r.anchor!.proof.length }} sibling{{ r.anchor!.proof.length === 1 ? '' : 's' }}</div>
+              } @else {
+                <span class="badge badge--warn">{{ anchorLabel(r.anchor) }}</span>
+              }
+            </td>
+            <td>
+              <button type="button" class="mini" (click)="verify(r)" [disabled]="verifying() === r.receiptHash">
+                {{ verifying() === r.receiptHash ? 'Verifying…' : 'Verify' }}
+              </button>
+              @if (verifications()[r.receiptHash]; as v) {
+                <div class="verify small">
+                  <span class="badge badge--{{ v.valid ? 'ok' : 'err' }}">{{ v.valid ? 'receipt valid' : 'receipt INVALID' }}</span>
+                  <span class="muted">hash {{ v.hashMatchesCanonical ? '✓' : '✗' }} · body {{ v.bodyMatchesCanonical ? '✓' : '✗' }} · signature {{ v.signatureValid ? '✓' : '✗' }} · parents {{ v.parentsPresent ? '✓' : '✗' }}</span>
+                  @if (v.anchor.anchored) {
+                    <span class="badge badge--{{ v.anchor.proofValid ? 'ok' : 'err' }}">{{ v.anchor.proofValid ? 'inclusion proof valid' : 'inclusion proof INVALID' }}</span>
+                    @if (v.anchor.explorerUrl) { <a class="explorer" [href]="v.anchor.explorerUrl" target="_blank" rel="noopener">tx ↗</a> }
+                  } @else {
+                    <span class="muted">anchor: {{ v.anchor.status ? v.anchor.status.toLowerCase() : 'none' }}</span>
+                  }
+                </div>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>
