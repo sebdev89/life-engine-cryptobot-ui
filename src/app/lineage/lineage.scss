@@ -1,0 +1,358 @@
+// Lineage panel (KAN-393). Styles are component-scoped; the few shared utilities are repeated here.
+:host {
+  display: block;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.small {
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.err {
+  color: var(--err);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.lineage {
+  margin-top: 14px;
+}
+
+.lineage__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.lineage__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+}
+
+.lineage__canvas {
+  margin-top: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 4px;
+}
+
+.lineage__legend {
+  margin: 6px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+}
+
+// ---- badges --------------------------------------------------------------------------------
+.lv,
+.badge,
+.edge-key {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--border);
+  background: var(--panel-elev);
+  color: var(--text-muted);
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+.lv--l0 {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.lv--l1 {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.lv--lx {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.badge--ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badge--err {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+.edge-key--validates {
+  color: #a78bfa;
+  border-color: #a78bfa;
+}
+
+.edge-key--executes {
+  color: #fb923c;
+  border-color: #fb923c;
+}
+
+.edge-key--reuses {
+  color: #2dd4bf;
+  border-color: #2dd4bf;
+}
+
+.reused {
+  color: #2dd4bf;
+}
+
+// ---- SVG -------------------------------------------------------------------------------------
+svg {
+  display: block;
+  max-width: none;
+  font-family: inherit;
+}
+
+.edge {
+  color: var(--border);
+
+  path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+
+  text {
+    fill: currentColor;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+}
+
+.edge--validates {
+  color: #a78bfa;
+}
+
+.edge--executes {
+  color: #fb923c;
+}
+
+.edge--reuses {
+  color: #2dd4bf;
+
+  path {
+    stroke-dasharray: 5 4;
+  }
+}
+
+.node {
+  cursor: pointer;
+  outline: none;
+
+  rect {
+    fill: var(--panel-elev);
+    stroke: var(--border);
+    stroke-width: 1.5;
+    transition: stroke 0.12s ease;
+  }
+
+  text {
+    fill: var(--text);
+    font-size: 11px;
+    pointer-events: none;
+  }
+
+  .node__kind {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 10px;
+  }
+
+  .node__level {
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  .node__hash {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    fill: var(--accent);
+  }
+
+  .node__meta,
+  .node__anchor {
+    fill: var(--text-muted);
+    font-size: 10px;
+  }
+
+  &:hover rect,
+  &:focus-visible rect {
+    stroke: var(--accent);
+  }
+}
+
+.node--l0 .node__level {
+  fill: var(--accent);
+}
+
+.node--l1 .node__level {
+  fill: var(--ok);
+}
+
+.node--l1 rect {
+  stroke: color-mix(in srgb, var(--ok) 50%, var(--border));
+}
+
+.node--root rect {
+  fill: color-mix(in srgb, var(--panel-elev) 80%, var(--accent));
+}
+
+.node--selected rect {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+// ---- receipt card ----------------------------------------------------------------------------
+.receipt-card {
+  margin-top: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.86rem;
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    strong {
+      text-transform: capitalize;
+    }
+  }
+
+  .hash {
+    font-size: 0.78rem;
+    word-break: break-all;
+    color: var(--accent);
+  }
+
+  p {
+    margin: 6px 0 0;
+  }
+}
+
+.receipt-card__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 12px;
+  margin: 10px 0 0;
+
+  dt {
+    color: var(--text-muted);
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  code {
+    font-size: 0.78rem;
+  }
+
+  a {
+    color: var(--accent);
+  }
+}
+
+button.link-hash {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0 4px;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.verify {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.verify__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button.mini {
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.checks {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: grid;
+  gap: 2px;
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+
+  .glyph {
+    display: inline-block;
+    width: 1em;
+    font-weight: 700;
+  }
+}
+
+.check--ok .glyph {
+  color: var(--ok);
+}
+
+.check--err .glyph {
+  color: var(--err);
+}
+
+.check--na {
+  color: var(--text-muted);
+}

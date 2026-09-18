@@ -319,6 +319,9 @@
                 </li>
               }
             </ol>
+
+            <!-- KAN-393: the decision receipts behind this proposal, as a DAG; click → verify live -->
+            <app-lineage [proposalId]="p.id" [version]="lineageVersion()" />
           </article>
         }
         <!-- KAN-394: signed receipts of the selected proposal (or the wallet), each with its devnet anchor and explorer link -->
