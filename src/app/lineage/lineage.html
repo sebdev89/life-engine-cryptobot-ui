@@ -1,0 +1,138 @@
+<section class="lineage" aria-label="Decision lineage">
+  <div class="lineage__head">
+    <h4>Lineage <span class="muted small">· signed, content-addressed receipts · click a node to verify it live</span></h4>
+    @if (graph(); as g) {
+      <div class="lineage__summary muted small">
+        <span>{{ g.summary.nodes }} receipts · {{ g.summary.edges }} edges</span>
+        <span>· compute {{ g.summary.inputTokens }}+{{ g.summary.outputTokens }} tok, {{ g.summary.computeUnits }} units</span>
+        <span>· cost {{ g.summary.costUsd ? '$' + g.summary.costUsd : 'not priced' }}</span>
+        @for (lv of g.summary.byLevel | keyvalue; track lv.key) {
+          <span class="lv lv--{{ lv.key === 'L0_SIGNED' ? 'l0' : lv.key === 'L1_REPRODUCIBLE' ? 'l1' : 'lx' }}">{{ lv.key.split('_')[0] }} ×{{ lv.value }}</span>
+        }
+        <span>· anchored {{ g.summary.anchored }}/{{ g.summary.nodes }}</span>
+        @if (g.summary.reused) { <span class="reused">· {{ g.summary.reused }} reused</span> }
+        @if (g.truncated) { <span class="warn">· truncated at depth {{ g.maxDepth }}</span> }
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <p class="muted small">Loading the DAG…</p>
+  }
+  @if (error()) {
+    <p class="err small" role="alert">{{ error() }}</p>
+  }
+
+  @if (layout(); as lo) {
+    @if (!lo.nodes.length) {
+      <p class="muted small">This proposal left no receipts (created before the receipt layer).</p>
+    } @else {
+      <div class="lineage__canvas">
+        <svg [attr.viewBox]="'0 0 ' + lo.width + ' ' + lo.height" [attr.width]="lo.width" [attr.height]="lo.height" role="img" aria-label="Provenance DAG">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+            </marker>
+          </defs>
+          @for (e of lo.edges; track e.edge.childHash + e.edge.parentHash) {
+            <g class="edge edge--{{ edgeClass(e.edge) }}">
+              <path [attr.d]="e.path" marker-end="url(#arrow)" />
+              @if (edgeLabel(e.edge)) {
+                <text [attr.x]="e.labelX" [attr.y]="e.labelY - 4" text-anchor="middle">{{ edgeLabel(e.edge) }}</text>
+              }
+            </g>
+          }
+          @for (n of lo.nodes; track n.node.receiptHash) {
+            <g class="node node--{{ levelClass(n.node) }}" [class.node--selected]="selectedHash() === n.node.receiptHash" [class.node--root]="isRoot(n.node)"
+               [attr.transform]="'translate(' + n.x + ',' + n.y + ')'" (click)="select(n.node.receiptHash)" (keydown.enter)="select(n.node.receiptHash)"
+               tabindex="0" role="button" [attr.aria-label]="n.node.kind + ' ' + n.node.receiptHash">
+              <title>{{ n.node.receiptHash }}
+{{ producer(n.node) }} · {{ compute(n.node) }} · {{ cost(n.node) }}</title>
+              <rect [attr.width]="nodeW" [attr.height]="nodeH" rx="8" />
+              <text class="node__kind" x="10" y="18">{{ kindLabel(n.node.kind) }}</text>
+              <text class="node__level" [attr.x]="nodeW - 10" y="18" text-anchor="end">{{ level(n.node) }}</text>
+              <text class="node__hash" x="10" y="36">{{ short(n.node.receiptHash) }}</text>
+              <text class="node__meta" x="10" y="54">{{ producer(n.node) }}</text>
+              @if (n.node.anchor) {
+                <text class="node__anchor" [attr.x]="nodeW - 10" y="54" text-anchor="end">⚓</text>
+              }
+            </g>
+          }
+        </svg>
+      </div>
+      <p class="lineage__legend muted small">
+        <span class="lv lv--l0">L0</span> signed by the service ·
+        <span class="lv lv--l1">L1</span> deterministic, re-executable ·
+        <span class="edge-key edge-key--validates">validates</span>
+        <span class="edge-key edge-key--executes">executes</span>
+        <span class="edge-key edge-key--reuses">reuses</span> (an earlier analysis, same asset, &lt; 1 h) ·
+        ⚓ anchored on Solana
+      </p>
+    }
+  }
+
+  @if (selectedNode(); as n) {
+    <article class="receipt-card">
+      <header>
+        <strong>{{ kindLabel(n.kind) }}</strong>
+        <span class="lv lv--{{ levelClass(n) }}">{{ n.level }}</span>
+        <code class="hash">{{ n.receiptHash }}</code>
+      </header>
+      <dl class="receipt-card__facts">
+        <dt>Agent</dt><dd>{{ n.agentId }}</dd>
+        @if (n.model) { <dt>Model</dt><dd>{{ n.model.ref }} <span class="muted small">via {{ n.model.provider ?? '?' }}@if (n.model.providerDigest) { · {{ short(n.model.providerDigest) }} } @else { · digest not exposed by Runtime yet }</span></dd> }
+        @if (n.engine) { <dt>Engine</dt><dd>{{ n.engine.id }} {{ n.engine.version }} @if (n.engine.weightsHash) { <span class="muted small">weights {{ short(n.engine.weightsHash) }}</span> }</dd> }
+        <dt>Compute</dt><dd>{{ compute(n) }} @if (n.compute?.wallMs) { <span class="muted small">· {{ n.compute!.wallMs }} ms</span> }</dd>
+        <dt>Cost</dt><dd>{{ cost(n) }} @if (n.cost?.priceTableVersion) { <span class="muted small">· table {{ n.cost!.priceTableVersion }}</span> }</dd>
+        <dt>Output</dt><dd><code>{{ short(n.outputHash) }}</code> <span class="muted small">{{ n.outputSchema }}</span></dd>
+        @if (n.runId) { <dt>Runtime run</dt><dd><code>{{ n.runId }}</code></dd> }
+        <dt>Anchor</dt>
+        <dd>
+          @if (n.anchor; as a) {
+            {{ a.chain }} @if (a.slot) { slot {{ a.slot }} } · root <code>{{ short(a.root) }}</code>
+            @if (a.explorerUrl) { <a [href]="a.explorerUrl" target="_blank" rel="noopener">{{ short(a.tx) }} ↗</a> } @else { <code>{{ short(a.tx) }}</code> }
+          } @else {
+            <span class="muted">not anchored yet</span>
+          }
+        </dd>
+        <dt>Signed</dt><dd>{{ n.createdAt }} <span class="muted small">key {{ n.keyId }}</span></dd>
+      </dl>
+
+      @if (receipt(); as r) {
+        @if (edgesOf(r).length) {
+          <p class="small"><strong>Parents</strong>
+            @for (e of edgesOf(r); track e.parentHash) {
+              <button type="button" class="link-hash" (click)="select(e.parentHash)"><span class="edge-key edge-key--{{ e.role.toLowerCase().replace('_', '-') }}">{{ e.role.toLowerCase() }}</span> {{ short(e.parentHash) }}</button>
+            }
+          </p>
+        }
+        @if (inputsOf(r).length) {
+          <p class="small muted"><strong>Inputs</strong> @for (i of inputsOf(r); track i.type + i.hash) { <span>{{ i.type }} {{ short(i.hash) }}</span> }</p>
+        }
+        @if (r.receipt.body.promptHash) {
+          <p class="small muted">prompt commitment {{ short(r.receipt.body.promptHash) }} — the prompt and the answer never leave the service; only hashes travel.</p>
+        }
+      }
+
+      <div class="verify">
+        <div class="verify__head">
+          <strong>Verify</strong>
+          @if (verifying()) { <span class="muted small">recomputing…</span> }
+          @if (verification(); as v) {
+            <span class="badge badge--{{ v.valid ? 'ok' : 'err' }}">{{ v.valid ? 'VALID' : 'INVALID' }}</span>
+          }
+          <button type="button" class="mini" (click)="reverify()" [disabled]="verifying()">Verify again</button>
+        </div>
+        @if (verification(); as v) {
+          <ul class="checks">
+            @for (c of checks(v); track c.label) {
+              <li class="check check--{{ c.ok === null ? 'na' : c.ok ? 'ok' : 'err' }}"><span class="glyph">{{ checkGlyph(c.ok) }}</span> {{ c.label }}</li>
+            }
+          </ul>
+          @if (reproductionReason(v); as why) { <p class="muted small">re-execution: {{ why }}</p> }
+        }
+        @if (detailError()) { <p class="err small" role="alert">{{ detailError() }}</p> }
+      </div>
+    </article>
+  }
+</section>

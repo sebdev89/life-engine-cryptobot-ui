@@ -319,6 +319,9 @@
                 </li>
               }
             </ol>
+
+            <!-- KAN-393: the decision receipts behind this proposal, as a DAG; click → verify live -->
+            <app-lineage [proposalId]="p.id" [version]="lineageVersion()" />
           </article>
         }
       </section>
