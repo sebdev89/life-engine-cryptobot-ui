@@ -29,6 +29,7 @@ import { AuthRequiredError, runtimeSseUrl } from './cryptobot-api';
 import { clearCryptobotSession, getAccessToken, setCryptobotSession } from './session';
 import { Glossary } from './glossary/glossary';
 import { Lineage } from './lineage/lineage';
+import { Receipts } from './receipts/receipts';
 
 interface RuntimeEventFrame {
   type: string;
@@ -57,7 +58,7 @@ const QUICK_PROMPTS = [
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, SlicePipe, Glossary, Lineage],
+  imports: [FormsModule, SlicePipe, Glossary, Lineage, Receipts],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -106,6 +107,8 @@ export class App implements OnInit, OnDestroy {
   readonly showTx = signal(false);
   /** Bumped whenever the selected proposal changes state, so the lineage panel reloads its DAG (KAN-393). */
   readonly lineageVersion = signal(0);
+  /** Bumped after approve / execute / refresh so the receipts panel (KAN-394) reloads. */
+  readonly receiptsVersion = signal(0);
 
   readonly wallet = computed(() => this.portfolio()?.wallet ?? null);
   readonly pricedPositions = computed(() =>
@@ -248,6 +251,7 @@ export class App implements OnInit, OnDestroy {
       this.handleAuth(e);
     } finally {
       this.refreshing.set(false);
+      this.receiptsVersion.update((v) => v + 1);
     }
   }
 
@@ -372,6 +376,7 @@ export class App implements OnInit, OnDestroy {
     this.proposals.update((list) => list.map((x) => (x.id === updated.id ? updated : x)));
     await this.selectProposal(updated);
     this.lineageVersion.update((v) => v + 1);
+    this.receiptsVersion.update((v) => v + 1);
   }
 
   // ---- helpers -----------------------------------------------------------------------------

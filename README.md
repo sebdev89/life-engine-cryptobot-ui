@@ -41,6 +41,8 @@ Covers:
 - Lineage layout (`layoutLineage`: parents strictly above children, longest-path
   layering, no overlaps, one path per edge, deterministic) and the receipt
   formatting helpers (KAN-393).
+- Receipts panel helpers (KAN-394): the explorer link rule (`?cluster=devnet`
+  only on devnet), the anchor label, short hashes and the pipeline order.
 
 ## Glossary
 
@@ -65,6 +67,18 @@ stored receipt (parents with roles, inputs, prompt commitment) and calls
 `POST /receipts/{hash}/verify` live, one line per check (hash, body, signature,
 parents, L1 re-execution). Nothing is computed client-side except the layout;
 the SVG is plain — no graph library.
+
+## Decision receipts and their devnet anchor (KAN-394)
+
+`src/app/receipts/` (`<app-receipts>`, under the proposal detail) lists the signed
+receipts of the selected proposal — or the wallet's latest when none is selected —
+with step, hash, key, reproducibility level and **anchor**: a receipt that is in a
+finalized batch shows `anchored · devnet · slot N`, the Merkle root and a link to
+the memo transaction on the Solana explorer (`https://explorer.solana.com/tx/<sig>?cluster=devnet`);
+one that is not yet says so. **Verify** calls `POST /api/cryptobot/receipts/{hash}/verify`
+and shows each server-side check (hash · body · signature · parents) plus whether the
+stored Merkle proof still folds to the root in that transaction. Types and pure helpers
+live in `receipts-api.ts`; nothing is computed in the UI beyond display.
 
 ## Phase 2 (deferred)
 
