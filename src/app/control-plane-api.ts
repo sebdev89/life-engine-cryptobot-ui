@@ -147,6 +147,18 @@ export interface PolicyViolation {
   message: string;
 }
 
+/** KAN-436: the graduated verdict of the deterministic engine over `(I, S, R_v)`; null on rows older than it. */
+export interface PolicyVerdict {
+  decision: 'ALLOW' | 'DENY' | 'ESCALATE';
+  escalation: 'NONE' | 'REQUIRE_SECOND_AGENT' | 'REQUIRE_HUMAN_SIGNATURE';
+  tier: 'AUTONOMOUS' | 'SECOND_AGENT' | 'HUMAN_SIGNATURE' | 'OVER_LIMIT';
+  failedPredicates: string[];
+  evaluatedPredicates: string[];
+  policyVersion: string;
+  policyHash: string;
+  inputHash: string;
+}
+
 export interface PolicyDecision {
   allowed: boolean;
   executable: boolean;
@@ -154,6 +166,9 @@ export interface PolicyDecision {
   executionViolations: PolicyViolation[];
   rulesApplied: string[];
   evaluatedAt: string;
+  authorization?: PolicyVerdict | null;
+  /** The exact `(I, S)` the verdict was computed over (KAN-438); opaque to the UI. */
+  input?: Record<string, unknown> | null;
 }
 
 export interface SimulationOutcome {
@@ -196,6 +211,7 @@ export interface ApprovalRecord {
 }
 
 export interface ExecutionRecord {
+  /** Fine-grained step: SIGNED (nothing broadcast yet) · SUBMITTED · EXECUTED · FAILED. */
   status: string;
   signature: string | null;
   explorerUrl: string | null;
@@ -204,6 +220,13 @@ export interface ExecutionRecord {
   confirmedAt: string | null;
   confirmationStatus: string | null;
   error: string | null;
+  recentBlockhash?: string | null;
+  lastValidBlockHeight?: number | null;
+  reconciliationAttempts?: number;
+  reconciledAt?: string | null;
+  /** KAN-571: idempotent retries under the same operationId (0 on the first attempt). */
+  retries?: number;
+  previousSignature?: string | null;
 }
 
 export type ProposalStatus =
@@ -214,6 +237,7 @@ export type ProposalStatus =
   | 'APPROVED'
   | 'REJECTED'
   | 'EXECUTING'
+  | 'SUBMITTED'
   | 'EXECUTED'
   | 'FAILED'
   | 'EXPIRED';
@@ -241,6 +265,8 @@ export interface ActionProposal {
   expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** KAN-403: idempotency key of the execution; set in the same commit that moves the row to EXECUTING. */
+  operationId?: string | null;
 }
 
 export interface AuditEvent {
@@ -251,6 +277,46 @@ export interface AuditEvent {
   actor: string;
   payload: Record<string, unknown>;
   createdAt: string;
+}
+
+/** One row of the transactional outbox (KAN-403): written with the state change, published later. */
+export interface OutboxEvent {
+  id: string;
+  aggregateType: string;
+  aggregateId: string;
+  eventType: string;
+  payload: Record<string, unknown>;
+  status: 'PENDING' | 'PUBLISHED' | 'FAILED';
+  attempts: number;
+  nextAttemptAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+  publishedAt: string | null;
+}
+
+/** `GET /proposals/{id}/events`: the durable event stream of one proposal plus its dead letters. */
+export interface ProposalEvents {
+  proposalId: string;
+  status: string;
+  operationId: string | null;
+  events: OutboxEvent[];
+  deadLetters: DeadLetter[];
+}
+
+/** A dead letter (KAN-571 / KAN-501): what the system refuses to guess about; a human resolves it. */
+export interface DeadLetter {
+  id: string;
+  source: 'OUTBOX' | 'RECONCILIATION';
+  refId: string;
+  proposalId: string | null;
+  ownerUserId: string | null;
+  reason: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+  outcome: 'RESOLVED' | 'REQUEUED' | null;
 }
 
 export interface ActivityItem {
@@ -320,6 +386,11 @@ export function createRebalance(
   }).then((r) => json<{ proposal: ActionProposal; audit: AuditEvent[] }>(r));
 }
 
+/** All proposals of the operator (every wallet), newest first — the picker of the live view (KAN-576). */
+export function listAllProposals(limit = 20): Promise<ActionProposal[]> {
+  return apiFetch(`/proposals?limit=${limit}`).then((r) => json<ActionProposal[]>(r));
+}
+
 export function listProposals(walletId: string): Promise<ActionProposal[]> {
   return apiFetch(`/wallets/${walletId}/proposals?limit=20`).then((r) => json<ActionProposal[]>(r));
 }
@@ -336,6 +407,28 @@ export function decideProposal(proposalId: string, decision: 'approve' | 'reject
   }).then((r) => json<ActionProposal>(r));
 }
 
-export function executeProposal(proposalId: string): Promise<ActionProposal> {
-  return apiFetch(`/proposals/${proposalId}/execute`, { method: 'POST' }).then((r) => json<ActionProposal>(r));
+/**
+ * Second, explicit click. `operationId` is the idempotency key (KAN-403): the same key never
+ * produces a second transaction. It travels in the body (`ExecuteRequest`) because the
+ * `Idempotency-Key` header is not in the service's CORS allow-list; the controller documents the
+ * body as the fallback.
+ */
+export function executeProposal(proposalId: string, operationId?: string | null): Promise<ActionProposal> {
+  const init: RequestInit = operationId
+    ? { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ operationId }) }
+    : { method: 'POST' };
+  return apiFetch(`/proposals/${proposalId}/execute`, init).then((r) => json<ActionProposal>(r));
+}
+
+/** KAN-438: a human cancels an APPROVED proposal inside its timelock. */
+export function cancelProposal(proposalId: string, note?: string): Promise<ActionProposal> {
+  return apiFetch(`/proposals/${proposalId}/cancel`, {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ note: note ?? null }),
+  }).then((r) => json<ActionProposal>(r));
+}
+
+export function getProposalEvents(proposalId: string): Promise<ProposalEvents> {
+  return apiFetch(`/proposals/${proposalId}/events`).then((r) => json<ProposalEvents>(r));
 }

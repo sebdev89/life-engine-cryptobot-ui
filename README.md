@@ -43,6 +43,39 @@ Covers:
   formatting helpers (KAN-393).
 - Receipts panel helpers (KAN-394): the explorer link rule (`?cluster=devnet`
   only on devnet), the anchor label, short hashes and the pipeline order.
+- Live operation (KAN-576): timeline model and component, see below.
+
+## Live operation — the hackathon demo path (KAN-576)
+
+`/live[/:proposalId]` (`src/app/live/`) shows the demo path of
+`Products/CryptoBot-Hackathon-Demo-Path-2026-09-20.md` §2 as one screen, without a console.
+The root is now a router shell (`app.ts` → `<router-outlet>`); the dashboard moved to
+`src/app/dashboard/` unchanged, plus a **● Operación en vivo** link in its header. The live
+route is lazy, so the dashboard's initial bundle does not pay for it.
+
+What it shows, and where each piece comes from (nothing is computed client-side beyond the
+mapping; every button hits an endpoint that already exists in `cryptobot-service` main):
+
+| Section | Source |
+|---|---|
+| Timeline of the 12 steps (intent → simulation → policy → approval → timelock → preconditions/mainnet gate → validator → signer → submit → confirmation → reconciliation/DLQ → EXECUTION receipt) with `done / active / failed / uncertain / skipped` | `GET /proposals/{id}` (status + `audit` trail) and `/receipts`; `live-model.ts#buildTimeline` maps event types to steps — `EXECUTION_BROADCAST_UNCERTAIN` and `RECONCILIATION_AMBIGUOUS` render as *uncertain* because the service itself said it does not know |
+| Live updates | **polling every 2 s** (`getProposal` + `/events`, the DLQ and the chaos state); the service exposes no SSE for proposals. Paused when the tab is hidden; a Pause button; lineage + receipts reload only when the row moved (`status`/`updatedAt`) |
+| Actions: Approve · Reject · Cancel (inside the timelock) · Execute on devnet | the same `POST /proposals/{id}/…` the dashboard uses. Execute sends a per-proposal `operationId` in the body (KAN-403 idempotency; the `Idempotency-Key` header is not in the service's CORS allow-list) — the second click returns the same tx. **Execute is enabled on any APPROVED row, even when the policy says not executable: the 409 the control plane answers (`CONFLICT` / `MAINNET_DISABLED`) is shown in "last answer", because that fail-closed refusal is part of the demo** |
+| Risk + policy | `policy` of the proposal: allowed/executable, the deterministic verdict (`decision`, `tier`, `escalation`, `R_v` hash, input hash, evaluated/failed predicates) and every applied rule as pass / blocked / not-executable with its message; a banner when the wallet is on mainnet or `EXECUTION_CLUSTER` fired (KAN-493) |
+| Signature and chain | `execution`: signature with the explorer link the service stored (or `?cluster=devnet` for devnet), signer, confirmation, `lastValidBlockHeight`, reconciliation attempts, and after an idempotent retry the superseded `previousSignature` (KAN-571) |
+| Receipts + lineage | `<app-receipts>` and `<app-lineage>` reused as-is (KAN-393/394): `verify` and the DAG |
+| Durable events | `GET /proposals/{id}/events`: outbox rows with delivery state and the proposal's dead letters |
+| Dead-letter queue | `GET /dead-letters?resolved=all` (RUNTIME_ADMIN — a 403 shows a one-line note instead of failing the page); open letters with **Requeue** / **Resolve** behind an inline confirmation + optional note (`POST /dead-letters/{id}/requeue|resolve`); the resolution (outcome, reconciliation result, proposal state) is shown and the view jumps to the proposal it touched |
+| Chaos (demo only) | rendered **only when `GET /demo/chaos` answers 200** (the bean exists only with `cryptobot.chaos.enabled=true`; 404/403/network ⇒ hidden). Arm a mode (`rpc-down` / `uncertain` / `confirm-timeout`) with a shot count, Disarm, and the injected faults log |
+
+Local: `npm start -- --port 4204` (the demo compose allows that origin) with the UI pointed at
+the demo stack (`public/config.js` → `cryptobotBase`), sign in with Auth or paste a token as
+above, open `/live`. Tests: `live-model.spec.ts` (the timeline against the audit sequences of
+the real devnet runs of 2026-09-20 — happy path, chaos `rpc-down` → DLQ → requeue → retry,
+blocked/rejected/cancelled/validator refusal, policy rows, the mainnet flag, error flattening)
+and `live.spec.ts` (the component against a fake `fetch`: 12 steps rendered, chaos hidden on
+404 / shown on 200, DLQ 403, requeue confirmation + note, execute with a stable `operationId`
+and the 409 shown, explorer link, redirect to login without a session).
 
 ## Glossary
 
