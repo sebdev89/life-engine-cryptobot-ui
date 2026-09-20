@@ -52,6 +52,19 @@ header, plus a link on the login card) with the Spanish CryptoBot glossary:
 filterable by category. Data lives in `glossary-data.ts`; to add a term, append
 an entry to the closest thematic block with one of the existing categories.
 
+Since KAN-353 the drawer is an accordion (click a term to unfold its definition,
+**Copiar** puts `term: definition` on the clipboard) and it is **measured**:
+`glossary-telemetry.ts` batches `open` / `search` / `copy` events and POSTs them
+to `cryptobot-service` (`POST /api/cryptobot/glossary/events`, bearer token,
+≤ 25 per batch, after 3 s idle or when the tab is hidden via `keepalive`). A
+search counts once per settled query (700 ms) and reports only the term it
+resolved to plus `hit: true|false` — never the typed text, never the user.
+Without a session the events are dropped (the login-card glossary is not
+measured). The service turns them into `cryptobot_glossary_term_total{term,action}`
+and `cryptobot_glossary_search_total{hit}`; the Grafana board lives in the
+service repo (`docs/observability/grafana/life-engine-cryptobot-glosario.json`).
+The UI never talks to Prometheus or Grafana.
+
 ## Lineage panel (KAN-393)
 
 `src/app/lineage/` renders, under the selected proposal, the **provenance DAG**

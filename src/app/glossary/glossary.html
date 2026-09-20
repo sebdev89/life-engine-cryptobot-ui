@@ -4,7 +4,7 @@
     <header class="glossary__head">
       <div>
         <h2 id="glossary-title">Glosario</h2>
-        <p class="muted small">{{ total }} términos · Solana, DeFi, criptografía, bots y agentes. Esc para cerrar.</p>
+        <p class="muted small">{{ total }} términos · Solana, DeFi, criptografía, bots y agentes. Tocá un término para leerlo. Esc para cerrar.</p>
       </div>
       <button type="button" class="ghost" (click)="close()" aria-label="Cerrar glosario">✕</button>
     </header>
@@ -46,12 +46,28 @@
       }
       <dl>
         @for (e of results(); track e.term) {
-          <div class="entry">
+          <div class="entry" [class.entry--open]="isExpanded(e)">
             <dt>
-              <strong>{{ e.term }}</strong>
+              <button
+                type="button"
+                class="entry__term"
+                (click)="toggle(e)"
+                [attr.aria-expanded]="isExpanded(e)"
+                [attr.aria-controls]="'def-' + $index"
+              >
+                <span class="entry__caret" aria-hidden="true">{{ isExpanded(e) ? '▾' : '▸' }}</span>
+                <strong>{{ e.term }}</strong>
+              </button>
               <button type="button" class="tag tag--btn" (click)="pickCategory(e.category)" [title]="'Filtrar: ' + e.category">{{ e.category }}</button>
             </dt>
-            <dd>{{ e.definition }}</dd>
+            @if (isExpanded(e)) {
+              <dd [id]="'def-' + $index">
+                {{ e.definition }}
+                <button type="button" class="mini entry__copy" (click)="copy(e, $event)" [attr.aria-label]="'Copiar ' + e.term">
+                  {{ copied() === e.term ? '✓ Copiado' : 'Copiar' }}
+                </button>
+              </dd>
+            }
           </div>
         }
       </dl>

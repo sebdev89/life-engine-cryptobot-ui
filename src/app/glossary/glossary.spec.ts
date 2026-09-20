@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY, GLOSSARY_CATEGORIES } from './glossary-data';
-import { filterGlossary, normalize } from './glossary';
+import { filterGlossary, normalize, searchEvent } from './glossary';
 
 describe('glossary data', () => {
   it('has no empty terms or definitions and only known categories', () => {
@@ -66,5 +66,27 @@ describe('filterGlossary', () => {
 
   it('returns empty for nonsense', () => {
     expect(filterGlossary(GLOSSARY, 'zzzzqqqq', null)).toEqual([]);
+  });
+});
+
+describe('searchEvent (KAN-353)', () => {
+  it('reports the term the query resolved to, never the query text', () => {
+    const results = filterGlossary(GLOSSARY, 'blockhas', null);
+    expect(searchEvent('blockhas', results)).toEqual({ action: 'search', term: 'blockhash', hit: true });
+  });
+
+  it('reports a miss without a term', () => {
+    expect(searchEvent('zzzzqqqq', filterGlossary(GLOSSARY, 'zzzzqqqq', null))).toEqual({ action: 'search', hit: false });
+  });
+
+  it('is not a search when the box is empty or blank', () => {
+    expect(searchEvent('', filterGlossary(GLOSSARY, '', null))).toBeNull();
+    expect(searchEvent('   ', filterGlossary(GLOSSARY, '   ', null))).toBeNull();
+  });
+
+  it('every glossary term is a value the service accepts as a label (mirror of GlossaryEventsService.TERM)', () => {
+    const TERM = /^[\p{L}\p{N}][\p{L}\p{N} .,+/()'’&_%!<>-]{0,63}$/u;
+    const bad = GLOSSARY.filter((e) => !TERM.test(e.term)).map((e) => e.term);
+    expect(bad).toEqual([]);
   });
 });
