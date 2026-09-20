@@ -1,0 +1,362 @@
+<main class="live">
+  <header class="live__header">
+    <div>
+      <a routerLink="/" class="back">← Dashboard</a>
+      <h1>Operación en vivo <span class="muted small">· el demo path, sin consola</span></h1>
+      <p class="muted">Intent → simulación → política → aprobación humana → validador independiente → signer aislado → cadena → reconciliación → recibo. Cada paso, como el servicio lo dejó.</p>
+    </div>
+    <div class="live__status" aria-live="polite">
+      @if (paused()) {
+        <span class="badge badge--warn">paused</span>
+      } @else {
+        <span class="badge badge--ok pulse">● live</span>
+      }
+      <span class="muted small">polling 2 s (sin SSE en el service) · {{ fmtTime(lastTick()) }}</span>
+      <button type="button" class="ghost" (click)="togglePause()">{{ paused() ? 'Resume' : 'Pause' }}</button>
+    </div>
+  </header>
+
+  @if (loadError()) {
+    <p class="err" role="alert">{{ loadError() }}</p>
+  }
+
+  <!-- ── proposal picker ─────────────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <div class="panel__head">
+      <h2>Propuesta</h2>
+      <span class="muted small">{{ proposals().length }} del operador · la más reciente primero</span>
+    </div>
+    @if (!proposals().length) {
+      <p class="muted">Sin propuestas todavía. Creá una desde el <a routerLink="/">dashboard</a> (Simulate rebalance) o con <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
+    }
+    <div class="chips">
+      @for (p of proposals(); track p.id) {
+        <button type="button" class="chip" [class.chip--active]="proposal()?.id === p.id" (click)="onPick(p)">
+          {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol || p.kind }} {{ p.plan.legs[0]?.weightPctBefore?.toFixed(0) }}→{{ p.plan.legs[0]?.weightPctAfter?.toFixed(0) }}%
+          <span class="muted">· {{ p.cluster }}</span>
+          <span class="badge badge--{{ statusClass(p.status) }}">{{ p.status }}</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  @if (proposal(); as p) {
+    <div class="grid">
+      <!-- ── timeline ──────────────────────────────────────────────────────────────── -->
+      <section class="panel">
+        <div class="panel__head">
+          <h2>
+            <span class="badge badge--{{ statusClass(p.status) }} badge--lg">{{ p.status }}</span>
+            {{ p.plan.summary }}
+          </h2>
+          <span class="muted small">{{ doneCount() }}/{{ timeline().length }} pasos · id {{ shortId(p.id) }} · {{ p.walletAddress | slice: 0 : 4 }}…{{ p.walletAddress | slice: -4 }} · {{ p.cluster }}</span>
+        </div>
+
+        <ol class="steps" aria-label="Estados de la propuesta">
+          @for (s of timeline(); track s.id) {
+            <li class="step step--{{ s.state }}">
+              <span class="step__marker" aria-hidden="true">
+                @switch (s.state) {
+                  @case ('done') { ✓ }
+                  @case ('failed') { ✗ }
+                  @case ('uncertain') { ? }
+                  @case ('active') { ● }
+                  @case ('skipped') { – }
+                  @default { ○ }
+                }
+              </span>
+              <div class="step__body">
+                <div class="step__title">
+                  <strong>{{ s.n }} · {{ s.label }}</strong>
+                  <span class="badge badge--state-{{ s.state }}">{{ s.state }}</span>
+                  @if (s.at) { <span class="muted small">{{ s.at | slice: 11 : 19 }} UTC</span> }
+                </div>
+                <div class="muted small">{{ s.who }}</div>
+                @if (s.note) { <div class="step__note small">{{ s.note }}</div> }
+              </div>
+            </li>
+          }
+        </ol>
+
+        <details class="audit">
+          <summary>Audit trail <span class="muted small">{{ audit().length }} eventos · <code>GET /proposals/{{ shortId(p.id) }}…/audit</code></span></summary>
+          <ol class="timeline">
+            @for (e of audit(); track e.id) {
+              <li>
+                <span class="timeline__time muted small">{{ e.createdAt | slice: 11 : 19 }}</span>
+                <strong>{{ e.eventType }}</strong>
+                <span class="muted small">by {{ e.actor }}</span>
+                @if (auditFacts(e); as facts) { <div class="facts small">{{ facts }}</div> }
+              </li>
+            }
+          </ol>
+        </details>
+      </section>
+
+      <!-- ── right column: actions · policy · chain ───────────────────────────────── -->
+      <div class="column">
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Acciones</h2>
+            <span class="muted small">los mismos endpoints del dashboard</span>
+          </div>
+          <div class="actions">
+            <button type="button" class="ok-btn" (click)="onDecide('approve')" [disabled]="!canApprove() || busy()">Approve</button>
+            <button type="button" class="ghost" (click)="onDecide('reject')" [disabled]="!canApprove() || busy()">Reject</button>
+            <button type="button" class="ghost" (click)="onCancel()" [disabled]="!canCancel() || busy()" title="Dentro del timelock (KAN-438)">Cancel</button>
+            <button type="button" class="exec-btn" (click)="onExecute()" [disabled]="!canExecute() || busy()"
+              [title]="mainnetFailClosed() ? 'El control plane responde 409 (mainnet fail-closed): eso es lo que muestra el demo' : 'Segundo click explícito: preconditions → validador → signer → devnet'">
+              Execute on devnet
+            </button>
+          </div>
+          @if (operationId(); as op) {
+            <p class="muted small">Idempotency key (operationId) <code>{{ op }}</code> — un segundo click con la misma clave devuelve la misma transacción, nunca una segunda.</p>
+          }
+          @if (lastAnswer(); as a) {
+            <div class="answer answer--{{ a.ok ? 'ok' : a.status === 409 ? 'conflict' : 'err' }}" role="status">
+              <div class="answer__head">
+                <span class="badge badge--{{ a.ok ? 'ok' : a.status === 409 ? 'warn' : 'err' }}">HTTP {{ a.status ?? '—' }}</span>
+                <strong>{{ a.action }}</strong>
+                @if (a.code) { <code>{{ a.code }}</code> }
+                <span class="muted small">{{ fmtTime(a.at) }}</span>
+              </div>
+              <p class="small">{{ a.message }}</p>
+              @if (a.status === 409) {
+                <p class="muted small">409 = el control plane se negó y no firmó nada: no aprobada, dentro del timelock, política no ejecutable o mainnet fail-closed (KAN-493).</p>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Risk + policy</h2>
+            @if (p.policy; as pol) {
+              <span>
+                <span class="badge badge--{{ pol.allowed ? 'ok' : 'err' }}">{{ pol.allowed ? 'allowed' : 'blocked' }}</span>
+                <span class="badge badge--{{ pol.executable ? 'ok' : 'warn' }}">{{ pol.executable ? 'executable' : 'not executable' }}</span>
+              </span>
+            }
+          </div>
+          @if (mainnetFailClosed()) {
+            <div class="banner banner--warn">
+              <strong>Mainnet fail-closed.</strong> La wallet está en <code>{{ p.cluster }}</code>: <code>EXECUTION_CLUSTER</code> es una violación de ejecución y <code>POST /execute</code> responde <strong>409</strong> (<code>MAINNET_DISABLED</code> si llegara al gate). Nada se firma, nada se envía.
+            </div>
+          }
+          @if (p.policy?.authorization; as v) {
+            <p class="verdict">
+              <span class="badge badge--{{ v.decision === 'ALLOW' ? 'ok' : v.decision === 'DENY' ? 'err' : 'warn' }} badge--lg">{{ v.decision }}</span>
+              <span>tier <strong>{{ v.tier }}</strong> · escalation {{ v.escalation }}</span>
+            </p>
+            <p class="muted small">
+              R_v <code title="{{ v.policyHash }}">{{ v.policyHash | slice: 0 : 19 }}…</code> ({{ v.policyVersion }})
+              · input <code title="{{ v.inputHash }}">{{ v.inputHash | slice: 0 : 19 }}…</code>
+            </p>
+            @if (predicateRows().length) {
+              <div class="rules">
+                @for (r of predicateRows(); track r.predicate) {
+                  <span class="rule rule--{{ r.failed ? 'blocked' : 'pass' }}" title="{{ r.failed ? 'predicado fallido' : 'predicado ok' }}">{{ r.failed ? '✗' : '✓' }} {{ r.predicate }}</span>
+                }
+              </div>
+            }
+          }
+          <h4>Reglas aplicadas ({{ policyRows().length }})</h4>
+          <ul class="rulelist">
+            @for (r of policyRows(); track r.rule) {
+              <li class="rule-row rule-row--{{ r.state }}">
+                <span class="glyph">{{ r.state === 'pass' ? '✓' : r.state === 'blocked' ? '✗' : '!' }}</span>
+                <code>{{ r.rule }}</code>
+                @if (r.message) { <span class="small">{{ r.message }}</span> }
+              </li>
+            }
+          </ul>
+          @if (p.riskBefore || p.riskAfter) {
+            <p class="muted small">Risk (deterministic engine): {{ p.riskBefore?.overall ?? '—' }} → {{ p.riskAfter?.overall ?? '—' }} · score {{ p.riskBefore?.score ?? '—' }} → {{ p.riskAfter?.score ?? '—' }}</p>
+          }
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Firma y cadena</h2>
+            @if (p.execution; as ex) {
+              <span class="badge badge--{{ ex.status === 'EXECUTED' ? 'ok' : ex.status === 'FAILED' ? 'err' : 'warn' }}">{{ ex.status }}</span>
+            }
+          </div>
+          @if (p.execution; as ex) {
+            <dl class="facts-list">
+              <dt>signature</dt>
+              <dd>
+                @if (ex.signature) {
+                  <code title="{{ ex.signature }}">{{ shortSig(ex.signature) }}</code>
+                  @if (explorerUrl(); as url) { <a [href]="url" target="_blank" rel="noopener">explorer ↗</a> }
+                } @else { — }
+              </dd>
+              @if (ex.previousSignature) {
+                <dt>previous</dt>
+                <dd><code title="{{ ex.previousSignature }}">{{ shortSig(ex.previousSignature) }}</code> <span class="muted small">superseded (retry #{{ ex.retries ?? 0 }}, same operationId)</span> @if (previousExplorerUrl(); as u) { <a [href]="u" target="_blank" rel="noopener">explorer ↗</a> }</dd>
+              }
+              <dt>signer</dt>
+              <dd><code>{{ ex.signerPublicKey ? (ex.signerPublicKey | slice: 0 : 8) + '…' : '—' }}</code></dd>
+              <dt>confirmation</dt>
+              <dd>{{ ex.confirmationStatus ?? '—' }} @if (ex.confirmedAt) { <span class="muted small">{{ ex.confirmedAt | slice: 11 : 19 }} UTC</span> }</dd>
+              <dt>submitted</dt>
+              <dd>{{ ex.submittedAt ? (ex.submittedAt | slice: 11 : 19) + ' UTC' : '—' }}</dd>
+              @if (ex.lastValidBlockHeight) {
+                <dt>valid until</dt>
+                <dd>block {{ ex.lastValidBlockHeight }} <span class="muted small">past it the tx can never land: that is how a never-seen signature is declared dead</span></dd>
+              }
+              @if (ex.reconciliationAttempts) {
+                <dt>reconciliation</dt>
+                <dd>{{ ex.reconciliationAttempts }} attempt(s) @if (ex.reconciledAt) { <span class="muted small">last {{ ex.reconciledAt | slice: 11 : 19 }} UTC</span> }</dd>
+              }
+              @if (ex.error) {
+                <dt>error</dt>
+                <dd class="err small">{{ ex.error }}</dd>
+              }
+            </dl>
+          } @else {
+            <p class="muted small">Nada firmado todavía. La firma se persiste <em>antes</em> del broadcast: si el proceso muere después de firmar, la reconciliación la encuentra.</p>
+          }
+          @if (p.transaction; as tx) {
+            <p class="muted small">{{ tx.instructionSummary }} · blockhash <code>{{ tx.recentBlockhash | slice: 0 : 8 }}…</code></p>
+          }
+        </section>
+      </div>
+    </div>
+
+    <!-- ── receipts + lineage (KAN-393 / KAN-394, reused as-is) ────────────────────── -->
+    <section class="panel">
+      <div class="panel__head">
+        <h2>Recibos y linaje</h2>
+        <span class="muted small">firmados, content-addressed · <code>POST /receipts/{{ '{' }}hash{{ '}' }}/verify</code> recomputa hash + firma; L1 re-ejecuta el motor</span>
+      </div>
+      <app-receipts [walletId]="p.walletId" [proposalId]="p.id" [version]="panelsVersion()" />
+      <app-lineage [proposalId]="p.id" [version]="panelsVersion()" />
+    </section>
+
+    <!-- ── outbox + dead letters of this proposal ─────────────────────────────────── -->
+    @if (events(); as ev) {
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Eventos durables</h2>
+          <span class="muted small">outbox transaccional (KAN-403) · <code>GET /proposals/{{ shortId(p.id) }}…/events</code></span>
+        </div>
+        @if (!ev.events.length) { <p class="muted small">Sin eventos de outbox todavía.</p> }
+        <ul class="outbox">
+          @for (o of ev.events; track o.id) {
+            <li>
+              <span class="badge badge--{{ outboxClass(o.status) }}">{{ o.status }}</span>
+              <strong>{{ o.eventType }}</strong>
+              <span class="muted small">{{ o.attempts }} attempt(s) · {{ (o.publishedAt || o.createdAt) | slice: 11 : 19 }} UTC</span>
+              @if (o.lastError) { <span class="err small">{{ o.lastError }}</span> }
+            </li>
+          }
+        </ul>
+        @if (ev.deadLetters.length) {
+          <p class="small"><strong>{{ ev.deadLetters.length }}</strong> dead letter(s) de esta propuesta — se resuelven en la DLQ de abajo.</p>
+        }
+      </section>
+    }
+  }
+
+  <!-- ── DLQ (global, admin) ─────────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <div class="panel__head">
+      <h2>Dead-letter queue <span class="badge badge--{{ (dlq()?.open ?? 0) > 0 ? 'warn' : 'ok' }}">{{ dlq()?.open ?? 0 }} open</span></h2>
+      <span class="muted small">lo que el sistema se niega a adivinar; un humano decide · <code>GET /dead-letters</code> (RUNTIME_ADMIN)</span>
+    </div>
+    @if (dlqForbidden()) {
+      <p class="muted small">Tu token no tiene <code>RUNTIME_ADMIN</code>: la DLQ global no es visible desde esta cuenta (la del demo la tiene).</p>
+    } @else {
+      @if (dlqError()) { <p class="err small" role="alert">{{ dlqError() }}</p> }
+      @if (dlqLast(); as l) {
+        <div class="answer answer--ok" role="status">
+          <span class="badge badge--ok">{{ l.resolution.deadLetter.outcome }}</span>
+          <strong>{{ l.action }}</strong> by {{ l.resolution.deadLetter.resolvedBy }}
+          @if (l.resolution.reconciliation) { · reconciliation <strong>{{ l.resolution.reconciliation }}</strong> }
+          @if (l.resolution.proposal) { · proposal {{ l.resolution.proposal.status }} }
+          @if (l.resolution.event) { · outbox event {{ l.resolution.event.status }} }
+        </div>
+      }
+      @if (!openLetters().length) { <p class="muted small">Nada abierto.</p> }
+      <ul class="dlq">
+        @for (d of openLetters(); track d.id) {
+          <li class="dlq__item">
+            <div class="dlq__head">
+              <span class="badge badge--warn">{{ deadLetterKind(d) }}</span>
+              <strong>{{ d.source }}</strong>
+              <span class="muted small">{{ d.createdAt | slice: 0 : 19 }} UTC · {{ shortId(d.id) }}</span>
+              @if (d.proposalId) {
+                <a [routerLink]="['/live', d.proposalId]" class="small">proposal {{ shortId(d.proposalId) }} →</a>
+              }
+            </div>
+            <p class="small">{{ d.reason }}</p>
+            @if (dlqConfirm()?.id === d.id) {
+              <div class="confirm">
+                <strong>¿{{ dlqConfirm()!.action === 'requeue' ? 'Requeue' : 'Resolve' }} {{ shortId(d.id) }}?</strong>
+                <span class="muted small">
+                  @if (dlqConfirm()!.action === 'requeue') { el sistema lo intenta de nuevo: outbox PENDING o reconciliación ahora (retry idempotente, mismo operationId) }
+                  @else { cierre manual: la propuesta queda como la cadena lo prueba (409 si aún no hay veredicto) }
+                </span>
+                <input [value]="dlqNote()" (input)="dlqNote.set($any($event.target).value)" placeholder="nota (opcional)" aria-label="Resolution note" />
+                <div class="actions">
+                  <button type="button" class="ok-btn" (click)="confirmDlq()" [disabled]="dlqBusy() === d.id">{{ dlqBusy() === d.id ? 'Working…' : 'Confirm' }}</button>
+                  <button type="button" class="ghost" (click)="cancelDlq()" [disabled]="dlqBusy() === d.id">Cancel</button>
+                </div>
+              </div>
+            } @else {
+              <div class="actions">
+                <button type="button" class="mini" (click)="askDlq(d, 'requeue')" [disabled]="!!dlqBusy()">Requeue</button>
+                <button type="button" class="mini" (click)="askDlq(d, 'resolve')" [disabled]="!!dlqBusy()">Resolve</button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+      @if (resolvedLetters().length) {
+        <details>
+          <summary class="muted small">Resueltas recientes ({{ resolvedLetters().length }})</summary>
+          <ul class="dlq dlq--resolved">
+            @for (d of resolvedLetters(); track d.id) {
+              <li class="dlq__item">
+                <span class="badge badge--ok">{{ d.outcome }}</span>
+                <span class="small">{{ deadLetterKind(d) }} · {{ d.source }} · by {{ d.resolvedBy }} · {{ d.resolvedAt | slice: 0 : 19 }} UTC</span>
+                @if (d.resolution) { <span class="muted small">— {{ d.resolution }}</span> }
+              </li>
+            }
+          </ul>
+        </details>
+      }
+    }
+  </section>
+
+  <!-- ── chaos: only when the backend exposes /demo/chaos (demo stack) ─────────────── -->
+  @if (chaosAvailable()) {
+    <section class="panel panel--chaos">
+      <div class="panel__head">
+        <h2>Chaos <span class="badge badge--{{ chaos()?.armed ? 'err' : 'ok' }}">{{ chaos()?.armed ? 'armed · ' + chaos()?.broadcast : 'disarmed' }}</span></h2>
+        <span class="muted small">DEMO ONLY · <code>PUT /demo/chaos</code> · existe sólo con <code>cryptobot.chaos.enabled</code>; UAT/PROD no lo exponen</span>
+      </div>
+      <div class="chaos__form">
+        <select [value]="chaosMode()" (change)="chaosMode.set($any($event.target).value)" aria-label="Chaos mode" [disabled]="chaosBusy()">
+          @for (m of chaosModes; track m.id) { <option [value]="m.id">{{ m.label }}</option> }
+        </select>
+        <label>shots <input type="number" min="-1" step="1" [value]="chaosShots()" (input)="chaosShots.set(+$any($event.target).value)" aria-label="Shots" [disabled]="chaosBusy()" /> <span class="muted small">-1 = hasta desarmar</span></label>
+        <button type="button" (click)="onArmChaos()" [disabled]="chaosBusy()">Arm</button>
+        <button type="button" class="ghost" (click)="onDisarmChaos()" [disabled]="chaosBusy() || !chaos()?.armed">Disarm</button>
+      </div>
+      @for (m of chaosModes; track m.id) {
+        @if (m.id === chaosMode()) { <p class="muted small">{{ m.label }}: {{ m.what }}</p> }
+      }
+      @if (chaosError()) { <p class="err small" role="alert">{{ chaosError() }}</p> }
+      @if (chaos()?.faults?.length) {
+        <h4>Faults injected ({{ chaos()!.faults.length }})</h4>
+        <ul class="faults">
+          @for (f of chaos()!.faults; track $index) {
+            <li><span class="muted small">{{ f.at | slice: 11 : 19 }}</span> <code>{{ f.method }}</code> <span class="small">{{ f.mode }} — {{ f.detail }}</span></li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</main>

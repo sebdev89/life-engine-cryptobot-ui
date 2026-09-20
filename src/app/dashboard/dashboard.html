@@ -33,6 +33,8 @@
           <p class="muted">The agent proposes. You approve. An isolated signer executes — on devnet, under policy, with a full audit trail.</p>
         </div>
         <div class="page__tools">
+          <!-- KAN-576: the demo path as one live screen (timeline, policy, signature, receipts, DLQ) -->
+          <a class="live-link" [routerLink]="selected() ? ['/live', selected()!.id] : ['/live']" title="Operación en vivo: estados, política, firma, recibos y DLQ">● Operación en vivo</a>
           <button type="button" class="ghost" (click)="glossaryOpen.set(true)" aria-haspopup="dialog" title="Glosario de términos (Solana, DeFi, cripto, bots)">📖 Glosario</button>
           <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
         </div>

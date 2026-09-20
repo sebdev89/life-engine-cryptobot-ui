@@ -32,6 +32,20 @@
   flex-shrink: 0;
 }
 
+// KAN-576: link to the live-operation route, styled like a ghost button.
+.live-link {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  color: var(--ok);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    border-color: var(--ok);
+  }
+}
+
 // Text-only button (used for the glossary link on the login card).
 button.link {
   background: transparent;
