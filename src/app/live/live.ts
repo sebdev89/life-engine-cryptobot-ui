@@ -14,6 +14,7 @@ import {
   listAllProposals,
 } from '../control-plane-api';
 import { AuthRequiredError } from '../cryptobot-api';
+import { getProposalLineage } from '../lineage-api';
 import { listProposalReceipts } from '../receipts-api';
 import {
   CHAOS_MODES,
@@ -48,6 +49,8 @@ import {
   shortSig,
 } from './live-model';
 
+const DEFAULT_POLL_MS = 2000;
+
 /** What the control plane answered to the last click — the 409s are the demo, not an error to hide. */
 export interface LastAnswer {
   at: string;
@@ -77,8 +80,12 @@ export interface LastAnswer {
 export class LiveOperation implements OnInit {
   /** Route param (`/live/:proposalId`), bound by `withComponentInputBinding`. */
   readonly proposalId = input<string | null>(null);
-  /** Polling interval; the demo runs at 2 s, tests set it to 0 to disable the timer. */
-  readonly pollMs = input(2000);
+  /**
+   * Polling interval; the demo runs at 2 s, tests set it to 0 to disable the timer. `undefined`
+   * means the default: `withComponentInputBinding` sets every input from the route, and an input
+   * the route does not carry arrives as `undefined` (it does not keep the declared default).
+   */
+  readonly pollMs = input<number | undefined>(DEFAULT_POLL_MS);
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -94,6 +101,8 @@ export class LiveOperation implements OnInit {
   readonly loadError = signal<string | null>(null);
   /** Bumped when the row moved (status/updatedAt) so lineage + receipts reload — not on every tick. */
   readonly panelsVersion = signal(0);
+  /** `GET /proposals/{id}/lineage` (KAN-393) answers 404 on a service without the lineage API: the DAG is hidden, not errored. */
+  readonly lineageAvailable = signal(true);
 
   // ---- liveness ----
   readonly paused = signal(false);
@@ -183,7 +192,7 @@ export class LiveOperation implements OnInit {
 
   private startTimer(): void {
     this.stopTimer();
-    const ms = this.pollMs();
+    const ms = this.pollMs() ?? DEFAULT_POLL_MS;
     if (ms > 0) {
       this.timer = setInterval(() => void this.tick(), ms);
     }
@@ -251,8 +260,16 @@ export class LiveOperation implements OnInit {
         list.some((x) => x.id === full.proposal.id) ? list.map((x) => (x.id === full.proposal.id ? full.proposal : x)) : [full.proposal, ...list],
       );
       if (moved) {
+        const [receipts, lineage] = await Promise.all([
+          listProposalReceipts(id).catch(() => []),
+          getProposalLineage(id, 1).then(
+            () => true,
+            (e) => describeFailure(e).status !== 404,
+          ),
+        ]);
+        this.receiptKinds.set(receipts.map((r) => r.body.kind));
+        this.lineageAvailable.set(lineage);
         this.panelsVersion.update((v) => v + 1);
-        this.receiptKinds.set((await listProposalReceipts(id).catch(() => [])).map((r) => r.body.kind));
       }
       this.loadError.set(null);
     } catch (e) {

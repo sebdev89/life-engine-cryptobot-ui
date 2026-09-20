@@ -231,7 +231,11 @@
         <span class="muted small">firmados, content-addressed · <code>POST /receipts/{{ '{' }}hash{{ '}' }}/verify</code> recomputa hash + firma; L1 re-ejecuta el motor</span>
       </div>
       <app-receipts [walletId]="p.walletId" [proposalId]="p.id" [version]="panelsVersion()" />
-      <app-lineage [proposalId]="p.id" [version]="panelsVersion()" />
+      @if (lineageAvailable()) {
+        <app-lineage [proposalId]="p.id" [version]="panelsVersion()" />
+      } @else {
+        <p class="muted small">Linaje (DAG de recibos, KAN-393): este service no expone <code>GET /proposals/{{ '{' }}id{{ '}' }}/lineage</code>; los recibos y su <code>verify</code> alcanzan para el demo.</p>
+      }
     </section>
 
     <!-- ── outbox + dead letters of this proposal ─────────────────────────────────── -->

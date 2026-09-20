@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>CryptoBot — AI control plane for Solana</title>
-    <!-- Per-environment backend URLs; see src/app/config.ts. Served by nginx in docker; a static default in dev. -->
-    <script src="config.js"></script>
+    <!-- Per-environment backend URLs; see src/app/config.ts. Served by nginx in docker; a static default in dev.
+         Absolute path: on a deep route such as /live/<id> a relative "config.js" would resolve under /live/ (KAN-576). -->
+    <script src="/config.js"></script>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>

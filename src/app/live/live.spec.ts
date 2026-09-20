@@ -346,6 +346,28 @@ describe('LiveOperation', () => {
     expect(fixture.nativeElement.textContent).toContain('confirmed');
   });
 
+  it('hides the lineage DAG (KAN-393) when the service answers 404 on /lineage, and says so', async () => {
+    fakeFetch(baseRoutes().filter((r) => !r.path.test(`/proposals/${PID}/lineage`)));
+    const fixture = await mount();
+    expect(fixture.componentInstance.lineageAvailable()).toBe(false);
+    expect(fixture.nativeElement.querySelector('app-lineage')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('este service no expone');
+  });
+
+  it('polls every 2 s by default even when the route binder passes pollMs as undefined', async () => {
+    fakeFetch(baseRoutes());
+    const timer = vi.spyOn(globalThis, 'setInterval');
+    await TestBed.configureTestingModule({ imports: [LiveOperation], providers: [provideRouter([])] }).compileComponents();
+    const fixture = TestBed.createComponent(LiveOperation);
+    fixture.componentRef.setInput('pollMs', undefined); // what withComponentInputBinding does for an input absent from the route
+    fixture.componentRef.setInput('proposalId', PID);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(timer).toHaveBeenCalledWith(expect.any(Function), 2000);
+    fixture.destroy();
+  });
+
   it('sends the operator back to the login when there is no session', async () => {
     localStorage.removeItem(SESSION_KEY);
     clearCryptobotSession();
