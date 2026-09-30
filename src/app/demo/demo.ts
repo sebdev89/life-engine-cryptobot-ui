@@ -1,23 +1,35 @@
-import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
-import { RouterLink } from "@angular/router";
-import { ExecutionDetail } from "../live/execution-detail/execution-detail";
-import { buildStages, buildTimeline, formatDuration } from "../live/live-model";
-import { explorerTxUrl } from "../receipts-api";
-import { uiConfig } from "../config";
-import { WalletView } from "../control-plane-api";
-import { bootstrapSessionFromQuery, getAccessToken } from "../session";
-import { DemoRunner, RunStep, runExplorerUrl } from "./demo-runner";
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ExecutionDetail } from '../live/execution-detail/execution-detail';
+import { buildStages, buildTimeline, formatDuration } from '../live/live-model';
+import { explorerTxUrl } from '../receipts-api';
+import { uiConfig } from '../config';
+import { WalletView } from '../control-plane-api';
+import { bootstrapSessionFromQuery, getAccessToken } from '../session';
+import { DemoRunner, RunStep, runExplorerUrl } from './demo-runner';
+import { explorerTxUrlFor } from '../live/live-model';
+
+/** Scenario B's story, one node per step of the runner (states come from the run, not from a script). */
+export const FAILURE_STORY: readonly { step: string; label: string }[] = [
+  { step: 'failed', label: 'FAILED' },
+  { step: 'deadletter', label: 'DEAD LETTER' },
+  { step: 'retry', label: 'RETRY' },
+  { step: 'idempotency', label: 'IDEMPOTENCY CHECK' },
+  { step: 'recovered', label: 'RECOVERED' },
+  { step: 'finalize', label: 'FINALIZED' },
+  { step: 'verified', label: 'PROOF' },
+];
 
 /**
  * `/demo` (KAN-785): one click runs the trusted execution end to end against the stack, and the
  * 8-stage pipeline of `/live` (same component, same model) animates from the API answers.
  */
 @Component({
-  selector: "app-demo",
+  selector: 'app-demo',
   standalone: true,
   imports: [RouterLink, ExecutionDetail],
-  templateUrl: "./demo.html",
-  styleUrl: "./demo.scss",
+  templateUrl: './demo.html',
+  styleUrl: './demo.scss',
 })
 export class DemoMode {
   readonly runner = new DemoRunner();
@@ -27,21 +39,15 @@ export class DemoMode {
   /** The wallet the run will use (null until known); `needsAddress` when the operator has none yet. */
   readonly wallet = signal<WalletView | null>(null);
   readonly needsAddress = signal(false);
-  readonly address = signal(uiConfig().demoWallet ?? "");
+  readonly address = signal(uiConfig().demoWallet ?? '');
 
   readonly stages = computed(() => {
     const s = this.run();
-    return buildStages(
-      s.proposal,
-      buildTimeline(s.proposal, s.audit, s.receiptKinds),
-      s.proof,
-      [],
-      s.phase === "running" ? this.now() : null,
-    );
+    return buildStages(s.proposal, buildTimeline(s.proposal, s.audit, s.receiptKinds), s.proof, [], s.phase === 'running' ? this.now() : null);
   });
   readonly elapsed = computed(() => {
     const s = this.run();
-    if (s.startedAt === null) return "—";
+    if (s.startedAt === null) return '—';
     return formatDuration((s.finishedAt ?? this.now()) - s.startedAt);
   });
   readonly countdown = computed(() => {
@@ -53,6 +59,21 @@ export class DemoMode {
   readonly anchorExplorer = computed(() => {
     const v = this.run().receiptVerification?.anchor;
     return v ? (v.explorerUrl ?? explorerTxUrl(v.chain, v.tx)) : null;
+  });
+
+  readonly story = computed(() => {
+    const steps = this.run().steps;
+    return FAILURE_STORY.map((n) => ({ ...n, state: steps.find((s) => s.id === n.step)?.state ?? 'pending' }));
+  });
+  readonly previousSignature = computed(() => this.run().proposal?.execution?.previousSignature ?? this.run().firstSignature);
+  readonly previousExplorer = computed(() => {
+    const p = this.run().proposal;
+    const prev = this.previousSignature();
+    return p && prev ? explorerTxUrlFor(p.cluster, prev) : null;
+  });
+  readonly sameOperation = computed(() => {
+    const s = this.run();
+    return !!s.operationId && s.proposal?.operationId === s.operationId;
   });
 
   constructor() {
@@ -74,14 +95,29 @@ export class DemoMode {
     });
   }
 
-  start(): void {
+  start(scenario: 'success' | 'failure' = 'success'): void {
     if (this.needsAddress()) this.runner.setDemoWallet(this.address());
-    void this.runner.runTrustedExecution().then((s) => {
+    const run = scenario === 'failure' ? this.runner.runSimulateFailure() : this.runner.runTrustedExecution();
+    void run.then((s) => {
       if (s.wallet) {
         this.wallet.set(s.wallet);
         this.needsAddress.set(false);
       }
     });
+  }
+
+  canStart(): boolean {
+    return !this.runner.running() && this.signedIn() && !(this.needsAddress() && !this.address());
+  }
+
+  phaseLabel(): string {
+    const s = this.run();
+    if (s.phase === 'verified') return s.scenario === 'failure' ? 'RECOVERED' : 'VERIFIED';
+    return s.phase;
+  }
+
+  phaseClass(): string {
+    return { verified: 'done', running: 'active', failed: 'failed', cancelled: 'skipped', idle: 'pending' }[this.run().phase];
   }
 
   onAddress(e: Event): void {
@@ -95,18 +131,18 @@ export class DemoMode {
   glyph(s: RunStep): string {
     return (
       {
-        done: "✓",
-        failed: "✗",
-        active: "●",
-        uncertain: "?",
-        skipped: "–",
-        pending: "○",
-      }[s.state] ?? "○"
+        done: '✓',
+        failed: '✗',
+        active: '●',
+        uncertain: '?',
+        skipped: '–',
+        pending: '○',
+      }[s.state] ?? '○'
     );
   }
 
   took(s: RunStep): string {
-    if (s.startedAt === null) return "";
+    if (s.startedAt === null) return '';
     return formatDuration((s.endedAt ?? this.now()) - s.startedAt);
   }
 }
