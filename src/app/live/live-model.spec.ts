@@ -556,7 +556,8 @@ describe('buildStages — 12 steps → INTENT · POLICY · APPROVAL · SIGN · E
     const steps = buildTimeline(awaiting, HAPPY.slice(0, 4));
     const now = parseInstant('2026-09-20T17:27:42Z')!;
     const stages = buildStages(awaiting, steps, NO_PROOF, [], now);
-    expect(stageStates(stages)).toMatchObject({ INTENT: 'done', POLICY: 'active', APPROVAL: 'active', SIGN: 'pending', PROVE: 'pending' });
+    expect(stageStates(stages)).toMatchObject({ INTENT: 'done', POLICY: 'done', APPROVAL: 'active', SIGN: 'pending', PROVE: 'pending' });
+    expect(stages.filter((s) => s.running).map((s) => s.id)).toEqual(['APPROVAL']); // one clock at a time
     const approval = stages.find((s) => s.id === 'APPROVAL')!;
     expect(approval.running).toBe(true);
     expect(approval.durationMs).toBe(30000); // last event 17:27:12 (policy) → now
@@ -606,11 +607,11 @@ describe('buildStages — 12 steps → INTENT · POLICY · APPROVAL · SIGN · E
 });
 
 describe('stage helpers', () => {
-  it('aggregateState: failed > uncertain > active > done; skipped does not hold done back', () => {
+  it('aggregateState: failed > uncertain > active > done; skipped and later pending checks do not hold done back', () => {
     expect(aggregateState(['done', 'failed', 'uncertain'])).toBe('failed');
     expect(aggregateState(['done', 'uncertain', 'active'])).toBe('uncertain');
     expect(aggregateState(['done', 'active'])).toBe('active');
-    expect(aggregateState(['done', 'pending'])).toBe('active');
+    expect(aggregateState(['done', 'pending'])).toBe('done'); // POLICY waiting on its execution-time preconditions
     expect(aggregateState(['done', 'done'])).toBe('done');
     expect(aggregateState(['done', 'skipped'])).toBe('done');
     expect(aggregateState(['skipped', 'skipped'])).toBe('skipped');

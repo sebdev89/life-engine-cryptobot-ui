@@ -6,6 +6,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { LiveOperation } from './live';
 import { clearCryptobotSession } from '../session';
+import { leafHash, webCryptoSha256 } from '../merkle';
 
 const SESSION_KEY = 'life-engine-cryptobot.session';
 const PID = '4c422b00-2fd3-422e-8319-08888986f11e';
@@ -381,5 +382,73 @@ describe('LiveOperation', () => {
     await fixture.whenStable();
     expect(nav).toHaveBeenCalledWith('/');
     expect(calls.length).toBe(0);
+  });
+
+  it('KAN-784: an EXECUTED proposal shows the 8 stages with duration and evidence, PROVE closed by the inclusion proof', async () => {
+    const EXEC_AUDIT = [
+      'PROPOSAL_CREATED',
+      'SIMULATED',
+      'POLICY_EVALUATED',
+      'AWAITING_APPROVAL',
+      'APPROVED',
+      'EXECUTION_STARTED',
+      'EXECUTION_VALIDATED',
+      'EXECUTION_SIGNED',
+      'EXECUTION_SUBMITTED',
+      'EXECUTED',
+    ].map((eventType, i) => ({
+      id: `x${i}`,
+      walletId: 'w1',
+      proposalId: PID,
+      eventType,
+      actor: 'demo@cryptobot.local',
+      payload: eventType === 'EXECUTED' ? { signature: SIG, confirmation: 'finalized' } : eventType === 'EXECUTION_SIGNED' ? { signature: SIG } : {},
+      createdAt: `2026-09-20T17:27:${String(10 + i * 2).padStart(2, '0')}Z`,
+    }));
+    const executed = proposal('EXECUTED', {
+      operationId: '9b02af63-d4d2-49bd-b4dc-47ebaa150ac0',
+      execution: { status: 'EXECUTED', signature: SIG, signerPublicKey: 'k', explorerUrl: null, confirmationStatus: 'finalized', error: null, retries: 0, previousSignature: null },
+    });
+    // A batch of one: root = leaf(receipt), empty proof — folded by merkle.ts in the component.
+    const receiptHash = 'sha256:' + 'd3'.repeat(32);
+    const root = await leafHash(receiptHash, webCryptoSha256()!);
+    const anchorTx = '5AnchorTxBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+    const receipt = {
+      receiptHash,
+      body: { kind: 'EXECUTION', agentId: 'cryptobot.execution', reproducibility: 'L1_REPRODUCIBLE', parents: [], model: null, engine: null, runtime: null, output: { hash: receiptHash, schema: null }, completedAt: '2026-09-20T17:27:30Z' },
+      signature: { alg: 'ed25519', keyId: 'k' },
+      anchor: { chain: 'solana-devnet', tx: anchorTx, slot: 7, root, proof: [] },
+      createdAt: '2026-09-20T17:27:31Z',
+    };
+    const batch = { root, chain: 'solana-devnet', status: 'FINALIZED', memo: 'm', receiptCount: 1, tx: anchorTx, slot: 7, attempts: 1, createdAt: '2026-09-20T17:27:35Z', finalizedAt: '2026-09-20T17:27:45Z' };
+    const { calls } = fakeFetch([
+      { path: /\/proposals\?limit=/, body: [executed] },
+      { path: new RegExp(`/proposals/${PID}$`), body: { proposal: executed, audit: EXEC_AUDIT } },
+      { path: new RegExp(`/proposals/${PID}/receipts$`), body: [receipt] },
+      { path: new RegExp(`/anchors/${root}$`), body: { anchor: batch, explorerUrl: `https://explorer.solana.com/tx/${anchorTx}?cluster=devnet`, myReceipts: [{ root, receiptHash, proof: [] }] } },
+      ...baseRoutes().slice(2).filter((r) => !r.path.test(`/proposals/${PID}/receipts`)),
+    ]);
+    const fixture = await mount();
+    await new Promise((r) => setTimeout(r, 20)); // WebCrypto digest + second render
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    const stages = Array.from(el.querySelectorAll('.stage')) as HTMLElement[];
+    expect(stages.map((s) => s.id)).toEqual(['INTENT', 'POLICY', 'APPROVAL', 'SIGN', 'EXECUTE', 'FINALIZE', 'RECONCILE', 'PROVE'].map((id) => `stage-${id}`));
+    expect(el.querySelectorAll('.pipe').length).toBe(8);
+    expect(el.querySelectorAll('.step').length).toBe(12); // the 12 original steps stay reachable in the detail
+    expect(el.querySelectorAll('.check').length).toBe(2); // PROVE: anchor + inclusion
+
+    const prove = el.querySelector('#stage-PROVE') as HTMLElement;
+    expect(prove.classList).toContain('st--done');
+    expect(prove.textContent).toContain('inclusion proof valid');
+    expect(prove.querySelector(`a[href="https://explorer.solana.com/tx/${anchorTx}?cluster=devnet"]`)).not.toBeNull();
+    expect(calls.some((c) => c.url.endsWith(`/anchors/${root}`))).toBe(true);
+
+    const sign = el.querySelector('#stage-SIGN') as HTMLElement;
+    expect(sign.querySelector('.stage__dur')!.textContent!.trim()).toBe('4.0 s'); // started :20 → validated :22 → signed :24
+    expect(sign.querySelector(`a[href="https://explorer.solana.com/tx/${SIG}?cluster=devnet"]`)).not.toBeNull();
+    expect((el.querySelector('#stage-INTENT .stage__dur') as HTMLElement).textContent!.trim()).toBe('t0');
+    expect(el.textContent).toContain('7/8 etapas');
   });
 });

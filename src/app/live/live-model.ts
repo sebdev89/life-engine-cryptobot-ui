@@ -422,19 +422,20 @@ export interface ProofInput {
 export const NO_PROOF: ProofInput = { receipt: null, batch: null, batchExplorerUrl: null, proof: null, inclusion: null };
 
 /**
- * failed if any failed · uncertain if any · active if any active (or some done and some still
- * pending) · done if all done (skipped ones do not hold it back) · skipped if all skipped · pending.
+ * failed if any failed · uncertain if any · active if any active · done if all done (skipped ones
+ * do not hold it back) · skipped if all skipped · pending if nothing started.
+ *
+ * Done + pending with nothing active reads as done: the only such case is POLICY, whose
+ * execution-time preconditions run after APPROVAL. They do not reopen the stage (two stages would
+ * "run" at once while the human decides); if they fail, the stage fails.
  */
 export function aggregateState(states: readonly StepState[]): StepState {
   if (!states.length) return 'pending';
   if (states.includes('failed')) return 'failed';
   if (states.includes('uncertain')) return 'uncertain';
   if (states.includes('active')) return 'active';
-  const done = states.filter((s) => s === 'done').length;
-  const pending = states.filter((s) => s === 'pending').length;
-  if (done && pending) return 'active';
-  if (done) return 'done';
-  if (pending) return 'pending';
+  if (states.includes('done')) return 'done';
+  if (states.includes('pending')) return 'pending';
   return 'skipped';
 }
 

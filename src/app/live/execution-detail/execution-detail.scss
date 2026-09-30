@@ -1,0 +1,406 @@
+// Execution Detail (KAN-784) — pipeline of the 8 stages + expandable stage list.
+// Colors come from the state classes of src/styles.scss (.st--<state> sets --st / --st-bg).
+
+.xd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+// ---- pipeline -------------------------------------------------------------------------------
+.pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0;
+  counter-reset: none;
+
+  @media (max-width: 720px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: var(--sp-2);
+  }
+}
+
+.pipe {
+  position: relative;
+  min-width: 0;
+
+  // Connector to the next node: colored once this stage is done.
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: calc(50% + 10px);
+    right: calc(-50% + 10px);
+    height: 2px;
+    background: var(--border);
+  }
+
+  &.st--done:not(:last-child)::after {
+    background: color-mix(in srgb, var(--ok) 55%, transparent);
+  }
+}
+
+.pipe__btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px 8px;
+  border-radius: var(--r-md);
+  transition: background var(--dur-fast) var(--ease);
+
+  &:hover {
+    background: var(--surface-2);
+  }
+
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.pipe__top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--st, var(--border-strong));
+  background: var(--surface-1);
+  position: relative;
+  z-index: 1;
+
+  .st-dot {
+    width: 8px;
+    height: 8px;
+    box-shadow: none;
+  }
+}
+
+.pipe--running .pipe__top {
+  box-shadow: 0 0 0 4px var(--st-bg);
+  animation: le-pulse 1.6s var(--ease) infinite;
+}
+
+.pipe__n {
+  display: none;
+}
+
+.pipe__id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  color: var(--text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.st--pending .pipe__id,
+.st--skipped .pipe__id {
+  color: var(--text-3);
+}
+
+.pipe__dur {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--st, var(--text-2));
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.st--pending .pipe__dur,
+.st--skipped .pipe__dur {
+  color: var(--text-3);
+}
+
+// ---- stage list -----------------------------------------------------------------------------
+.stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.stage {
+  border-left: 3px solid var(--st, var(--border));
+  background: var(--surface-1);
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  &.st--pending,
+  &.st--skipped {
+    border-left-color: var(--border);
+  }
+}
+
+.stage__row {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 22px 22px minmax(0, 1fr) auto minmax(96px, auto);
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-3) 4px;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover {
+    background: var(--surface-2);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+
+    .stage__n,
+    .stage__dur {
+      display: none;
+    }
+  }
+}
+
+.stage__marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--st, var(--text-3));
+  background: var(--st-bg, transparent);
+  border: 1.5px solid var(--st, var(--border-strong));
+}
+
+.st--active .stage__marker {
+  animation: le-pulse 1.6s var(--ease) infinite;
+}
+
+.stage__n {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.stage__name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  min-width: 0;
+  flex-wrap: wrap;
+
+  strong {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    letter-spacing: 0.06em;
+  }
+}
+
+.stage__label {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.stage__dur {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.stage__dur--running {
+  color: var(--active);
+}
+
+.st--pending .stage__dur,
+.st--skipped .stage__dur {
+  color: var(--text-3);
+}
+
+.stage__ev {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) 10px calc(22px + 22px + var(--sp-3) * 3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text);
+  word-break: break-all;
+
+  .eyebrow {
+    font-size: 0.6rem;
+    color: var(--text-3);
+    flex-shrink: 0;
+  }
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  @media (max-width: 560px) {
+    padding-left: calc(22px + var(--sp-3) * 2);
+  }
+}
+
+.st--failed .stage__ev span:last-child {
+  color: var(--err);
+}
+
+.st--uncertain .stage__ev span:last-child {
+  color: var(--uncertain);
+}
+
+.stage__body {
+  padding: 2px var(--sp-3) var(--sp-2) calc(22px + var(--sp-3) * 2);
+  animation: le-fade-in var(--dur) var(--ease);
+}
+
+// ---- original steps (12-step model) and PROVE checks ------------------------------------------
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: var(--sp-2) 0 var(--sp-1) var(--sp-3);
+  border-left: 1px dashed var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step,
+.check {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: var(--sp-2);
+  padding: 5px 0;
+}
+
+.step__marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-3);
+  background: var(--surface-1);
+}
+
+.step--done .step__marker,
+.check--done .step__marker {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.step--active .step__marker,
+.check--active .step__marker {
+  border-color: var(--active);
+  color: var(--active);
+  background: var(--active-bg);
+  animation: le-pulse 1.6s var(--ease) infinite;
+}
+
+.step--failed .step__marker,
+.check--failed .step__marker {
+  border-color: var(--err);
+  color: var(--err);
+  background: var(--err-bg);
+}
+
+.step--uncertain .step__marker,
+.check--uncertain .step__marker {
+  border-color: var(--uncertain);
+  color: var(--uncertain);
+  background: var(--uncertain-bg);
+}
+
+.step--skipped,
+.step--pending,
+.check--skipped,
+.check--pending {
+  opacity: 0.55;
+}
+
+.step__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  font-size: var(--fs-sm);
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.step__at {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+
+.step__who {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+
+.step__note {
+  margin-top: 1px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text);
+  word-break: break-word;
+}
+
+.badge--state-done {
+  color: var(--ok);
+}
+
+.badge--state-active {
+  color: var(--active);
+  background: var(--active-bg);
+}
+
+.badge--state-failed {
+  color: var(--err);
+  background: var(--err-bg);
+}
+
+.badge--state-uncertain {
+  color: var(--uncertain);
+  background: var(--uncertain-bg);
+}
+
+.badge--state-skipped,
+.badge--state-pending {
+  color: var(--text-3);
+}
