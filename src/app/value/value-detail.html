@@ -15,6 +15,9 @@
       <p class="banner-err" role="alert">{{ e }}</p>
     }
     @if (event(); as ev) {
+      @if (distribution(); as d) {
+        <p class="final-line panel pad mono" data-testid="final-line">VALUE EVENT · {{ ev.title }} · POOL {{ sol(d.poolLamports) }} SOL · PAID TO {{ paidCount(d) }} contributors</p>
+      }
       <div class="sections">
         <section class="panel pad" data-section="task">
           <h2>Task</h2>
@@ -162,7 +165,62 @@
 
         <section class="panel pad" data-section="distribution">
           <h2>Immediate distribution</h2>
-          <p class="t-2">Not yet — V5.</p>
+          @if (distribution(); as d) {
+            <dl class="facts">
+              <div><dt>pool</dt><dd class="mono" data-testid="pool">{{ sol(d.poolLamports) }} SOL</dd></div>
+              <div><dt>policy</dt><dd>{{ d.policy }}</dd></div>
+              <div><dt>status</dt><dd><span class="st-badge st--{{ d.status === 'COMPLETE' ? 'done' : d.status === 'FAILED' ? 'failed' : 'active' }}" data-testid="dist-status">{{ d.status }}</span></dd></div>
+            </dl>
+            <div class="table-wrap">
+              <table class="grid" data-testid="payouts">
+                <thead><tr><th>Contributor</th><th>Wallet</th><th class="num">SOL</th><th>Status</th><th>Transaction</th></tr></thead>
+                <tbody>
+                  @for (p of d.payouts; track p.identityId) {
+                    <tr>
+                      <td><a [routerLink]="['/value/identities', p.identityId]">{{ p.displayName }}</a></td>
+                      <td>
+                        @if (p.wallet; as w) {
+                          <a class="mono small" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener" [title]="w">{{ shortWallet(w) }} ↗</a>
+                        } @else {
+                          <span class="t-3">no wallet on file</span>
+                        }
+                      </td>
+                      <td class="mono num">{{ sol(p.lamports) }}</td>
+                      <td>
+                        <span class="st-badge st--{{ payoutClass(p.status) }}">{{ p.status }}</span>
+                        @if (p.status === 'FAILED' && p.error) {
+                          <span class="small t-3 payout-error">{{ p.error }}</span>
+                        }
+                      </td>
+                      <td>
+                        @if (p.txSignature; as sig) {
+                          <a class="mono small" [href]="p.explorerUrl ?? txExplorerUrl(sig)" target="_blank" rel="noopener">{{ short(sig, 6, 4) }} ↗</a>
+                        } @else {
+                          <span class="t-3">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            @if (distributionError(); as de) {
+              <p class="banner-err" role="alert">Could not read the distribution: {{ de }}</p>
+            } @else if (ev.distribution) {
+              <p class="t-3 small" aria-busy="true">Reading distribution…</p>
+            } @else {
+              <p class="t-2">No immediate reward distributed yet</p>
+              <button type="button" class="btn" data-testid="distribute" [disabled]="ev.status !== 'ANCHORED' || distributing()"
+                [title]="ev.status !== 'ANCHORED' ? 'The event must be anchored on Solana before rewards can be distributed.' : ''" (click)="distribute()">
+                {{ distributing() ? 'Distributing…' : 'Distribute immediate reward' }}
+              </button>
+            }
+          }
+          @if (distributeError(); as err) {
+            <p class="banner-err" role="alert" data-testid="distribute-error">{{ err }}</p>
+          }
+          <p class="t-3 small cost-note">{{ note }}</p>
         </section>
 
         <section class="panel pad" data-section="future">

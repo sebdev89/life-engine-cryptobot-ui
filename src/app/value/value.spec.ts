@@ -6,7 +6,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ValueList } from './value-list';
 import { ValueDetail } from './value-detail';
-import { ValueEvent, IdentityProfile as Prof } from '../value-events-api';
+import { Distribution, ValueEvent, IdentityProfile as Prof } from '../value-events-api';
 import { IdentityList } from './identity-list';
 import { IdentityProfilePage } from './identity-profile';
 import { Ledger } from './ledger';
@@ -171,7 +171,7 @@ describe('ValueDetail (/value/:id)', () => {
     expect(t).toContain('No knowledge assets attributed');
     expect(t).toContain('No compute receipts attached');
     expect(t).toContain('Compute cost is recorded separately from economic value.');
-    expect(t).toContain('Not yet — V5');
+    expect(t).toContain('No immediate reward distributed yet');
     expect(t).toContain('Contribution Units: 100 — V6');
     expect(t).toContain('NOT verified');
   });
@@ -382,5 +382,158 @@ describe('Ledger (/value/ledger)', () => {
     route({ '/units/ledger': json({ code: 'BOOM', message: 'backend down' }, 500) });
     const el: HTMLElement = (await mount(Ledger)).nativeElement;
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('backend down');
+  });
+});
+
+// ---- V5 (KAN-831): WHO GOT PAID ----
+
+function dist(over: Partial<Distribution> = {}): Distribution {
+  return {
+    id: 'd-1',
+    valueEventId: 've-1',
+    poolLamports: 50_000_000,
+    policy: 'pov/equal-split/v1',
+    status: 'COMPLETE',
+    receiptHash: 'sha256:' + 'aa'.repeat(32),
+    anchor: null,
+    payouts: [
+      { identityId: 'i1', displayName: 'Sebas', wallet: 'WALLETAAAA1111BBBB', lamports: 25_000_000, status: 'CONFIRMED', txSignature: 'SIG1', explorerUrl: 'https://explorer.solana.com/tx/SIG1?cluster=devnet', error: null },
+      { identityId: 'i2', displayName: 'dev-agent', wallet: 'WALLETCCCC2222DDDD', lamports: 25_000_000, status: 'CONFIRMED', txSignature: 'SIG2', explorerUrl: null, error: null },
+    ],
+    ...over,
+  };
+}
+const summary = (d: Distribution) => ({ status: d.status, poolLamports: d.poolLamports, confirmedLamports: d.poolLamports });
+
+describe('ValueDetail immediate distribution (V5)', () => {
+  it('without a distribution: says so and offers the button', async () => {
+    route({ '/value-events/ve-1/proof': json({ receiptHash: 'h', root: 'r', txSignature: 't', verified: true }), '/value-events/ve-1': json(event()) });
+    const el: HTMLElement = (await mountDetail()).nativeElement;
+    const sec = el.querySelector('[data-section="distribution"]') as HTMLElement;
+    expect(sec.textContent).toContain('No immediate reward distributed yet');
+    const btn = sec.querySelector('[data-testid="distribute"]') as HTMLButtonElement;
+    expect(btn.textContent).toContain('Distribute immediate reward');
+    expect(btn.disabled).toBe(false);
+    expect(el.querySelector('[data-testid="final-line"]')).toBeNull();
+  });
+
+  it('button is disabled with a tooltip when the event is not anchored', async () => {
+    route({ '/value-events/ve-1': json(event({ status: 'RECORDED', anchor: null })) });
+    const el: HTMLElement = (await mountDetail()).nativeElement;
+    const btn = el.querySelector('[data-testid="distribute"]') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn.title).toContain('anchored');
+  });
+
+  it('with a complete distribution: pool, payouts table, links, note and final line', async () => {
+    const d = dist();
+    route({
+      '/value-events/ve-1/proof': json({ receiptHash: 'h', root: 'r', txSignature: 't', verified: true }),
+      '/value-events/ve-1/distribution': json(d),
+      '/value-events/ve-1': json(event({ distribution: summary(d) })),
+    });
+    const el: HTMLElement = (await mountDetail()).nativeElement;
+    expect(el.querySelector('[data-testid="pool"]')?.textContent).toContain('0.0500 SOL');
+    expect(el.querySelector('[data-testid="dist-status"]')?.textContent).toContain('COMPLETE');
+    const rows = el.querySelectorAll('[data-testid="payouts"] tbody tr');
+    expect(rows.length).toBe(2);
+    expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/value/identities/i1');
+    expect(rows[0].textContent).toContain('0.0250');
+    expect(rows[0].querySelector('a[href="https://explorer.solana.com/address/WALLETAAAA1111BBBB?cluster=devnet"]')).not.toBeNull();
+    expect(rows[0].querySelector('a[href="https://explorer.solana.com/tx/SIG1?cluster=devnet"]')).not.toBeNull();
+    expect(rows[1].querySelector('a[href="https://explorer.solana.com/tx/SIG2?cluster=devnet"]')).not.toBeNull();
+    expect(el.querySelectorAll('[data-testid="payouts"] .st--done').length).toBe(2);
+    expect(el.querySelector('[data-section="distribution"]')?.textContent).toContain('devnet SOL stands in for stablecoin settlement in this demo.');
+    expect(el.querySelector('[data-testid="distribute"]')).toBeNull();
+    expect(el.querySelector('[data-testid="final-line"]')?.textContent?.trim()).toBe('VALUE EVENT · Fix login redirect · POOL 0.0500 SOL · PAID TO 2 contributors');
+  });
+
+  it('shows UNFUNDED as no wallet on file and FAILED with its error', async () => {
+    const d = dist({
+      status: 'PARTIAL',
+      payouts: [
+        { identityId: 'i1', displayName: 'Sebas', wallet: null, lamports: 25_000_000, status: 'UNFUNDED', txSignature: null, explorerUrl: null, error: null },
+        { identityId: 'i2', displayName: 'dev-agent', wallet: 'WALLETCCCC2222DDDD', lamports: 25_000_000, status: 'FAILED', txSignature: null, explorerUrl: null, error: 'blockhash expired' },
+      ],
+    });
+    route({ '/value-events/ve-1/distribution': json(d), '/value-events/ve-1': json(event({ distribution: { status: 'PARTIAL', poolLamports: 50_000_000, confirmedLamports: 0 } })) });
+    const el: HTMLElement = (await mountDetail()).nativeElement;
+    const t = el.querySelector('[data-testid="payouts"]')?.textContent as string;
+    expect(t).toContain('no wallet on file');
+    expect(t).toContain('blockhash expired');
+    expect(el.querySelectorAll('[data-testid="payouts"] .st--uncertain').length).toBe(1);
+    expect(el.querySelectorAll('[data-testid="payouts"] .st--failed').length).toBe(1);
+    expect(el.querySelector('[data-testid="final-line"]')?.textContent).toContain('PAID TO 0 contributors');
+  });
+
+  it('POST distribute ok renders the payouts', async () => {
+    const d = dist();
+    const post = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/value-events/ve-1/distribute') && init?.method === 'POST') return new Response(JSON.stringify(d), { status: 200 });
+      if (url.includes('/value-events/ve-1/proof')) return new Response(JSON.stringify({ receiptHash: 'h', root: 'r', txSignature: 't', verified: true }), { status: 200 });
+      if (url.includes('/value-events/ve-1')) return new Response(JSON.stringify(event()), { status: 200 });
+      return new Response('{}', { status: 404 });
+    });
+    const f = await mountDetail();
+    (f.nativeElement.querySelector('[data-testid="distribute"]') as HTMLButtonElement).click();
+    await settle(f);
+    await settle(f);
+    expect(post).toHaveBeenCalled();
+    expect(f.nativeElement.querySelectorAll('[data-testid="payouts"] tbody tr').length).toBe(2);
+    expect(f.nativeElement.querySelector('[data-testid="final-line"]')).not.toBeNull();
+  });
+
+  for (const [status, expected] of [
+    [409, 'not anchored'],
+    [403, 'RUNTIME_ADMIN'],
+  ] as const) {
+    it(`POST distribute ${status} shows an honest message and keeps the button`, async () => {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (url.includes('/distribute') && init?.method === 'POST') return new Response(JSON.stringify({ code: 'X', message: 'nope' }), { status });
+        if (url.includes('/proof')) return new Response(JSON.stringify({ receiptHash: 'h', root: 'r', txSignature: 't', verified: true }), { status: 200 });
+        if (url.includes('/value-events/ve-1')) return new Response(JSON.stringify(event()), { status: 200 });
+        return new Response('{}', { status: 404 });
+      });
+      const f = await mountDetail();
+      (f.nativeElement.querySelector('[data-testid="distribute"]') as HTMLButtonElement).click();
+      await settle(f);
+      await settle(f);
+      expect(f.nativeElement.querySelector('[data-testid="distribute-error"]')?.textContent).toContain(expected);
+      expect(f.nativeElement.querySelector('[data-testid="distribute"]')).not.toBeNull();
+      expect(f.nativeElement.querySelector('[data-testid="payouts"]')).toBeNull();
+    });
+  }
+});
+
+describe('ValueList paid label (V5)', () => {
+  it('marks Paid on COMPLETE, Partially paid on PARTIAL, nothing otherwise', async () => {
+    route({
+      '/value-events': json([
+        event({ id: 'a', distribution: { status: 'COMPLETE', poolLamports: 1, confirmedLamports: 1 } }),
+        event({ id: 'b', distribution: { status: 'PARTIAL', poolLamports: 2, confirmedLamports: 1 } }),
+        event({ id: 'c', distribution: null }),
+      ]),
+    });
+    const el: HTMLElement = (await mountList()).nativeElement;
+    const labels = Array.from(el.querySelectorAll('[data-testid="paid"]')).map((n) => n.textContent?.trim());
+    expect(labels).toEqual(['Paid', 'Partially paid']);
+  });
+});
+
+describe('IdentityProfilePage rewards (V5)', () => {
+  it('shows confirmed SOL and payout count', async () => {
+    const d = dist();
+    route({ '/identities/i1': json({ ...profile({ id: 'i1' }), rewards: { confirmedLamports: 25_000_000, payouts: d.payouts.slice(0, 1) } }) });
+    const el: HTMLElement = (await mount(IdentityProfilePage, { id: 'i1' })).nativeElement;
+    expect(el.querySelector('[data-testid="rewards-sol"]')?.textContent).toContain('0.0250 SOL');
+    expect(el.querySelector('[data-testid="rewards-count"]')?.textContent?.trim()).toBe('1');
+  });
+
+  it('says so when there are no rewards', async () => {
+    route({ '/identities/i1': json(profile({ id: 'i1' })) });
+    const el: HTMLElement = (await mount(IdentityProfilePage, { id: 'i1' })).nativeElement;
+    expect(el.querySelector('[data-section="rewards"]')?.textContent).toContain('No rewards received yet');
   });
 });
