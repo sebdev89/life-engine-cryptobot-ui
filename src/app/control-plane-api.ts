@@ -169,6 +169,34 @@ export interface PolicyDecision {
   authorization?: PolicyVerdict | null;
   /** The exact `(I, S)` the verdict was computed over (KAN-438); opaque to the UI. */
   input?: Record<string, unknown> | null;
+  /** KAN-439 / KAN-572: the price consensus the price-integrity rules were evaluated on. */
+  oracle?: OracleReading | null;
+}
+
+export interface OracleQuote {
+  source: string;
+  asset: string;
+  mint: string | null;
+  priceUsd: number;
+  observedAt: string;
+}
+
+export interface OracleAsset {
+  asset: string;
+  mint: string | null;
+  priceUsd: number | null;
+  asOf: string | null;
+  used: OracleQuote[];
+  rejected: unknown[];
+  refusals: unknown[];
+  problems: unknown[];
+  quotesHash: string | null;
+}
+
+export interface OracleReading {
+  readAt: string;
+  limits: { minSources: number; maxAgeSeconds: number; maxDeviationBps: number; maxMoveBps: number; moveIntervalSeconds: number };
+  assets: OracleAsset[];
 }
 
 export interface SimulationOutcome {

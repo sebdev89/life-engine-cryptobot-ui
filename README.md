@@ -138,6 +138,30 @@ token `/demo` (and `/tower`, `/proof`) ask for one in a field (`app-token-gate`)
 (lazy); every screen shares `app-top-nav` (Control Tower · Execution · Proof · Demo Mode · Console). The logo is
 `public/brand/cryptobot-mark.svg`, copied from `cryptobot-service/docs/brand/`.
 
+## Recovery (KAN-790)
+
+`/recovery` is the dead-letter queue: what the reconciler refused to guess about. It reads
+`GET /dead-letters?resolved=all` (global, RUNTIME_ADMIN) and `GET /proposals` (this operator) every 5 s:
+counts (open · requeued · resolved · recovered · mean time to decision), one row per letter (state, kind,
+reason, proposal and its status, reconciliation attempts / retries, timestamps, decision and note) with
+**Requeue** / **Resolve** on open letters (`POST /dead-letters/{id}/requeue|resolve`, a 403 is shown as
+"needs RUNTIME_ADMIN"), the recoveries (decided letter → proposal EXECUTED, links to `/live/:id` and
+`/proof`) and, marked *demo only*, the fault injection (`GET|PUT|DELETE /demo/chaos`; hidden text when
+the endpoint answers 404/403). A letter whose proposal belongs to another operator shows "other
+operator" instead of a guessed status. Model: `recovery/recovery-model.ts` (+ spec).
+
+## Policies (KAN-791)
+
+`/policies` shows the policy a proposal was decided under, read from `GET /proposals/{id}` (no policy
+endpoint): verdict (ALLOW / DENY / ESCALATE, tier, escalation), `R_v`, `H_R` and `H(I,S)`; the **13 core
+rules** of `PolicyEngine` with their state (pass · fail with the service's message · pending · not
+evaluated) and one line each; autonomy tiers with the current one; asset allowlist with the oracle
+sources; timelock (approval → executableAt); the 11 predicates with the expression they evaluate; the
+5 price-integrity rules with the oracle limits; the 3 signer caps; and the `(I, S)` facts.
+`TIMELOCK_ELAPSED` is not in the recorded decision (the service checks it at execute), so its state
+comes from the approval and whether execute was accepted. `?proposal=<id>` selects one; default is the
+newest proposal with a policy record. Model: `policies/policies-model.ts` (+ spec).
+
 ## Glossary
 
 `src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the

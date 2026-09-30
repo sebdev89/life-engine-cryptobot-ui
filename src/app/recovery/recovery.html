@@ -1,0 +1,237 @@
+<main class="rec">
+  <app-top-nav />
+
+  <header class="rec__head">
+    <div>
+      <p class="eyebrow">What the system refused to guess</p>
+      <h1>Recovery · dead letters</h1>
+      <p class="t-2 rec__sub">When reconciliation cannot prove what happened on chain, it stops and asks a human. Each decision below is persisted and audited.</p>
+    </div>
+    @if (signedIn()) {
+      <p class="rec__live mono" aria-live="polite">
+        <span class="st-dot st--active" aria-hidden="true"></span>
+        live · every 5 s · {{ ago() }}
+      </p>
+    }
+  </header>
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'The dead-letter queue is read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+
+    @if (!loaded()) {
+      <p class="t-2 loading" aria-busy="true">Reading /dead-letters, /proposals, /demo/chaos…</p>
+    } @else {
+      @if (dlDenied(); as why) {
+        <section class="panel denied" role="alert">
+          <p class="eyebrow">Admin only</p>
+          <p>{{ why }}</p>
+        </section>
+      }
+
+      @if (counts(); as c) {
+        <section class="kpis" aria-label="Dead-letter counts">
+          <article class="kpi" [class.kpi--warn]="c.open > 0">
+            <span class="eyebrow">Open</span>
+            <strong class="kpi__v mono">{{ c.open }}</strong>
+            <span class="kpi__src">waiting for a human · all operators</span>
+          </article>
+          <article class="kpi">
+            <span class="eyebrow">Requeued</span>
+            <strong class="kpi__v mono">{{ c.requeued }}</strong>
+            <span class="kpi__src">sent back to the reconciler</span>
+          </article>
+          <article class="kpi">
+            <span class="eyebrow">Resolved</span>
+            <strong class="kpi__v mono">{{ c.resolved }}</strong>
+            <span class="kpi__src">closed by hand</span>
+          </article>
+          <article class="kpi kpi--ok">
+            <span class="eyebrow">Recovered</span>
+            <strong class="kpi__v mono">{{ c.recovered }}</strong>
+            <span class="kpi__src">decided → proposal EXECUTED · your proposals</span>
+          </article>
+          <article class="kpi">
+            <span class="eyebrow">Time to decision</span>
+            <strong class="kpi__v mono">{{ meanDecision() }}</strong>
+            <span class="kpi__src">mean, letter created → decided</span>
+          </article>
+        </section>
+        <p class="kpis__foot t-3">{{ c.total }} letters read (resolved=all{{ c.total >= limit ? ', API max ' + limit + ', older ones not shown' : '' }}). "Recovered" counts only proposals this operator can read.</p>
+
+        <section class="panel letters" aria-labelledby="letters-h">
+          <header class="sec-head">
+            <h2 id="letters-h">Dead letters</h2>
+            <label class="note">
+              <span class="t-3">Decision note (optional, sent with the next action)</span>
+              <input class="field" type="text" maxlength="200" [value]="note()" (input)="onNote($event)" placeholder="e.g. RPC is back, let the reconciler try again" />
+            </label>
+          </header>
+          @if (actionMsg(); as m) {
+            <p class="msg" [class.msg--ok]="m.ok" [class.msg--err]="!m.ok" role="status">{{ m.text }}</p>
+          }
+          @if (!rows().length) {
+            <div class="empty">
+              <p class="eyebrow">Queue empty</p>
+              <p class="t-2">No dead letter was ever written. Arm <code>rpc-down</code> below and run Scenario B in Demo Mode to see one appear and recover.</p>
+              <a routerLink="/demo" class="btn">Open Demo Mode →</a>
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <table class="grid">
+                <thead>
+                  <tr>
+                    <th>State</th>
+                    <th>Kind</th>
+                    <th>Reason</th>
+                    <th>Proposal</th>
+                    <th class="num">Attempts</th>
+                    <th>Created</th>
+                    <th>Decision</th>
+                    <th><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of rows(); track r.dl.id) {
+                    <tr [class.is-open]="r.state === 'OPEN'">
+                      <td><span class="st-badge st--{{ stateClass(r.state) }}">{{ r.state }}</span></td>
+                      <td class="mono small">{{ r.kind }}<span class="sub">{{ r.dl.source }}</span></td>
+                      <td class="small reason" [title]="r.dl.reason">{{ r.dl.reason }}</td>
+                      <td class="small">
+                        @if (r.dl.proposalId) {
+                          <a class="mono" [routerLink]="['/live', r.dl.proposalId]">{{ short(r.dl.proposalId) }}</a>
+                          @if (r.p) {
+                            <span class="sub"><span class="st--{{ statusClass(r.p.status) }} inline-st"><span class="st-dot" aria-hidden="true"></span>{{ r.p.status }}</span></span>
+                          } @else {
+                            <span class="sub">other operator</span>
+                          }
+                        } @else {
+                          <span class="t-3">—</span>
+                        }
+                      </td>
+                      <td class="mono small num">
+                        @if (r.attempts.reconciliation !== null) {
+                          {{ r.attempts.reconciliation }} rec
+                          <span class="sub">{{ r.attempts.retries }} retr{{ r.attempts.retries === 1 ? 'y' : 'ies' }}</span>
+                        } @else {
+                          <span class="t-3">—</span>
+                        }
+                      </td>
+                      <td class="mono small t-2">{{ r.dl.createdAt | date: 'MMM d, HH:mm:ss' }}</td>
+                      <td class="small">
+                        @if (r.dl.resolvedAt) {
+                          <span class="mono">{{ r.dl.resolvedAt | date: 'HH:mm:ss' }}</span> · {{ r.dl.resolvedBy }}
+                          @if (r.dl.resolution) {
+                            <span class="sub clip" [title]="r.dl.resolution">“{{ r.dl.resolution }}”</span>
+                          }
+                        } @else {
+                          <span class="t-3">pending</span>
+                        }
+                      </td>
+                      <td class="actions">
+                        @if (r.state === 'OPEN') {
+                          <button type="button" class="btn btn--primary btn--sm" [disabled]="!!acting()" (click)="decide(r.dl, 'requeue')" [attr.aria-label]="'Requeue letter ' + short(r.dl.id)">
+                            {{ acting() === r.dl.id ? '…' : 'Requeue' }}
+                          </button>
+                          <button type="button" class="btn btn--sm" [disabled]="!!acting()" (click)="decide(r.dl, 'resolve')" [attr.aria-label]="'Resolve letter ' + short(r.dl.id)">Resolve</button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="legend t-3"><strong>Requeue</strong> hands the proposal back to the reconciler (the retry reuses the same operationId, so it cannot pay twice). <strong>Resolve</strong> closes the letter without touching the proposal. Both need RUNTIME_ADMIN.</p>
+          }
+        </section>
+
+        <section class="panel history" aria-labelledby="hist-h">
+          <header class="sec-head">
+            <h2 id="hist-h">Recoveries</h2>
+            <span class="t-3 small">dead letter → human decision → EXECUTED</span>
+          </header>
+          @if (!history().length) {
+            <p class="t-2 none">No recovery yet: no decided letter whose proposal ended EXECUTED.</p>
+          } @else {
+            <ol class="hist">
+              @for (h of history(); track h.letter.id) {
+                <li class="hist__item">
+                  <div class="hist__flow mono small">
+                    <span class="st--uncertain inline-st"><span class="st-dot" aria-hidden="true"></span>{{ h.letter.payload['kind'] ?? h.letter.source }}</span>
+                    <span class="t-3">→</span>
+                    <span class="st--active inline-st"><span class="st-dot" aria-hidden="true"></span>{{ h.letter.outcome }} by {{ h.letter.resolvedBy }}</span>
+                    <span class="t-3">→</span>
+                    <span class="st--done inline-st"><span class="st-dot" aria-hidden="true"></span>EXECUTED</span>
+                  </div>
+                  <p class="hist__meta small t-2">
+                    proposal <span class="mono">{{ short(h.proposal.id) }}</span> · decided in <span class="mono">{{ dur(h.decisionMs) }}</span> · on chain
+                    <span class="mono">{{ dur(h.recoveryMs) }}</span> after the letter · retries <span class="mono">{{ h.proposal.execution?.retries ?? 0 }}</span> ·
+                    {{ h.letter.resolvedAt | date: 'MMM d, HH:mm:ss' }}
+                  </p>
+                  @if (h.letter.resolution) {
+                    <p class="hist__note small">“{{ h.letter.resolution }}”</p>
+                  }
+                  <p class="hist__links small">
+                    <a [routerLink]="['/live', h.proposal.id]">Open execution →</a>
+                    <a routerLink="/proof">Proof →</a>
+                  </p>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+      }
+
+      <section class="panel chaos" aria-labelledby="chaos-h">
+        <header class="sec-head">
+          <h2 id="chaos-h">Fault injection</h2>
+          <span class="badge badge--warn">demo only</span>
+        </header>
+        @if (!chaosLoaded()) {
+          <p class="t-2 none">Reading /demo/chaos…</p>
+        } @else if (chaos(); as ch) {
+          <p class="t-2 small chaos__why">Breaks the Solana RPC of this demo stack on purpose, so the recovery path above can be watched end to end. It does not exist outside the demo (<code>cryptobot.chaos.enabled</code>).</p>
+          <div class="chaos__state mono small" aria-live="polite">
+            @if (ch.armed) {
+              <span class="st--uncertain inline-st"><span class="st-dot" aria-hidden="true"></span>ARMED · {{ ch.broadcast }} · {{ ch.shotsLeft < 0 ? 'until disarmed' : ch.shotsLeft + ' shots left' }}</span>
+            } @else {
+              <span class="st--done inline-st"><span class="st-dot" aria-hidden="true"></span>disarmed · RPC healthy</span>
+            }
+          </div>
+          <div class="chaos__form">
+            <label>
+              <span class="t-3 small">Mode</span>
+              <select class="field" [value]="chaosMode()" (change)="onMode($event)">
+                @for (m of modes; track m.id) {
+                  <option [value]="m.id">{{ m.label }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span class="t-3 small">Shots (-1 = until disarmed)</span>
+              <input class="field mono shots" type="number" min="-1" step="1" [value]="chaosShots()" (change)="onShots($event)" />
+            </label>
+            <button type="button" class="btn btn--primary" [disabled]="chaosBusy() || ch.armed" (click)="arm()">Arm</button>
+            <button type="button" class="btn" [disabled]="chaosBusy() || !ch.armed" (click)="disarm()">Disarm</button>
+          </div>
+          <p class="t-3 small">{{ modeWhat() }}</p>
+          @if (chaosMsg(); as m) {
+            <p class="msg msg--err" role="alert">{{ m }}</p>
+          }
+          @if (faults().length) {
+            <ul class="faults mono small">
+              @for (f of faults(); track f.at) {
+                <li><span class="t-3">{{ f.at | date: 'HH:mm:ss' }}</span> {{ f.mode }} · {{ f.method }} · <span class="t-2">{{ f.detail }}</span></li>
+              }
+            </ul>
+          }
+        } @else {
+          <p class="t-2 none">Not exposed here: <code>/demo/chaos</code> answered 404 or 403 (it exists only in the demo stack, for admins).</p>
+        }
+      </section>
+    }
+  }
+</main>
