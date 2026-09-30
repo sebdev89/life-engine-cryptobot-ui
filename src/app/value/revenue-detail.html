@@ -1,0 +1,107 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <a routerLink="/value/revenue" class="back">← All revenue events</a>
+    <p class="eyebrow">Proof of Value · revenue</p>
+    <h1>Revenue event</h1>
+  </header>
+  <app-value-nav />
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Revenue data is read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (event(); as ev) {
+      @if (ev.simulated) {
+        <p class="banner-err simulated-banner" data-testid="simulated-note">{{ simulatedNote }}</p>
+      }
+      <div class="sections">
+        <section class="panel pad" data-section="what">
+          <h2>What value was generated</h2>
+          <dl class="facts">
+            <div><dt>amount</dt><dd class="mono" data-testid="amount">{{ sol(ev.amountLamports) }} SOL</dd></div>
+            <div>
+              <dt>source</dt>
+              <dd>
+                {{ ev.source.kind }}
+                @if (ev.source.kind === 'PROPOSAL' && ev.source.ref) {
+                  <a class="mono" [routerLink]="['/live', ev.source.ref]" data-testid="source-link">{{ ev.source.ref }}</a>
+                } @else if (ev.source.ref) {
+                  <span class="mono">{{ ev.source.ref }}</span>
+                }
+                @if (ev.simulated) {
+                  <span class="st-badge st--uncertain" data-testid="simulated">SIMULATED</span>
+                }
+              </dd>
+            </div>
+            <div><dt>project</dt><dd class="mono">{{ ev.projectId }}</dd></div>
+            <div><dt>created</dt><dd class="mono">{{ ev.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</dd></div>
+            <div><dt>status</dt><dd><span class="st-badge st--{{ statusClass(ev.status) }}" data-testid="status">{{ ev.status }}</span></dd></div>
+          </dl>
+        </section>
+
+        <section class="panel pad" data-section="why">
+          <h2>Why it was split this way</h2>
+          @if (policy(); as p) {
+            @if (p.name) {
+              <p class="t-2">Policy {{ p.name }}</p>
+            }
+            <table class="grid" data-testid="split">
+              <thead><tr><th>Part</th><th class="num">Share</th><th class="num">SOL</th></tr></thead>
+              <tbody>
+                <tr><td>Contributor pool</td><td class="mono num" data-testid="share-pool">{{ pct(p.shareBps) }}</td><td class="mono num">{{ sol(ev.contributorPoolLamports) }}</td></tr>
+                <tr><td>Protocol fee</td><td class="mono num" data-testid="share-fee">{{ pct(p.feeBps) }}</td><td class="mono num">{{ sol(ev.protocolFeeLamports) }}</td></tr>
+                <tr><td>Retained</td><td class="mono num" data-testid="share-retained">{{ pct(p.retainedBps) }}</td><td class="mono num">{{ sol(ev.retainedLamports) }}</td></tr>
+              </tbody>
+            </table>
+          }
+        </section>
+
+        <section class="panel pad" data-section="linked">
+          <h2>Linked value events</h2>
+          @if (!ev.linkedValueEvents.length) {
+            <p class="t-2">No value events are linked to this revenue.</p>
+          } @else {
+            <ul class="shares" data-testid="linked">
+              @for (l of ev.linkedValueEvents; track l.id) {
+                <li><a [routerLink]="['/value', l.id]">{{ l.title }}</a> <span class="mono small t-3">{{ l.id }}</span></li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="panel pad" data-section="payouts">
+          <h2>Historical distribution</h2>
+          @if (!ev.payouts.length) {
+            <p class="t-2">No payouts recorded for this revenue event.</p>
+          } @else {
+            <app-payouts-table [payouts]="ev.payouts" />
+          }
+          <p class="t-3 small cost-note">{{ note }}</p>
+        </section>
+
+        <section class="panel pad" data-section="solana">
+          <h2>Solana</h2>
+          @if (ev.anchor; as a) {
+            <dl class="facts">
+              <div><dt>Merkle root</dt><dd class="mono">{{ a.root }}</dd></div>
+              <div><dt>transaction</dt><dd class="mono">{{ a.txSignature }}</dd></div>
+              <div><dt>slot</dt><dd class="mono">{{ a.slot ?? '—' }}</dd></div>
+              <div><dt>receipt hash</dt><dd class="mono" [title]="ev.receiptHash">{{ ev.receiptHash }}</dd></div>
+            </dl>
+            @if (a.explorerUrl; as href) {
+              <a class="btn" [href]="href" target="_blank" rel="noopener">Open in explorer ↗</a>
+            }
+          } @else {
+            <p class="t-2">Not anchored on Solana yet.</p>
+          }
+        </section>
+      </div>
+    } @else if (!error()) {
+      <p class="t-2 loading" aria-busy="true">Reading revenue event…</p>
+    }
+  }
+</main>

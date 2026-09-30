@@ -62,7 +62,9 @@
           <h2>Rewards received</h2>
           @if (p.rewards; as r) {
             <dl class="facts">
-              <div><dt>confirmed</dt><dd class="mono" data-testid="rewards-sol">{{ sol(r.confirmedLamports) }} SOL</dd></div>
+              <div><dt>immediate rewards</dt><dd class="mono" data-testid="rewards-sol">{{ sol(r.confirmedLamports) }} SOL</dd></div>
+              <div><dt>revenue rewards</dt><dd class="mono" data-testid="rewards-revenue">{{ sol(r.revenueLamports ?? 0) }} SOL</dd></div>
+              <div><dt>total received</dt><dd class="mono" data-testid="rewards-total">{{ sol(r.confirmedLamports + (r.revenueLamports ?? 0)) }} SOL</dd></div>
               <div><dt>payouts</dt><dd class="mono" data-testid="rewards-count">{{ r.payouts.length }}</dd></div>
             </dl>
           } @else {

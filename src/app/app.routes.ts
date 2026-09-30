@@ -28,6 +28,9 @@ const valueDetail = () => import('./value/value-detail').then((m) => m.ValueDeta
 
 const identities = () => import('./value/identity-list').then((m) => m.IdentityList);
 const identityProfile = () => import('./value/identity-profile').then((m) => m.IdentityProfilePage);
+const revenueList = () => import('./value/revenue-list').then((m) => m.RevenueList);
+const revenueDetail = () => import('./value/revenue-detail').then((m) => m.RevenueDetail);
+const treasury = () => import('./value/treasury').then((m) => m.TreasuryPage);
 const ledger = () => import('./value/ledger').then((m) => m.Ledger);
 
 export const routes: Routes = [
@@ -43,6 +46,9 @@ export const routes: Routes = [
   { path: 'value/identities', title: 'Identities · CryptoBot', loadComponent: identities },
   { path: 'value/identities/:id', title: 'Identity · CryptoBot', loadComponent: identityProfile },
   { path: 'value/ledger', title: 'Units ledger · CryptoBot', loadComponent: ledger },
+  { path: 'value/revenue', title: 'Revenue · CryptoBot', loadComponent: revenueList },
+  { path: 'value/revenue/:id', title: 'Revenue event · CryptoBot', loadComponent: revenueDetail },
+  { path: 'value/treasury', title: 'Treasury · CryptoBot', loadComponent: treasury },
   { path: 'value/:id', title: 'Value event · CryptoBot', loadComponent: valueDetail },
   { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: recovery },
   { path: 'policies', title: 'Policies · CryptoBot', loadComponent: policies },

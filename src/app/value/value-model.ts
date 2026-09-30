@@ -1,4 +1,4 @@
-import { DistributionSummary, PayoutStatus, ValueEvent } from '../value-events-api';
+import { DistributionSummary, PayoutStatus, RevenueEvent, RevenuePolicy, Treasury, ValueEvent } from '../value-events-api';
 
 /** The five acceptance stages, in the fixed order of P-16: MERGED, BUILT, DEPLOYED, RUNNING, ACCEPTED. */
 export const ACCEPTANCE_STAGES = ['MERGED', 'BUILT', 'DEPLOYED', 'RUNNING', 'ACCEPTED'] as const;
@@ -97,4 +97,52 @@ export function txExplorerUrl(sig: string): string {
 
 export function shortWallet(w: string): string {
   return w.length <= 11 ? w : `${w.slice(0, 4)}…${w.slice(-4)}`;
+}
+
+export const REVENUE_SIMULATED_NOTE = 'Simulated economic result — not real profit.';
+export const TREASURY_NOTE = 'Treasury is an accounting view; in this demo payouts are signed from the demo wallet.';
+
+export function revenueStatusClass(s: RevenueEvent['status']): 'done' | 'active' | 'failed' {
+  return s === 'COMPLETE' ? 'done' : s === 'FAILED' ? 'failed' : 'active';
+}
+
+/** basis points to a percentage string: `2000` -> `20 %`, `250` -> `2.5 %`. */
+export function bpsPercent(bps: number | null | undefined): string {
+  if (bps === null || bps === undefined || Number.isNaN(bps)) return '—';
+  return `${Number((bps / 100).toFixed(2))} %`;
+}
+
+export interface RevenuePolicyView {
+  name: string | null;
+  shareBps: number | null;
+  feeBps: number | null;
+  retainedBps: number | null;
+}
+
+/**
+ * The split percentages come from the policy object the API returned. If it only sent a name (or nothing),
+ * they are derived from the amounts the server computed — never from constants in the UI.
+ */
+export function revenuePolicyView(ev: Pick<RevenueEvent, 'policy' | 'amountLamports' | 'contributorPoolLamports' | 'protocolFeeLamports'>): RevenuePolicyView {
+  const p = typeof ev.policy === 'object' && ev.policy ? (ev.policy as RevenuePolicy) : null;
+  const name = p ? (p.name ?? null) : typeof ev.policy === 'string' ? ev.policy : null;
+  const derive = (part: number) => (ev.amountLamports > 0 ? Math.round((part * 10000) / ev.amountLamports) : null);
+  const shareBps = typeof p?.revenueShareBps === 'number' ? p.revenueShareBps : derive(ev.contributorPoolLamports);
+  const feeBps = typeof p?.protocolFeeBps === 'number' ? p.protocolFeeBps : derive(ev.protocolFeeLamports);
+  const retainedBps = shareBps !== null && feeBps !== null ? 10000 - shareBps - feeBps : null;
+  return { name, shareBps, feeBps, retainedBps };
+}
+
+/** Lamports actually confirmed on chain for a revenue event's payouts. */
+export function confirmedLamports(payouts: { status: string; lamports: number }[] | null | undefined): number {
+  return (payouts ?? []).filter((p) => p.status === 'CONFIRMED').reduce((a, p) => a + p.lamports, 0);
+}
+
+export function treasuryPolicyRows(t: Treasury): { label: string; value: string }[] {
+  return [
+    { label: 'reward pool per outcome', value: `${lamportsToSol(t.policies.rewardPoolLamports)} SOL` },
+    { label: 'revenue share', value: bpsPercent(t.policies.revenueShareBps) },
+    { label: 'protocol fee', value: bpsPercent(t.policies.protocolFeeBps) },
+    { label: 'signer max per tx', value: `${lamportsToSol(t.policies.signerMaxLamports)} SOL` },
+  ];
 }

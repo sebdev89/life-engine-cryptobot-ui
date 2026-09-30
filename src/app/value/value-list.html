@@ -14,6 +14,14 @@
     @if (error(); as e) {
       <p class="banner-err" role="alert">{{ e }}</p>
     }
+    @if (kpis(); as k) {
+      <section class="kpis" data-testid="kpis" aria-label="Proof of Value totals">
+        <div class="panel pad kpi"><span class="eyebrow">Accepted outcomes</span><b data-testid="kpi-accepted">{{ k.accepted }}</b></div>
+        <div class="panel pad kpi"><span class="eyebrow">Anchored</span><b data-testid="kpi-anchored">{{ k.anchored }}</b></div>
+        <div class="panel pad kpi"><span class="eyebrow">SOL distributed</span><b data-testid="kpi-sol">{{ k.distributedLamports === null ? '—' : sol(k.distributedLamports) }}</b></div>
+        <div class="panel pad kpi"><span class="eyebrow">Revenue events</span><b data-testid="kpi-revenue">{{ k.revenueEvents === null ? '—' : k.revenueEvents }}</b></div>
+      </section>
+    }
     @if (events(); as list) {
       @if (!list.length) {
         <section class="panel empty">

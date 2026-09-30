@@ -60,6 +60,13 @@ export interface ValueEvent {
   computeReceipts?: ComputeReceipt[] | null;
   /** V5 (KAN-822): null/absent until an immediate reward distribution exists. */
   distribution?: DistributionSummary | null;
+  /** V7 (KAN-832): revenue events this outcome participates in; absent on an older backend. */
+  revenueShares?: RevenueShare[] | null;
+}
+
+export interface RevenueShare {
+  revenueEventId: string;
+  lamports: number;
 }
 
 export type DistributionStatus = 'PARTIAL' | 'COMPLETE' | 'FAILED';
@@ -96,6 +103,8 @@ export interface Distribution {
 
 export interface IdentityRewards {
   confirmedLamports: number;
+  /** V7 (KAN-832): confirmed lamports that came from revenue events; absent on an older backend. */
+  revenueLamports?: number | null;
   payouts: Payout[];
 }
 
@@ -241,4 +250,80 @@ export async function getDistribution(id: string): Promise<Distribution | null> 
 /** Needs RUNTIME_ADMIN; 409 when the event is not ANCHORED. */
 export function distributeValueEvent(id: string): Promise<Distribution> {
   return apiFetch(`/value-events/${encodeURIComponent(id)}/distribute`, { method: 'POST' }).then((r) => json<Distribution>(r));
+}
+
+export type RevenueSourceKind = 'PROPOSAL' | 'SIMULATED' | 'EXTERNAL';
+
+/** V7 (KAN-832): `GET /revenue-events[/{id}]`. The bps live in `policy`; the UI never hardcodes them. */
+export interface RevenueEvent {
+  id: string;
+  projectId: string;
+  source: { kind: RevenueSourceKind; ref: string | null };
+  simulated: boolean;
+  amountLamports: number;
+  policy: RevenuePolicy | string;
+  contributorPoolLamports: number;
+  protocolFeeLamports: number;
+  retainedLamports: number;
+  status: DistributionStatus;
+  receiptHash: string;
+  anchor: ValueAnchor | null;
+  linkedValueEvents: { id: string; title: string }[];
+  payouts: Payout[];
+  createdAt: string;
+}
+
+/** The contract says `policy`; a structured object with bps is read when present, a plain name is shown as is. */
+export interface RevenuePolicy {
+  name?: string | null;
+  revenueShareBps?: number | null;
+  protocolFeeBps?: number | null;
+  [extra: string]: unknown;
+}
+
+export interface RevenueEventRequest {
+  projectId: string;
+  source: { kind: RevenueSourceKind; ref: string | null };
+  amountLamports: number;
+  linkedValueEventIds: string[];
+  simulated: boolean;
+}
+
+export interface TreasuryEvent {
+  kind: 'VALUE' | 'REVENUE' | 'PAYOUT';
+  id: string;
+  lamports: number | null;
+  at: string;
+  txSignature: string | null;
+}
+
+/** `GET /treasury/{identityId}`. */
+export interface Treasury {
+  identityId: string;
+  wallet: string | null;
+  onChainBalanceLamports: number | null;
+  incomeLamports: number;
+  contributorPayoutsLamports: number;
+  protocolFeeLamports: number;
+  computeCostMicroUsd: number;
+  retainedLamports: number;
+  policies: { rewardPoolLamports: number; revenueShareBps: number; protocolFeeBps: number; signerMaxLamports: number };
+  recentEvents: TreasuryEvent[];
+}
+
+export function listRevenueEvents(): Promise<RevenueEvent[]> {
+  return apiFetch('/revenue-events').then((r) => json<RevenueEvent[]>(r));
+}
+
+export function getRevenueEvent(id: string): Promise<RevenueEvent> {
+  return apiFetch(`/revenue-events/${encodeURIComponent(id)}`).then((r) => json<RevenueEvent>(r));
+}
+
+/** Needs RUNTIME_ADMIN; 409/422 carry a message. Not used by a page yet, kept with the contract. */
+export function createRevenueEvent(req: RevenueEventRequest): Promise<RevenueEvent> {
+  return apiFetch('/revenue-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) }).then((r) => json<RevenueEvent>(r));
+}
+
+export function getTreasury(identityId: string): Promise<Treasury> {
+  return apiFetch(`/treasury/${encodeURIComponent(identityId)}`).then((r) => json<Treasury>(r));
 }

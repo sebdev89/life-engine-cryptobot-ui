@@ -175,3 +175,32 @@
 .payout-error {
   display: block;
 }
+
+.shares {
+  list-style: none;
+  margin: 0 0 var(--space-2, 8px);
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.simulated-banner {
+  margin-bottom: var(--space-3, 12px);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3, 12px);
+  margin: 0 0 var(--space-4, 16px);
+}
+
+.kpi {
+  display: grid;
+  gap: 2px;
+}
+
+.kpi b {
+  font-size: 1.6rem;
+  font-family: var(--font-mono, monospace);
+}
