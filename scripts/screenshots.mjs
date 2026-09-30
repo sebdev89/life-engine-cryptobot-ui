@@ -64,6 +64,7 @@ const proposalId = latest?.id ?? latest?.proposalId;
 const root = ev.anchor?.root;
 
 const pages = [
+  ['landing', '/'],
   ['value', '/value'],
   ['value-detail', `/value/${ev.id}`],
   ['identity-dev-agent-17', '/value/identities/dev-agent-17'],
