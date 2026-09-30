@@ -1,19 +1,111 @@
+// =============================================================================================
+// CryptoBot design system (KAN-783) — tokens + shared atoms.
+//
+// Direction: dark, institutional, terminal/data. Control + trust + execution. High contrast,
+// quiet motion, no decorative graphics. Solana is present as the "chain" hue (violet → mint),
+// used only where something actually touches the chain (sign, submit, anchor), never as a theme.
+//
+// Rules of use
+//   · Components read tokens (`var(--…)`), never raw hex. The legacy names at the bottom of
+//     :root (--panel, --text-muted, …) are aliases kept so older component styles keep working.
+//   · Numbers, hashes, signatures, ids, amounts and states go in the mono stack (`.mono`, `code`).
+//   · A state (done/active/failed/uncertain/skipped/pending) is expressed with `.st--<state>`,
+//     which sets `--st` (foreground) and `--st-bg` (tint); atoms like `.st-badge`, `.st-dot`
+//     read those two, so one class names the state everywhere.
+//   · Motion only signals liveness (active step, polling); all of it collapses under
+//     `prefers-reduced-motion: reduce`.
+//   · No remote fonts: the demo runs offline. Both stacks are system fonts.
+// =============================================================================================
+
 :root {
-  color-scheme: light dark;
-  --bg: #0f172a;
-  --panel: #111827;
-  --panel-elev: #1e293b;
-  --text: #e2e8f0;
-  --text-muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-strong: #0ea5e9;
-  --ok: #4ade80;
-  --warn: #facc15;
-  --err: #f87171;
-  --border: #334155;
-  font-family: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+
+  // ---- surfaces: page → panel → elevated → inset -------------------------------------------
+  --bg: #07090d; // page
+  --surface-1: #0c1016; // panels
+  --surface-2: #121821; // elevated: cards inside panels, inputs, chips
+  --surface-3: #19212c; // hover / pressed / selected
+  --surface-inset: #05070a; // logs, code blocks, terminal wells
+
+  // ---- borders -----------------------------------------------------------------------------
+  --border: #1e2733;
+  --border-strong: #2b3746;
+  --border-subtle: #151c25;
+
+  // ---- text --------------------------------------------------------------------------------
+  --text: #e8edf3; // primary — 15.6:1 on --bg
+  --text-2: #98a4b3; // secondary — labels, metadata (7.4:1)
+  --text-3: #5d6978; // tertiary — separators, disabled, timestamps in dense lists
+  --on-accent: #041018; // text on a filled accent/state button
+
+  // ---- accent + chain ----------------------------------------------------------------------
+  --accent: #5cc8ff; // interactive: links, focus, primary action, "active"
+  --accent-strong: #8fdcff;
+  --accent-bg: rgba(92, 200, 255, 0.1);
+  --chain: #9d8cff; // on-chain things: sign, submit, anchor (Solana violet, desaturated)
+  --chain-2: #3ee6b0; // its pair, used only in the chain gradient
+  --chain-bg: rgba(157, 140, 255, 0.1);
+  --chain-gradient: linear-gradient(90deg, var(--chain), var(--chain-2));
+
+  // ---- semantic states ---------------------------------------------------------------------
+  --ok: #3ddc97;
+  --ok-bg: rgba(61, 220, 151, 0.1);
+  --warn: #f2c94c;
+  --warn-bg: rgba(242, 201, 76, 0.1);
+  --err: #ff5f6d;
+  --err-bg: rgba(255, 95, 109, 0.1);
+  --active: var(--accent);
+  --active-bg: var(--accent-bg);
+  --uncertain: #ff9f43; // "the system does not know yet" — distinct from warn on purpose
+  --uncertain-bg: rgba(255, 159, 67, 0.1);
+  --neutral: var(--text-3);
+  --neutral-bg: rgba(93, 105, 120, 0.12);
+
+  // ---- typography --------------------------------------------------------------------------
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-2xs: 0.68rem; // eyebrows, badges
+  --fs-xs: 0.75rem; // metadata
+  --fs-sm: 0.85rem; // secondary body
+  --fs-base: 14px; // body
+  --fs-md: 1.02rem; // panel titles
+  --fs-lg: 1.3rem; // section / big numbers
+  --fs-xl: 1.7rem; // page title
+  --lh-tight: 1.2;
+  --lh: 1.5;
+  --tracking-label: 0.08em; // uppercase labels
+
+  // ---- space, radii, elevation -------------------------------------------------------------
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --r-sm: 3px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-pill: 999px;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  // ---- motion ------------------------------------------------------------------------------
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  // ---- legacy aliases (pre-KAN-783 names; do not use in new code) --------------------------
+  --panel: var(--surface-1);
+  --panel-elev: var(--surface-2);
+  --text-muted: var(--text-2);
+
+  font-family: var(--font-sans);
 }
 
+// =============================================================================================
+// Base
+// =============================================================================================
 * {
   box-sizing: border-box;
 }
@@ -24,15 +116,254 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
+  line-height: var(--lh);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-button {
+body {
+  // One quiet light source at the top; no pattern, no decoration.
+  background:
+    radial-gradient(1200px 420px at 50% -180px, rgba(92, 200, 255, 0.06), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+}
+
+button,
+input,
+select,
+textarea {
   font-family: inherit;
   font-size: inherit;
 }
 
 a {
   color: var(--accent);
+  text-underline-offset: 2px;
+  transition: color var(--dur-fast) var(--ease);
+
+  &:hover {
+    color: var(--accent-strong);
+  }
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-md);
+}
+
+::selection {
+  background: rgba(92, 200, 255, 0.28);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+}
+
+// Scrollbars follow the surface, not the OS light theme.
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+// =============================================================================================
+// Typography utilities
+// =============================================================================================
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+// Small uppercase label above a value or a section: "SIGNATURE", "STAGE 04".
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.t-2 {
+  color: var(--text-2);
+}
+
+.t-3 {
+  color: var(--text-3);
+}
+
+// =============================================================================================
+// States — one class names the state; atoms read --st / --st-bg
+// =============================================================================================
+.st--done,
+.st--ok {
+  --st: var(--ok);
+  --st-bg: var(--ok-bg);
+}
+
+.st--active {
+  --st: var(--active);
+  --st-bg: var(--active-bg);
+}
+
+.st--failed,
+.st--err {
+  --st: var(--err);
+  --st-bg: var(--err-bg);
+}
+
+.st--uncertain {
+  --st: var(--uncertain);
+  --st-bg: var(--uncertain-bg);
+}
+
+.st--warn {
+  --st: var(--warn);
+  --st-bg: var(--warn-bg);
+}
+
+.st--skipped,
+.st--pending {
+  --st: var(--neutral);
+  --st-bg: var(--neutral-bg);
+}
+
+// Pill with the state's color: <span class="st-badge st--done">done</span>
+.st-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--st, var(--text-2));
+  background: var(--st-bg, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--st, var(--border)) 40%, transparent);
+  vertical-align: middle;
+}
+
+// 8px status light; pulses only while active.
+.st-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--st, var(--neutral));
+  box-shadow: 0 0 0 3px var(--st-bg, transparent);
+  flex-shrink: 0;
+}
+
+.st--active .st-dot,
+.st-dot.st--active {
+  animation: le-pulse 1.6s var(--ease) infinite;
+}
+
+// =============================================================================================
+// Shared atoms (global so every view gets the same panel/badge/button; components may refine)
+// =============================================================================================
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.badge--ok {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-color: rgba(61, 220, 151, 0.35);
+}
+
+.badge--warn {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-color: rgba(242, 201, 76, 0.35);
+}
+
+.badge--err {
+  color: var(--err);
+  background: var(--err-bg);
+  border-color: rgba(255, 95, 109, 0.4);
+}
+
+// Divider line used between rows of data.
+.rule-line {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: var(--sp-2) 0;
+}
+
+// =============================================================================================
+// Motion
+// =============================================================================================
+@keyframes le-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes le-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

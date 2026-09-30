@@ -7,7 +7,7 @@
 .glossary__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.55);
+  background: rgba(3, 5, 8, 0.6);
   z-index: 40;
 }
 
@@ -119,16 +119,16 @@
 // ---- controls (same look as app.scss) ------------------------------------------------------
 button {
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--accent);
-  color: #082f49;
+  color: var(--on-accent);
   padding: 8px 14px;
   font-weight: 600;
 
   &:hover:not(:disabled) {
     background: var(--accent-strong);
-    color: #fff;
+    color: var(--on-accent);
   }
 }
 
@@ -153,7 +153,7 @@ input {
   background: var(--panel-elev);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   padding: 8px 10px;
   font-size: 0.95rem;
 }

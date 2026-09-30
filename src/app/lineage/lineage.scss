@@ -64,7 +64,7 @@
 .badge,
 .edge-key {
   display: inline-block;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 0 7px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -102,22 +102,22 @@
 }
 
 .edge-key--validates {
-  color: #a78bfa;
-  border-color: #a78bfa;
+  color: var(--chain);
+  border-color: var(--chain);
 }
 
 .edge-key--executes {
-  color: #fb923c;
-  border-color: #fb923c;
+  color: var(--uncertain);
+  border-color: var(--uncertain);
 }
 
 .edge-key--reuses {
-  color: #2dd4bf;
-  border-color: #2dd4bf;
+  color: var(--chain-2);
+  border-color: var(--chain-2);
 }
 
 .reused {
-  color: #2dd4bf;
+  color: var(--chain-2);
 }
 
 // ---- SVG -------------------------------------------------------------------------------------
@@ -145,15 +145,15 @@ svg {
 }
 
 .edge--validates {
-  color: #a78bfa;
+  color: var(--chain);
 }
 
 .edge--executes {
-  color: #fb923c;
+  color: var(--uncertain);
 }
 
 .edge--reuses {
-  color: #2dd4bf;
+  color: var(--chain-2);
 
   path {
     stroke-dasharray: 5 4;
@@ -190,7 +190,7 @@ svg {
   }
 
   .node__hash {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--font-mono);
     fill: var(--accent);
   }
 
@@ -290,7 +290,7 @@ button.link-hash {
   cursor: pointer;
   padding: 0 4px;
   font: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
 
   &:hover {
@@ -316,7 +316,7 @@ button.mini {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   cursor: pointer;
 
   &:disabled {
