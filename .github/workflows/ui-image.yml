@@ -1,0 +1,57 @@
+# CI de cryptobot-ui (KAN-799): tests + build, y la imagen nginx por digest en GHCR con el
+# workflow reusable de la plataforma — el mismo caller que genera App Factory
+# (deploy: factory/templates/frontend-angular/.github/workflows/ui-image.yml).
+#
+# Imagen: ghcr.io/sebdev89/life-engine-cryptobot-ui:sha-<commit7> (el reusable la nombra por el
+# repo que llama). Runner hosted: el repo no tiene runner propio en le-ci; es privado, así que
+# gasta cuota de Actions de la cuenta y un job que "no arranca" no es un fallo de código.
+# No despliega: publicar en uat es KAN-800 (gitops).
+#
+# Config en runtime: la imagen de la plataforma inyecta `window.__CRYPTOBOT_ENV = {...}` en
+# index.html (UI_ENV_GLOBAL=__CRYPTOBOT_ENV, UI_ENV_JSON='{"cryptobotBase":"…","authBase":"…"}');
+# src/app/config.ts lo lee por encima de /config.js. El Dockerfile del repo (compose del demo)
+# sigue generando config.js con su entrypoint.
+name: ui-image
+
+on:
+  push:
+    branches: [main, KAN-799-ui-ci]  # TEMPORAL: verificar el push a GHCR antes del merge; se quita en el commit siguiente
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx ng test --watch=false
+      - run: npx ng build
+
+  image:
+    needs: test
+    uses: sebdev89/life-engine-deploy/.github/workflows/ui-image.yml@main
+    with:
+      runner: '["ubuntu-latest"]'
+      app: cryptobot
+      build: npx ng build --configuration production
+      dist: dist/cryptobot-ui/browser
+      push: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
