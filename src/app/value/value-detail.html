@@ -1,0 +1,135 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <a routerLink="/value" class="back">← All value events</a>
+    <p class="eyebrow">Proof of Value</p>
+    <h1>{{ event()?.title ?? 'Value event' }}</h1>
+  </header>
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Value events are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (event(); as ev) {
+      <div class="sections">
+        <section class="panel pad" data-section="task">
+          <h2>Task</h2>
+          <dl class="facts">
+            <div><dt>title</dt><dd>{{ ev.title }}</dd></div>
+            <div><dt>task</dt><dd class="mono">{{ ev.taskId }}</dd></div>
+            <div><dt>project</dt><dd class="mono">{{ ev.projectId }}</dd></div>
+            <div><dt>accepted</dt><dd class="mono">{{ ev.acceptedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel pad" data-section="evidence">
+          <h2>Evidence</h2>
+          <dl class="facts">
+            <div><dt>artifact hash</dt><dd class="mono" [title]="ev.artifactHash">{{ ev.artifactHash }}</dd></div>
+            @if (ev.artifact?.commitSha) {
+              <div><dt>commit</dt><dd class="mono">{{ ev.artifact?.commitSha }}</dd></div>
+            }
+            @if (ev.artifact?.prUrl; as pr) {
+              <div><dt>pull request</dt><dd><a [href]="pr" target="_blank" rel="noopener">{{ pr }} ↗</a></dd></div>
+            }
+            @if (ev.artifact?.imageDigest) {
+              <div><dt>image digest</dt><dd class="mono">{{ ev.artifact?.imageDigest }}</dd></div>
+            }
+            <div><dt>receipt hash</dt><dd class="mono" [title]="ev.receiptHash">{{ ev.receiptHash }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel pad" data-section="acceptance">
+          <h2>Acceptance</h2>
+          <ul class="stages">
+            @for (s of stages(ev); track s.label) {
+              <li class="stage" [class.stage--fail]="s.state === false" [class.stage--unknown]="s.state === null">
+                <span class="stage__mark" aria-hidden="true">{{ s.state === true ? '✓' : s.state === false ? '✗' : '?' }}</span> {{ s.label }}
+                @if (s.state === null) {
+                  <span class="t-3 small">unknown</span>
+                }
+              </li>
+            }
+          </ul>
+          <dl class="facts">
+            @if (ev.acceptance?.source) {
+              <div><dt>source</dt><dd>{{ ev.acceptance?.source }}</dd></div>
+            }
+            @if (ev.acceptance?.environment) {
+              <div><dt>environment</dt><dd>{{ ev.acceptance?.environment }}</dd></div>
+            }
+            <div><dt>acceptance hash</dt><dd class="mono" [title]="ev.acceptanceHash">{{ ev.acceptanceHash }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="panel pad" data-section="contributors">
+          <h2>Contributors</h2>
+          <table class="grid">
+            <thead><tr><th>Who</th><th>Kind</th><th>Role</th><th class="num">Units</th></tr></thead>
+            <tbody>
+              @for (c of ev.contributions; track c.identityId) {
+                <tr>
+                  <td>{{ c.displayName }} <span class="mono small t-3">{{ c.identityId }}</span></td>
+                  <td><span class="chip chip--{{ c.kind.toLowerCase() }}"><b>{{ c.kind }}</b></span></td>
+                  <td>{{ c.role }}</td>
+                  <td class="mono num">{{ c.units }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="t-3 small">Policy {{ ev.distributionPolicy }} · {{ ev.totalUnits }} units in total.</p>
+        </section>
+
+        <section class="panel pad" data-section="knowledge">
+          <h2>Knowledge</h2>
+          <p class="t-2">Not attributed in V1.</p>
+        </section>
+
+        <section class="panel pad" data-section="compute">
+          <h2>Compute</h2>
+          <p class="t-2">Not attributed in V1.</p>
+        </section>
+
+        <section class="panel pad" data-section="solana">
+          <h2>Solana</h2>
+          @if (ev.anchor; as a) {
+            <dl class="facts">
+              <div><dt>Merkle root</dt><dd class="mono">{{ a.root }}</dd></div>
+              <div><dt>transaction</dt><dd class="mono">{{ a.txSignature }}</dd></div>
+              <div><dt>slot</dt><dd class="mono">{{ a.slot ?? '—' }}</dd></div>
+            </dl>
+            @if (a.explorerUrl; as href) {
+              <a class="btn" [href]="href" target="_blank" rel="noopener">Open in explorer ↗</a>
+            }
+            @if (proof(); as p) {
+              <p class="verdict" [class.verdict--ok]="p.verified" [class.verdict--bad]="!p.verified" data-testid="proof">
+                Proof check: {{ p.verified ? 'verified' : 'NOT verified' }}
+              </p>
+            } @else if (proofError(); as pe) {
+              <p class="banner-err" role="alert">Proof check failed: {{ pe }}</p>
+            } @else {
+              <p class="t-3 small" aria-busy="true">Checking proof…</p>
+            }
+          } @else {
+            <p class="t-2">Recorded, not anchored on Solana yet. The batch anchors it and this page will show the transaction.</p>
+          }
+        </section>
+
+        <section class="panel pad" data-section="distribution">
+          <h2>Immediate distribution</h2>
+          <p class="t-2">Not yet — V5.</p>
+        </section>
+
+        <section class="panel pad" data-section="future">
+          <h2>Future participation</h2>
+          <p class="t-2">Contribution Units: {{ ev.totalUnits }} — V6. Units are a record of contribution, not a promise of payment or return.</p>
+        </section>
+      </div>
+    } @else if (!error()) {
+      <p class="t-2 loading" aria-busy="true">Reading value event…</p>
+    }
+  }
+</main>
