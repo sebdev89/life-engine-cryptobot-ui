@@ -1,0 +1,61 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <p class="eyebrow">Proof of Value</p>
+    <h1>Units ledger</h1>
+    <p class="t-2 thesis" data-testid="disclaimer">{{ disclaimer }}</p>
+  </header>
+  <app-value-nav />
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'The ledger is read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    <div class="seg" role="group" aria-label="Group by">
+      @for (g of groups; track g.value) {
+        <button type="button" class="btn" [class.on]="groupBy() === g.value" [attr.aria-pressed]="groupBy() === g.value" (click)="select(g.value)">{{ g.label }}</button>
+      }
+    </div>
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (ledger(); as l) {
+      @if (!l.rows.length) {
+        <section class="panel empty">
+          <p class="eyebrow">Nothing recorded</p>
+          <p class="t-2">No units distributed yet.</p>
+        </section>
+      } @else {
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="grid" data-testid="ledger">
+              <thead><tr><th>{{ l.groupBy }}</th><th class="num">Total units</th><th class="num">Accepted outcomes</th></tr></thead>
+              <tbody>
+                @for (r of l.rows; track r.key) {
+                  <tr>
+                    <td>
+                      @if (l.groupBy === 'identity') {
+                        <a [routerLink]="['/value/identities', r.key]">{{ r.displayName }}</a>
+                      } @else {
+                        {{ r.displayName }}
+                      }
+                      <span class="mono small t-3">{{ r.key }}</span>
+                      @if (r.kind) {
+                        <span class="chip chip--{{ r.kind.toLowerCase() }}"><b>{{ r.kind }}</b></span>
+                      }
+                    </td>
+                    <td class="mono num">{{ r.totalUnits }}</td>
+                    <td class="mono num">{{ r.acceptedOutcomes }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot><tr><th>Total</th><th class="mono num" data-testid="total">{{ l.totalUnits }}</th><th></th></tr></tfoot>
+            </table>
+          </div>
+        </section>
+      }
+    } @else if (loading()) {
+      <p class="t-2 loading" aria-busy="true">Reading /units/ledger…</p>
+    }
+  }
+</main>

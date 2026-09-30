@@ -6,6 +6,7 @@ import { ValueEvent, listValueEvents } from '../value-events-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
+import { ValueNav } from './value-nav';
 import { short, statusClass, statusLabel } from './value-model';
 
 const LIST_LIMIT = 50;
@@ -14,7 +15,7 @@ const LIST_LIMIT = 50;
 @Component({
   selector: 'app-value-list',
   standalone: true,
-  imports: [RouterLink, DatePipe, TopNav, TokenGate],
+  imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
   templateUrl: './value-list.html',
   styleUrl: './value.scss',
 })

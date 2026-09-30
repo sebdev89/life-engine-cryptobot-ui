@@ -6,6 +6,7 @@
     <h1>Proof of Value</h1>
     <p class="t-2 thesis">AI can create value. Proof of Value makes sure we remember who created it.</p>
   </header>
+  <app-value-nav />
 
   @if (!signedIn()) {
     <app-token-gate [why]="error() ?? 'Value events are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
@@ -49,7 +50,7 @@
                       <ul class="chips">
                         @for (c of ev.contributions; track c.identityId) {
                           <li class="chip chip--{{ c.kind.toLowerCase() }}" [title]="c.displayName + ' · ' + c.role">
-                            <b>{{ c.kind }}</b> {{ c.displayName }} <span class="t-3">· {{ c.role }}</span>
+                            <b>{{ c.kind }}</b> <a [routerLink]="['/value/identities', c.identityId]">{{ c.displayName }}</a> <span class="t-3">· {{ c.role }}</span>
                           </li>
                         }
                       </ul>

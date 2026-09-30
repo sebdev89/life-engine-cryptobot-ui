@@ -26,6 +26,10 @@ const policies = () => import('./policies/policies').then((m) => m.PoliciesView)
 const value = () => import('./value/value-list').then((m) => m.ValueList);
 const valueDetail = () => import('./value/value-detail').then((m) => m.ValueDetail);
 
+const identities = () => import('./value/identity-list').then((m) => m.IdentityList);
+const identityProfile = () => import('./value/identity-profile').then((m) => m.IdentityProfilePage);
+const ledger = () => import('./value/ledger').then((m) => m.Ledger);
+
 export const routes: Routes = [
   { path: '', title: 'CryptoBot — trusted execution for financial AI agents', component: Landing, pathMatch: 'full' },
   { path: 'console', title: 'Console · CryptoBot', loadComponent: consoleView },
@@ -36,6 +40,9 @@ export const routes: Routes = [
   { path: 'proof', title: 'Proof · CryptoBot', loadComponent: proof },
   { path: 'proof/:root', title: 'Proof · CryptoBot', loadComponent: proof },
   { path: 'value', title: 'Proof of Value · CryptoBot', loadComponent: value },
+  { path: 'value/identities', title: 'Identities · CryptoBot', loadComponent: identities },
+  { path: 'value/identities/:id', title: 'Identity · CryptoBot', loadComponent: identityProfile },
+  { path: 'value/ledger', title: 'Units ledger · CryptoBot', loadComponent: ledger },
   { path: 'value/:id', title: 'Value event · CryptoBot', loadComponent: valueDetail },
   { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: recovery },
   { path: 'policies', title: 'Policies · CryptoBot', loadComponent: policies },

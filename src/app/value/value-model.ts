@@ -37,3 +37,27 @@ export function contributionSummary(ev: Pick<ValueEvent, 'contributions'>): { hu
   const humans = ev.contributions.filter((c) => c.kind === 'HUMAN').length;
   return { humans, agents: ev.contributions.length - humans };
 }
+
+/** Devnet explorer link for a wallet address (KAN-830). */
+export function explorerAddressUrl(wallet: string): string {
+  return `https://explorer.solana.com/address/${encodeURIComponent(wallet)}?cluster=devnet`;
+}
+
+/** micro USD (1e-6) to a display string: `$0.004200`. Compute cost only; never economic value. */
+export function formatMicroUsd(micro: number | null | undefined): string {
+  if (micro === null || micro === undefined || Number.isNaN(micro)) return '—';
+  return `$${(micro / 1_000_000).toFixed(6)}`;
+}
+
+export function ledgerTotal(rows: { totalUnits: number }[]): number {
+  return rows.reduce((a, r) => a + r.totalUnits, 0);
+}
+
+export const LEDGER_GROUPS = [
+  { value: 'identity', label: 'Identity' },
+  { value: 'asset', label: 'Asset' },
+  { value: 'project', label: 'Project' },
+] as const;
+
+export const UNITS_DISCLAIMER =
+  'Contribution Units are an attribution primitive inside the protocol — not equity, not a promise of financial return.';

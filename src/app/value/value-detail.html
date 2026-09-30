@@ -6,6 +6,7 @@
     <p class="eyebrow">Proof of Value</p>
     <h1>{{ event()?.title ?? 'Value event' }}</h1>
   </header>
+  <app-value-nav />
 
   @if (!signedIn()) {
     <app-token-gate [why]="error() ?? 'Value events are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
@@ -72,7 +73,7 @@
             <tbody>
               @for (c of ev.contributions; track c.identityId) {
                 <tr>
-                  <td>{{ c.displayName }} <span class="mono small t-3">{{ c.identityId }}</span></td>
+                  <td><a [routerLink]="['/value/identities', c.identityId]">{{ c.displayName }}</a> <span class="mono small t-3">{{ c.identityId }}</span></td>
                   <td><span class="chip chip--{{ c.kind.toLowerCase() }}"><b>{{ c.kind }}</b></span></td>
                   <td>{{ c.role }}</td>
                   <td class="mono num">{{ c.units }}</td>
@@ -85,12 +86,53 @@
 
         <section class="panel pad" data-section="knowledge">
           <h2>Knowledge</h2>
-          <p class="t-2">Not attributed in V1.</p>
+          @if (!ev.knowledgeAssets?.length) {
+            <p class="t-2">No knowledge assets attributed.</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="grid" data-testid="knowledge">
+                <thead><tr><th>Asset</th><th>Version</th><th>Kind</th><th>Creator</th><th>Content hash</th></tr></thead>
+                <tbody>
+                  @for (k of ev.knowledgeAssets; track k.id) {
+                    <tr>
+                      <td>{{ k.title }} <span class="mono small t-3">{{ k.id }}</span></td>
+                      <td class="mono">{{ k.version }}</td>
+                      <td>{{ k.kind }}</td>
+                      <td><a [routerLink]="['/value/identities', k.creatorId]">{{ k.creatorId }}</a></td>
+                      <td class="mono small" [title]="k.contentHash">{{ short(k.contentHash) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </section>
 
         <section class="panel pad" data-section="compute">
           <h2>Compute</h2>
-          <p class="t-2">Not attributed in V1.</p>
+          @if (!ev.computeReceipts?.length) {
+            <p class="t-2">No compute receipts attached.</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="grid" data-testid="compute">
+                <thead><tr><th>Provider</th><th>Node</th><th>Model</th><th class="num">Tokens in</th><th class="num">Tokens out</th><th class="num">GPU s</th><th class="num">Est. cost</th></tr></thead>
+                <tbody>
+                  @for (c of ev.computeReceipts; track c.id) {
+                    <tr>
+                      <td><a [routerLink]="['/value/identities', c.providerId]">{{ c.providerDisplayName }}</a></td>
+                      <td class="mono">{{ c.node }}</td>
+                      <td class="mono">{{ c.model }}</td>
+                      <td class="mono num">{{ c.inputTokens }}</td>
+                      <td class="mono num">{{ c.outputTokens }}</td>
+                      <td class="mono num">{{ c.gpuSeconds }}</td>
+                      <td class="mono num">{{ formatMicroUsd(c.estimatedCostMicroUsd) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          <p class="t-3 small cost-note">Compute cost is recorded separately from economic value.</p>
         </section>
 
         <section class="panel pad" data-section="solana">
