@@ -15,7 +15,7 @@ name: ui-image
 
 on:
   push:
-    branches: [main, KAN-799-ui-ci]  # TEMPORAL: verificar el push a GHCR antes del merge; se quita en el commit siguiente
+    branches: [main, KAN-799-ui-ci]  # TEMPORAL: verificar el push a GHCR antes del merge; se quita antes del merge
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -48,8 +48,10 @@ jobs:
     with:
       runner: '["ubuntu-latest"]'
       app: cryptobot
-      build: npx ng build --configuration production
-      dist: dist/cryptobot-ui/browser
+      # Fuera de dist/: el reusable construye con contexto `.` y el .dockerignore del repo
+      # excluye dist (lo necesita el Dockerfile propio, que compila adentro). Run 36664487601.
+      build: npx ng build --configuration production --output-path ci-image
+      dist: ci-image/browser
       push: ${{ github.event_name != 'pull_request' }}
     permissions:
       contents: read
