@@ -24,7 +24,7 @@ export const FAILURE_STORY: readonly { step: string; label: string }[] = [
 ];
 
 /**
- * `/demo` (KAN-785): one click runs the trusted execution end to end against the stack, and the
+ * `/demo`: one click runs the trusted execution end to end against the stack, and the
  * 8-stage pipeline of `/live` (same component, same model) animates from the API answers.
  */
 @Component({
@@ -91,7 +91,7 @@ export class DemoMode {
     });
   }
 
-  /** KAN-789: without a session /demo asks for the token instead of failing; once given, the run is possible. */
+  /** Without a session /demo asks for the token instead of failing; once given, the run is possible. */
   onSignedIn(): void {
     this.signedIn.set(true);
     this.loadWallet();

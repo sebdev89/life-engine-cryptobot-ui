@@ -1,5 +1,5 @@
 /**
- * Pure helpers of the Proof view (KAN-788). The server's answer (`POST /anchors/{root}/verify`)
+ * Pure helpers of the Proof view. The server's answer (`POST /anchors/{root}/verify`)
  * is shown check by check, next to what this browser recomputed on its own (`merkle.proofPath`).
  */
 import { ProofInput, StepState } from '../live/live-model';

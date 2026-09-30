@@ -19,7 +19,7 @@ import {
 } from '../lineage-api';
 
 /**
- * The provenance DAG of one proposal (KAN-393, Endgame §19 step 5): every receipt the pipeline
+ * The provenance DAG of one proposal (Endgame §19 step 5): every receipt the pipeline
  * left behind, as a node with its hash, what produced it (model or deterministic engine), what it
  * cost in measured compute, its reproducibility level and its anchor; edges typed by role. Click a
  * node → the stored receipt and a live `verify` (hash, body, signature, parents, and for L1 the

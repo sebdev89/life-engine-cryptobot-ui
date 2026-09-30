@@ -347,7 +347,7 @@ describe('LiveOperation', () => {
     expect(fixture.nativeElement.textContent).toContain('confirmed');
   });
 
-  it('hides the lineage DAG (KAN-393) when the service answers 404 on /lineage, and says so', async () => {
+  it('hides the lineage DAG when the service answers 404 on /lineage, and says so', async () => {
     fakeFetch(baseRoutes().filter((r) => !r.path.test(`/proposals/${PID}/lineage`)));
     const fixture = await mount();
     expect(fixture.componentInstance.lineageAvailable()).toBe(false);
@@ -384,7 +384,7 @@ describe('LiveOperation', () => {
     expect(calls.length).toBe(0);
   });
 
-  it('KAN-784: an EXECUTED proposal shows the 8 stages with duration and evidence, PROVE closed by the inclusion proof', async () => {
+  it('An EXECUTED proposal shows the 8 stages with duration and evidence, PROVE closed by the inclusion proof', async () => {
     const EXEC_AUDIT = [
       'PROPOSAL_CREATED',
       'SIMULATED',

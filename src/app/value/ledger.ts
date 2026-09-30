@@ -8,7 +8,7 @@ import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
 import { LEDGER_GROUPS, UNITS_DISCLAIMER } from './value-model';
 
-/** `/value/ledger` (KAN-830): Contribution Units accumulated, grouped by identity, asset or project. */
+/** `/value/ledger`: Contribution Units accumulated, grouped by identity, asset or project. */
 @Component({
   selector: 'app-ledger',
   standalone: true,

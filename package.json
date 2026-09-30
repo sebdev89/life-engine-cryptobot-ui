@@ -10,6 +10,7 @@
     "screenshots": "node scripts/screenshots.mjs"
   },
   "private": true,
+  "license": "Apache-2.0",
   "packageManager": "npm@11.11.0",
   "dependencies": {
     "@angular/common": "^21.2.0",

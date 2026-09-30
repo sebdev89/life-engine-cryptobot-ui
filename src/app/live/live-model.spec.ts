@@ -348,7 +348,7 @@ describe('policy helpers', () => {
     expect(predicateRows({ ...mainnet, authorization: null })).toEqual([]);
   });
 
-  it('isMainnetFailClosed: a mainnet wallet or an EXECUTION_CLUSTER violation (KAN-493)', () => {
+  it('isMainnetFailClosed: a mainnet wallet or an EXECUTION_CLUSTER violation', () => {
     expect(isMainnetFailClosed({ cluster: 'mainnet-beta', policy: null })).toBe(true);
     expect(isMainnetFailClosed({ cluster: 'devnet', policy: mainnet })).toBe(true);
     expect(isMainnetFailClosed({ cluster: 'devnet', policy: { ...mainnet, executionViolations: [] } })).toBe(false);
@@ -416,7 +416,7 @@ describe('small helpers', () => {
   });
 });
 
-// ---- KAN-784: the 12 steps as the 8 stages of the product -------------------------------------
+// ---- The 12 steps as the 8 stages of the product -------------------------------------
 
 const ROOT = 'sha256:' + '9f'.repeat(32);
 const ANCHOR_TX = '2vXa9mMemoAnchorTx8Qw1zPp3kLr6YtUe5sDfGhJkL9nBvCxZa1s2d3f4g5h6j7k8m9n1p2q3r4s5t6u7v8w9';

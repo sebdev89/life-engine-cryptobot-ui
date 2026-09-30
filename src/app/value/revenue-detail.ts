@@ -10,7 +10,7 @@ import { ValueNav } from './value-nav';
 import { PayoutsTable } from './payouts-table';
 import { DISTRIBUTION_NOTE, REVENUE_SIMULATED_NOTE, bpsPercent, lamportsToSol, revenuePolicyView, revenueStatusClass } from './value-model';
 
-/** `/value/revenue/:id` (KAN-832): what value came in, why it was split this way, who was paid, and the Solana anchor. */
+/** `/value/revenue/:id`: what value came in, why it was split this way, who was paid, and the Solana anchor. */
 @Component({
   selector: 'app-revenue-detail',
   standalone: true,

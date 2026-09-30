@@ -1,5 +1,5 @@
 /**
- * Client for the operator side of reliability (KAN-571 / KAN-501, demo path HK-3): the global
+ * Client for the operator side of reliability (demo path HK-3): the global
  * dead-letter queue (`/api/cryptobot/dead-letters`, RUNTIME_ADMIN) and the demo-only fault
  * injection (`/api/cryptobot/demo/chaos`, exists only with `cryptobot.chaos.enabled=true`).
  * Shapes mirror the Java records; nothing is computed here.

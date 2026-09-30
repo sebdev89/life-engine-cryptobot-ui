@@ -1,5 +1,5 @@
 /**
- * `/policies` (KAN-791): the policy a proposal was decided under, read from the proposal itself
+ * `/policies`: the policy a proposal was decided under, read from the proposal itself
  * (`GET /proposals/{id}` → `policy`, `approval`) — no policy endpoint exists and none is added.
  * Rule ids and their one-line meaning come from the service (`PolicyEngine.RULE_*`, the violation
  * messages it writes, `PolicyPredicate`, `PolicyRules`); the UI only reads which ones were applied
@@ -34,7 +34,7 @@ export const CORE_RULES: readonly RuleDef[] = [
   { id: 'TIMELOCK_ELAPSED', stage: 'execution', what: "The approval's timelock (executableAt) has elapsed; execute is refused before it." },
 ];
 
-/** Price integrity (KAN-439 / KAN-572), in the order they are applied. */
+/** Price integrity, in the order they are applied. */
 export const PRICE_RULES: readonly RuleDef[] = [
   { id: 'PRICE_QUORUM', stage: 'proposal', what: 'At least min_sources independent, valid, distinct price sources answered for every asset touched.' },
   { id: 'PRICE_STALE', stage: 'proposal', what: 'The quorum was not lost to observations older than max_age.' },
@@ -43,7 +43,7 @@ export const PRICE_RULES: readonly RuleDef[] = [
   { id: 'PRICE_DRIFT', stage: 'proposal', what: 'The price each leg was planned at is within max_move_bps of the fresh median.' },
 ];
 
-/** The signer's own hard caps (KAN-572), checked here so the refusal is visible one step earlier. */
+/** The signer's own hard caps, checked here so the refusal is visible one step earlier. */
 export const SIGNER_RULES: readonly RuleDef[] = [
   { id: 'SIGNER_DESTINATION_ALLOWLISTED', stage: 'execution', what: "The transaction's destination is in the signer's allowlist." },
   { id: 'SIGNER_MAX_LAMPORTS', stage: 'execution', what: "The lamports moved are under the signer's own cap." },

@@ -1,5 +1,5 @@
 /**
- * `/recovery` (KAN-790): the dead-letter queue as an operator reads it. Everything here is derived
+ * `/recovery`: the dead-letter queue as an operator reads it. Everything here is derived
  * from two API reads — `GET /dead-letters?resolved=all` (global, RUNTIME_ADMIN) and
  * `GET /proposals` (this operator's) — and nothing is estimated: a letter whose proposal belongs to
  * another operator shows its proposal as unknown, not as a guess.

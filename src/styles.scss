@@ -1,5 +1,5 @@
 // =============================================================================================
-// CryptoBot design system (KAN-783) — tokens + shared atoms.
+// CryptoBot design system — tokens + shared atoms.
 //
 // Direction: dark, institutional, terminal/data. Control + trust + execution. High contrast,
 // quiet motion, no decorative graphics. Solana is present as the "chain" hue (violet → mint),
@@ -35,7 +35,7 @@
   // ---- text --------------------------------------------------------------------------------
   --text: #e8edf3; // primary — 15.6:1 on --bg
   --text-2: #98a4b3; // secondary — labels, metadata (7.4:1)
-  --text-3: #7a8696; // tertiary — metadata, timestamps in dense lists (KAN-792: 5.4:1 on --bg, 4.8:1 on --surface-2; was #5d6978 = 3.6:1)
+  --text-3: #7a8696; // tertiary — metadata, timestamps in dense lists (5.4:1 on --bg, 4.8:1 on --surface-2; was #5d6978 = 3.6:1)
   --on-accent: #041018; // text on a filled accent/state button
 
   // ---- accent + chain ----------------------------------------------------------------------
@@ -95,7 +95,7 @@
   --dur: 200ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
-  // ---- legacy aliases (pre-KAN-783 names; do not use in new code) --------------------------
+  // ---- legacy aliases (earlier names; do not use in new code) --------------------------
   --panel: var(--surface-1);
   --panel-elev: var(--surface-2);
   --text-muted: var(--text-2);
@@ -163,7 +163,7 @@ a {
   border-radius: var(--r-md);
 }
 
-// ---- shared screen states (KAN-792): one look for loading, error and empty on every screen ----
+// ---- shared screen states: one look for loading, error and empty on every screen ----
 .banner-err {
   margin: 0 0 var(--sp-3);
   padding: var(--sp-2) var(--sp-3);
@@ -362,7 +362,7 @@ pre {
   border-color: rgba(255, 95, 109, 0.4);
 }
 
-// Buttons and fields for the screens after KAN-787 (older views keep their own component styles).
+// Buttons and fields for the screens after the first redesign (older views keep their own component styles).
 .btn {
   display: inline-flex;
   align-items: center;

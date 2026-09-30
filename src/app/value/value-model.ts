@@ -38,7 +38,7 @@ export function contributionSummary(ev: Pick<ValueEvent, 'contributions'>): { hu
   return { humans, agents: ev.contributions.length - humans };
 }
 
-/** Devnet explorer link for a wallet address (KAN-830). */
+/** Devnet explorer link for a wallet address. */
 export function explorerAddressUrl(wallet: string): string {
   return `https://explorer.solana.com/address/${encodeURIComponent(wallet)}?cluster=devnet`;
 }

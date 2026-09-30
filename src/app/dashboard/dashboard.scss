@@ -24,7 +24,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap; // KAN-792: 390 px
+  flex-wrap: wrap; // 390 px
 }
 
 .page__tools {
@@ -34,7 +34,7 @@
   flex-wrap: wrap;
 }
 
-// KAN-576: link to the live-operation route, styled like a ghost button.
+// Link to the live-operation route, styled like a ghost button.
 .live-link {
   border: 1px solid var(--border);
   border-radius: var(--r-md);

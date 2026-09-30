@@ -8,7 +8,7 @@ import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
 import { short } from './value-model';
 
-/** `/value/identities` (KAN-830): every identity with its explicit reputation. */
+/** `/value/identities`: every identity with its explicit reputation. */
 @Component({
   selector: 'app-identity-list',
   standalone: true,

@@ -39,7 +39,7 @@ function event(over: Partial<ValueEvent> = {}): ValueEvent {
       acceptedAt: '2026-09-30T10:00:00Z',
     },
     projectId: 'p1',
-    taskId: 'KAN-100',
+    taskId: 'TASK-100',
     title: 'Fix login redirect',
     acceptedAt: '2026-09-30T10:00:00Z',
     createdAt: '2026-09-30T10:00:05Z',
@@ -98,7 +98,7 @@ describe('ValueList (/value)', () => {
     const el: HTMLElement = f.nativeElement;
     expect(el.querySelectorAll('tbody tr').length).toBe(2);
     expect(el.textContent).toContain('Fix login redirect');
-    expect(el.textContent).toContain('KAN-100');
+    expect(el.textContent).toContain('TASK-100');
     expect(el.querySelectorAll('.chip--human').length).toBe(2);
     expect(el.querySelectorAll('.chip--agent').length).toBe(2);
     const link = el.querySelector(`a[href="${EXPLORER}"]`) as HTMLAnchorElement;
@@ -385,7 +385,7 @@ describe('Ledger (/value/ledger)', () => {
   });
 });
 
-// ---- V5 (KAN-831): WHO GOT PAID ----
+// ---- V5: WHO GOT PAID ----
 
 function dist(over: Partial<Distribution> = {}): Distribution {
   return {
@@ -531,7 +531,7 @@ describe('IdentityProfilePage rewards (V5)', () => {
     expect(el.querySelector('[data-testid="rewards-count"]')?.textContent?.trim()).toBe('1');
   });
 
-  it('KAN-831: the real backend sends the payout COUNT (rewards.payouts is a number), not the rows', async () => {
+  it('The real backend sends the payout COUNT (rewards.payouts is a number), not the rows', async () => {
     route({ '/identities/i1': json({ ...profile({ id: 'i1' }), rewards: { confirmedLamports: 5_600_000, revenueLamports: 3_600_000, payouts: 5 } }) });
     const el: HTMLElement = (await mount(IdentityProfilePage, { id: 'i1' })).nativeElement;
     expect(el.querySelector('[data-testid="rewards-count"]')?.textContent?.trim()).toBe('5');

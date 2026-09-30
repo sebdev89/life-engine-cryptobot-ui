@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-/** Sub-navigation inside the Value section (KAN-830): Events · Identities · Ledger · Revenue · Treasury. */
+/** Sub-navigation inside the Value section: Events · Identities · Ledger · Revenue · Treasury. */
 @Component({
   selector: 'app-value-nav',
   standalone: true,

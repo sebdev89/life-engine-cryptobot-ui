@@ -1,6 +1,6 @@
 /**
  * Client for the Decision Receipts read side (`/api/cryptobot/receipts/**`, `/proposals/{id}/receipts`,
- * `/wallets/{id}/receipts`, `/anchors/**`). Shapes mirror the Java records (KAN-391, KAN-394);
+ * `/wallets/{id}/receipts`, `/anchors/**`). Shapes mirror the Java records;
  * the only things computed here are display helpers, and they are pure.
  */
 import { apiFetch, throwHttp } from './cryptobot-api';

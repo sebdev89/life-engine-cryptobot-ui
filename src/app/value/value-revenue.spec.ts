@@ -71,7 +71,7 @@ function valueEvent(over: Partial<ValueEvent> = {}): ValueEvent {
     totalUnits: 100,
     contributions: [{ identityId: 'i1', displayName: 'Sebas', kind: 'HUMAN', role: 'reviewer', units: 100 }],
     projectId: 'p1',
-    taskId: 'KAN-100',
+    taskId: 'TASK-100',
     title: 'Fix login redirect',
     acceptedAt: '2026-09-30T10:00:00Z',
     createdAt: '2026-09-30T10:00:05Z',

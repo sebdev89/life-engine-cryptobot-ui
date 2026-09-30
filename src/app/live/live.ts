@@ -73,11 +73,11 @@ export interface LastAnswer {
 }
 
 /**
- * The hackathon demo path (KAN-576 / HK-8) as one live screen, without a console: the state
+ * The hackathon demo path (HK-8) as one live screen, without a console: the state
  * timeline of a proposal (polling every 2 s — the service exposes no SSE for proposals), the
  * policy/risk decision with rules and violations (incl. the mainnet 409), the signature with its
- * explorer link, the receipts with `verify` and the lineage DAG (KAN-393/394), the outbox + dead
- * letters of the proposal, the global DLQ with resolve/requeue (KAN-571), and — only when the
+ * explorer link, the receipts with `verify` and the lineage DAG, the outbox + dead
+ * letters of the proposal, the global DLQ with resolve/requeue, and — only when the
  * backend exposes `/demo/chaos` — the fault-injection control. No business feature is new here:
  * every button maps to an endpoint that already exists in `cryptobot-service` main.
  */
@@ -109,13 +109,13 @@ export class LiveOperation implements OnInit {
   readonly audit = signal<AuditEvent[]>([]);
   readonly events = signal<ProposalEvents | null>(null);
   readonly receiptKinds = signal<string[]>([]);
-  /** PROVE (KAN-784): EXECUTION receipt + its anchor batch + the inclusion proof folded here. */
+  /** PROVE: EXECUTION receipt + its anchor batch + the inclusion proof folded here. */
   readonly proof = signal<ProofInput>(NO_PROOF);
   readonly proofLink = computed(() => proofLinkOf(this.proof()));
   readonly loadError = signal<string | null>(null);
   /** Bumped when the row moved (status/updatedAt) so lineage + receipts reload — not on every tick. */
   readonly panelsVersion = signal(0);
-  /** `GET /proposals/{id}/lineage` (KAN-393) answers 404 on a service without the lineage API: the DAG is hidden, not errored. */
+  /** `GET /proposals/{id}/lineage` answers 404 on a service without the lineage API: the DAG is hidden, not errored. */
   readonly lineageAvailable = signal(true);
 
   // ---- liveness ----

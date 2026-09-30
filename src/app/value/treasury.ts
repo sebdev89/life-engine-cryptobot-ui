@@ -11,7 +11,7 @@ import { TREASURY_NOTE, explorerAddressUrl, formatMicroUsd, lamportsToSol, short
 
 export const DEFAULT_TREASURY_IDENTITY = 'cryptobot-001';
 
-/** `/value/treasury` (KAN-832): an accounting view of one AGENT identity; default `cryptobot-001`. */
+/** `/value/treasury`: an accounting view of one AGENT identity; default `cryptobot-001`. */
 @Component({
   selector: 'app-treasury',
   standalone: true,

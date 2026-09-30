@@ -14,7 +14,7 @@ import { actionError, attemptsOf, countLetters, letterKind, letterState, recover
 export const RECOVERY_POLL_MS = 5000;
 
 /**
- * `/recovery` (KAN-790): the dead-letter queue — what the system refused to guess about — with the
+ * `/recovery`: the dead-letter queue — what the system refused to guess about — with the
  * human decision on each letter (requeue / resolve, RUNTIME_ADMIN), the recoveries it produced and,
  * in the demo stack only, the fault injection that makes one happen.
  */

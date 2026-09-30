@@ -9,7 +9,7 @@ import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
 import { DISTRIBUTION_NOTE, REVENUE_SIMULATED_NOTE, lamportsToSol, revenueStatusClass } from './value-model';
 
-/** `/value/revenue` (KAN-832): revenue events, newest first, with the split the server computed. */
+/** `/value/revenue`: revenue events, newest first, with the split the server computed. */
 @Component({
   selector: 'app-revenue-list',
   standalone: true,

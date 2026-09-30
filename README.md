@@ -56,7 +56,7 @@ npx ng build      # production build
 
 ## Screenshots
 
-Not included yet: they are taken from the final recorded demo run and will live in `docs/screenshots/`.
+Captured against a live devnet stack and stored in `docs/screenshots/` (see the capture section below).
 
 ## More
 
@@ -65,9 +65,9 @@ explorer links), limitations and roadmap: the service README.
 
 ## License
 
-No license file yet: **pending the owner's decision**. Until one is added, all rights are reserved.
+Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 Sebastián Vito.
 
-## Screenshots de Proof of Value (KAN-831)
+## Screenshots de Proof of Value
 
 Captura manual (no corre en CI ni en `npm test`) de las pantallas `/value*`, `/live/:id` y `/proof/:root` contra un stack vivo:
 

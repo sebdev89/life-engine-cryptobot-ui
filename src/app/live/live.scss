@@ -1,4 +1,4 @@
-// Live-operation view (KAN-576), re-styled on the design tokens of src/styles.scss (KAN-783).
+// Live-operation view, re-styled on the design tokens of src/styles.scss.
 // Base atoms (.panel surface, .badge, .st-*) are global; this file only lays them out and
 // refines what is specific to this screen. Raw colors are not allowed here: tokens only.
 
@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  flex-wrap: wrap; // KAN-792: wraps at 390 px instead of widening the page
+  flex-wrap: wrap; // Wraps at 390 px instead of widening the page
   min-width: 0;
   font-family: var(--font-mono);
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// KAN-831 — manual Playwright capture of the Proof of Value screens against a LIVE stack.
+// Manual Playwright capture of the Proof of Value screens against a LIVE stack.
 // Not part of CI or `npm test`. The token comes from the environment, never from the repo.
 //
 //   UI_URL=http://127.0.0.1:4204 UI_TOKEN=<jwt> npm run screenshots

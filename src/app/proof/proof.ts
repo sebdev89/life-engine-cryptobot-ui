@@ -13,7 +13,7 @@ import { Check, anchorState, pickMember, shortHex, verificationChecks } from './
 const LIST_LIMIT = 50;
 
 /**
- * `/proof` and `/proof/:root` (KAN-788). The list is `GET /anchors`; the detail is
+ * `/proof` and `/proof/:root`. The list is `GET /anchors`; the detail is
  * `GET /anchors/{root}` (the batch + the caller's members with their Merkle siblings), the
  * inclusion path of one member folded in this browser (`merkle.proofPath`), and
  * `POST /anchors/{root}/verify` on demand — the server's check, shown next to ours.

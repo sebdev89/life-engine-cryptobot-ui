@@ -147,7 +147,7 @@ export interface PolicyViolation {
   message: string;
 }
 
-/** KAN-436: the graduated verdict of the deterministic engine over `(I, S, R_v)`; null on rows older than it. */
+/** The graduated verdict of the deterministic engine over `(I, S, R_v)`; null on rows older than it. */
 export interface PolicyVerdict {
   decision: 'ALLOW' | 'DENY' | 'ESCALATE';
   escalation: 'NONE' | 'REQUIRE_SECOND_AGENT' | 'REQUIRE_HUMAN_SIGNATURE';
@@ -167,9 +167,9 @@ export interface PolicyDecision {
   rulesApplied: string[];
   evaluatedAt: string;
   authorization?: PolicyVerdict | null;
-  /** The exact `(I, S)` the verdict was computed over (KAN-438); opaque to the UI. */
+  /** The exact `(I, S)` the verdict was computed over; opaque to the UI. */
   input?: Record<string, unknown> | null;
-  /** KAN-439 / KAN-572: the price consensus the price-integrity rules were evaluated on. */
+  /** The price consensus the price-integrity rules were evaluated on. */
   oracle?: OracleReading | null;
 }
 
@@ -236,7 +236,7 @@ export interface ApprovalRecord {
   by: string;
   at: string;
   note: string | null;
-  /** Timelock (KAN-438): the proposal cannot execute before this instant; null when rejected. */
+  /** Timelock: the proposal cannot execute before this instant; null when rejected. */
   executableAt?: string | null;
 }
 
@@ -254,7 +254,7 @@ export interface ExecutionRecord {
   lastValidBlockHeight?: number | null;
   reconciliationAttempts?: number;
   reconciledAt?: string | null;
-  /** KAN-571: idempotent retries under the same operationId (0 on the first attempt). */
+  /** Idempotent retries under the same operationId (0 on the first attempt). */
   retries?: number;
   previousSignature?: string | null;
 }
@@ -295,7 +295,7 @@ export interface ActionProposal {
   expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
-  /** KAN-403: idempotency key of the execution; set in the same commit that moves the row to EXECUTING. */
+  /** Idempotency key of the execution; set in the same commit that moves the row to EXECUTING. */
   operationId?: string | null;
 }
 
@@ -309,7 +309,7 @@ export interface AuditEvent {
   createdAt: string;
 }
 
-/** One row of the transactional outbox (KAN-403): written with the state change, published later. */
+/** One row of the transactional outbox: written with the state change, published later. */
 export interface OutboxEvent {
   id: string;
   aggregateType: string;
@@ -333,7 +333,7 @@ export interface ProposalEvents {
   deadLetters: DeadLetter[];
 }
 
-/** A dead letter (KAN-571 / KAN-501): what the system refuses to guess about; a human resolves it. */
+/** A dead letter: what the system refuses to guess about; a human resolves it. */
 export interface DeadLetter {
   id: string;
   source: 'OUTBOX' | 'RECONCILIATION';
@@ -416,7 +416,7 @@ export function createRebalance(
   }).then((r) => json<{ proposal: ActionProposal; audit: AuditEvent[] }>(r));
 }
 
-/** All proposals of the operator (every wallet), newest first — the picker of the live view (KAN-576). */
+/** All proposals of the operator (every wallet), newest first — the picker of the live view. */
 export function listAllProposals(limit = 20): Promise<ActionProposal[]> {
   return apiFetch(`/proposals?limit=${limit}`).then((r) => json<ActionProposal[]>(r));
 }
@@ -438,7 +438,7 @@ export function decideProposal(proposalId: string, decision: 'approve' | 'reject
 }
 
 /**
- * Second, explicit click. `operationId` is the idempotency key (KAN-403): the same key never
+ * Second, explicit click. `operationId` is the idempotency key: the same key never
  * produces a second transaction. It travels in the body (`ExecuteRequest`) because the
  * `Idempotency-Key` header is not in the service's CORS allow-list; the controller documents the
  * body as the fallback.
@@ -450,7 +450,7 @@ export function executeProposal(proposalId: string, operationId?: string | null)
   return apiFetch(`/proposals/${proposalId}/execute`, init).then((r) => json<ActionProposal>(r));
 }
 
-/** KAN-438: a human cancels an APPROVED proposal inside its timelock. */
+/** A human cancels an APPROVED proposal inside its timelock. */
 export function cancelProposal(proposalId: string, note?: string): Promise<ActionProposal> {
   return apiFetch(`/proposals/${proposalId}/cancel`, {
     method: 'POST',

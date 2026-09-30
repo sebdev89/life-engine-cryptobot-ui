@@ -14,7 +14,7 @@ export const NAV_LINKS: readonly { path: string; label: string; quiet?: boolean 
 ];
 
 /**
- * The one header every screen shares (KAN-787 → KAN-789 → KAN-792). Wide: brand + the links in one
+ * The one header every screen shares. Wide: brand + the links in one
  * row. Narrow (≤ 900 px): brand + a Menu button, and the links open as a panel under the header —
  * the header itself stays one line at 390 px.
  */

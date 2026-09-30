@@ -11,7 +11,7 @@ import { confirmedLamports, lamportsToSol, paidLabel, short, statusClass, status
 
 const LIST_LIMIT = 50;
 
-/** `/value` (KAN-828): the accepted outcomes recorded as ValueEvents, who contributed, and whether each is anchored on Solana. */
+/** `/value`: the accepted outcomes recorded as ValueEvents, who contributed, and whether each is anchored on Solana. */
 @Component({
   selector: 'app-value-list',
   standalone: true,

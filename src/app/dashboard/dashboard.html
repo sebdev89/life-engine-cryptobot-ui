@@ -34,7 +34,7 @@
           <p class="muted">The agent proposes. You approve. An isolated signer executes — on devnet, under policy, with a full audit trail.</p>
         </div>
         <div class="page__tools">
-          <!-- KAN-576: the demo path as one live screen (timeline, policy, signature, receipts, DLQ) -->
+          <!-- The demo path as one live screen (timeline, policy, signature, receipts, DLQ) -->
           <a class="live-link" [routerLink]="selected() ? ['/live', selected()!.id] : ['/live']" title="Operación en vivo: estados, política, firma, recibos y DLQ">● Operación en vivo</a>
           <button type="button" class="ghost" (click)="glossaryOpen.set(true)" aria-haspopup="dialog" title="Glosario de términos (Solana, DeFi, cripto, bots)">📖 Glosario</button>
           <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
@@ -323,11 +323,11 @@
               }
             </ol>
 
-            <!-- KAN-393: the decision receipts behind this proposal, as a DAG; click → verify live -->
+            <!-- The decision receipts behind this proposal, as a DAG; click → verify live -->
             <app-lineage [proposalId]="p.id" [version]="lineageVersion()" />
           </article>
         }
-        <!-- KAN-394: signed receipts of the selected proposal (or the wallet), each with its devnet anchor and explorer link -->
+        <!-- Signed receipts of the selected proposal (or the wallet), each with its devnet anchor and explorer link -->
         <app-receipts [walletId]="wallet()?.id ?? null" [proposalId]="selected()?.id ?? null" [version]="receiptsVersion()" />
       </section>
     }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { routes } from './app.routes';
 import { NAV_LINKS } from './shell/top-nav';
 
-describe('routes (KAN-792)', () => {
+describe('routes', () => {
   it('gives every screen its own tab title', () => {
     for (const r of routes.filter((x) => x.redirectTo === undefined)) {
       expect(typeof r.title, `route "${r.path}"`).toBe('string');
