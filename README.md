@@ -65,7 +65,7 @@ explorer links), limitations and roadmap: the service README.
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright 2026 Sebastián Vito.
+Apache License 2.0 — see [`LICENSE`](LICENSE). Copyright (c) 2026 Sebastian H. De Vito. See [`NOTICE`](NOTICE) for contributors.
 
 ## Screenshots de Proof of Value
 
