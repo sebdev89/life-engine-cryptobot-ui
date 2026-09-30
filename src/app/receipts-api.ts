@@ -77,6 +77,11 @@ export interface AnchorView {
   explorerUrl: string | null;
 }
 
+/** `GET /anchors/{root}`: one batch plus the caller's receipts in it (hash + Merkle siblings). */
+export interface AnchorDetail extends AnchorView {
+  myReceipts: { root: string; receiptHash: string; proof: string[] }[];
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     return throwHttp(res);
@@ -98,6 +103,10 @@ export function verifyReceipt(receiptHash: string): Promise<ReceiptVerification>
 
 export function listAnchors(limit = 5): Promise<AnchorView[]> {
   return apiFetch(`/anchors?limit=${limit}`).then((r) => json<AnchorView[]>(r));
+}
+
+export function getAnchor(root: string): Promise<AnchorDetail> {
+  return apiFetch(`/anchors/${root}`).then((r) => json<AnchorDetail>(r));
 }
 
 // ---- pure display helpers (tested) ----
