@@ -6,6 +6,7 @@ export const NAV_LINKS: readonly { path: string; label: string; quiet?: boolean 
   { path: '/tower', label: 'Control Tower' },
   { path: '/live', label: 'Execution' },
   { path: '/proof', label: 'Proof' },
+  { path: '/value', label: 'Value' },
   { path: '/recovery', label: 'Recovery' },
   { path: '/policies', label: 'Policies' },
   { path: '/demo', label: 'Demo Mode' },

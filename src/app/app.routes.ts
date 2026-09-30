@@ -22,6 +22,10 @@ const recovery = () => import('./recovery/recovery').then((m) => m.RecoveryView)
 // KAN-791: Policies — the rules a proposal was decided under, read from the proposal itself.
 const policies = () => import('./policies/policies').then((m) => m.PoliciesView);
 
+// KAN-828: Proof of Value — accepted outcomes, who contributed, and their Solana anchor.
+const value = () => import('./value/value-list').then((m) => m.ValueList);
+const valueDetail = () => import('./value/value-detail').then((m) => m.ValueDetail);
+
 export const routes: Routes = [
   { path: '', title: 'CryptoBot — trusted execution for financial AI agents', component: Landing, pathMatch: 'full' },
   { path: 'console', title: 'Console · CryptoBot', loadComponent: consoleView },
@@ -31,6 +35,8 @@ export const routes: Routes = [
   { path: 'tower', title: 'Control Tower · CryptoBot', loadComponent: tower },
   { path: 'proof', title: 'Proof · CryptoBot', loadComponent: proof },
   { path: 'proof/:root', title: 'Proof · CryptoBot', loadComponent: proof },
+  { path: 'value', title: 'Proof of Value · CryptoBot', loadComponent: value },
+  { path: 'value/:id', title: 'Value event · CryptoBot', loadComponent: valueDetail },
   { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: recovery },
   { path: 'policies', title: 'Policies · CryptoBot', loadComponent: policies },
   { path: '**', redirectTo: '' },

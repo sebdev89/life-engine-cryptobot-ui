@@ -1,0 +1,73 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <p class="eyebrow">Proof of Value</p>
+    <h1>Proof of Value</h1>
+    <p class="t-2 thesis">AI can create value. Proof of Value makes sure we remember who created it.</p>
+  </header>
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Value events are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (events(); as list) {
+      @if (!list.length) {
+        <section class="panel empty">
+          <p class="eyebrow">Nothing recorded</p>
+          <p class="t-2">No accepted outcomes recorded yet. A value event appears here only after a task passes all five acceptance stages.</p>
+        </section>
+      } @else {
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th>Outcome</th>
+                  <th>Task</th>
+                  <th>Accepted</th>
+                  <th>Status</th>
+                  <th>Contributors</th>
+                  <th class="num">Units</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ev of list; track ev.id) {
+                  <tr>
+                    <td><a [routerLink]="['/value', ev.id]">{{ ev.title }}</a></td>
+                    <td class="mono small">{{ ev.taskId }}</td>
+                    <td class="mono small t-2">{{ ev.acceptedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                    <td>
+                      <span class="st-badge st--{{ statusClass(ev.status) }}">{{ ev.status }}</span>
+                      @if (ev.anchor?.explorerUrl; as href) {
+                        <a class="small" [href]="href" target="_blank" rel="noopener">explorer ↗</a>
+                      }
+                    </td>
+                    <td>
+                      <ul class="chips">
+                        @for (c of ev.contributions; track c.identityId) {
+                          <li class="chip chip--{{ c.kind.toLowerCase() }}" [title]="c.displayName + ' · ' + c.role">
+                            <b>{{ c.kind }}</b> {{ c.displayName }} <span class="t-3">· {{ c.role }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </td>
+                    <td class="mono num">{{ ev.totalUnits }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+    } @else if (loading()) {
+      <p class="t-2 loading" aria-busy="true">Reading /value-events…</p>
+    }
+    <section class="panel pad notyet">
+      <p class="eyebrow">Not in V1</p>
+      <p class="t-2">Value scoring, payments and financial returns are not part of this version. Units record who contributed, not what anyone is owed.</p>
+    </section>
+  }
+</main>
