@@ -3,206 +3,233 @@
     <div>
       <a routerLink="/" class="back">← Dashboard</a>
       <h1>Demo Mode</h1>
-      <p class="t-2">
-        One click, the real stack: every state below is an API answer, every
-        wait is one the service imposes.
-      </p>
+      <p class="t-2">One click, the real stack: every state below is an API answer, every wait is one the service imposes.</p>
     </div>
     @if (run().startedAt !== null) {
-    <div class="demo__clock" aria-live="polite">
-      <span
-        class="st-badge st--{{ run().phase === 'verified' ? 'done' : run().phase === 'running' ? 'active' : run().phase === 'failed' ? 'failed' : 'pending' }}"
-        >{{ run().phase === 'verified' ? 'VERIFIED' : run().phase }}</span
-      >
-      <span class="mono tnum demo__elapsed">{{ elapsed() }}</span>
-    </div>
+      <div class="demo__clock" aria-live="polite">
+        <span class="st-badge st--{{ phaseClass() }}">{{ phaseLabel() }}</span>
+        <span class="mono tnum demo__elapsed">{{ elapsed() }}</span>
+      </div>
     }
   </header>
 
   @if (!signedIn()) {
-  <p class="err" role="alert">
-    No session. Open this page with <code>?token=…</code> (a demo JWT with
-    RUNTIME_ADMIN) or sign in from the <a routerLink="/">dashboard</a>.
-  </p>
-  } @if (signedIn()) {
-  <p class="wallet t-2">
-    @if (wallet(); as w) { wallet <span class="mono">{{ w.address }}</span> · {{
-    w.cluster }} · reused on every run } @else if (needsAddress()) {
-    <label
-      >No wallet registered for this operator. Demo wallet (devnet, the one the
-      signer controls):
-      <input
-        class="mono"
-        [value]="address()"
-        (input)="onAddress($event)"
-        placeholder="base58 address"
-        size="46"
-      />
-    </label>
-    }
-  </p>
+    <p class="err" role="alert">
+      No session. Open this page with <code>?token=…</code> (a demo JWT with RUNTIME_ADMIN) or sign in from the <a routerLink="/">dashboard</a>.
+    </p>
+  }
+
+  @if (signedIn()) {
+    <p class="wallet t-2">
+      @if (wallet(); as w) {
+        wallet <span class="mono">{{ w.address }}</span> · {{ w.cluster }} · reused on every run
+      } @else if (needsAddress()) {
+        <label
+          >No wallet registered for this operator. Demo wallet (devnet, the one the signer controls):
+          <input class="mono" [value]="address()" (input)="onAddress($event)" placeholder="base58 address" size="46" />
+        </label>
+      }
+    </p>
   }
 
   <section class="scenarios">
-    <button
-      type="button"
-      class="scenario scenario--a"
-      (click)="start()"
-      [disabled]="runner.running() || !signedIn() || (needsAddress() && !address())"
-    >
+    <button type="button" class="scenario scenario--a" (click)="start('success')" [disabled]="!canStart()">
       <span class="eyebrow">Scenario A</span>
       <span class="scenario__title">RUN TRUSTED EXECUTION</span>
-      <span class="scenario__what"
-        >intent → policy → approval → timelock → sign → Solana → receipt →
-        Merkle proof</span
-      >
+      <span class="scenario__what">intent → policy → approval → timelock → sign → Solana → receipt → Merkle proof</span>
     </button>
-    <button
-      type="button"
-      class="scenario scenario--b"
-      disabled
-      title="Scenario B (failure → dead letter → retry → idempotency check) lands with KAN-786"
-    >
+    <button type="button" class="scenario scenario--b" (click)="start('failure')" [disabled]="!canStart()">
       <span class="eyebrow">Scenario B</span>
       <span class="scenario__title">SIMULATE FAILURE</span>
-      <span class="scenario__what">coming next · KAN-786</span>
+      <span class="scenario__what">RPC down at broadcast → dead letter → retry → idempotency check → recovered, one transaction</span>
     </button>
   </section>
 
-  @if (run().phase === 'running') {
-  <div class="waiting panel" aria-live="polite">
-    <span class="st-dot st--active" aria-hidden="true"></span>
-    @if (run().waiting; as w) {
-    <span>waiting on <strong>{{ w.what }}</strong></span>
-    @if (countdown() !== null) {
-    <span class="mono tnum waiting__count">{{ countdown() }} s</span> } } @else
-    {
-    <span>calling the control plane…</span>
-    }
-    <button type="button" class="ghost" (click)="cancel()">Stop</button>
-  </div>
-  } @if (run().error; as e) {
-  <div class="err panel" role="alert">
-    <strong
-      >{{ e.status ? 'HTTP ' + e.status : 'Stopped' }}{{ e.code ? ' · ' + e.code
-      : '' }}</strong
-    >
-    — {{ e.message }} @if (run().proposal; as p) {
-    <a [routerLink]="['/live', p.id]">open the proposal in /live →</a> }
-  </div>
-  } @if (run().phase === 'verified') {
-  <section class="panel result">
-    <div class="result__head">
-      <span class="result__badge">VERIFIED</span>
-      <span class="t-2"
-        >in <strong class="mono">{{ elapsed() }}</strong> end to end</span
-      >
-    </div>
-    <dl class="facts">
-      @if (run().proposal; as p) {
-      <dt>transaction</dt>
-      <dd class="mono">
-        @if (explorer(); as href) {
-        <a [href]="href" target="_blank" rel="noopener"
-          >{{ p.execution?.signature }} ↗</a
-        >
-        } @else { {{ p.execution?.signature }} }
-        <span class="t-3"
-          >· {{ p.execution?.confirmationStatus }} · {{ p.cluster }}</span
-        >
-      </dd>
-      <dt>operationId</dt>
-      <dd class="mono">{{ run().operationId }}</dd>
-      } @if (run().receipt; as r) {
-      <dt>receipt</dt>
-      <dd class="mono">
-        {{ r.receiptHash }}
-        <span class="t-3"
-          >· verify valid, signature valid ({{ run().receiptVerification?.keyId
-          }})</span
-        >
-      </dd>
-      } @if (run().receiptVerification?.anchor; as a) {
-      <dt>inclusion proof</dt>
-      <dd>
-        <span class="badge badge--ok">proofValid</span>
-        <span class="mono"
-          >{{ a.proof.length }} siblings → root {{ a.root }}</span
-        >
-        @if (run().proof.inclusion === true) {
-        <span class="t-3">· re-folded in this browser ✓</span> }
-        <ol class="proof mono">
-          @for (s of a.proof; track $index) {
-          <li>{{ s }}</li>
-          }
-        </ol>
-      </dd>
-      <dt>anchor</dt>
-      <dd class="mono">
-        @if (anchorExplorer(); as href) {
-        <a [href]="href" target="_blank" rel="noopener">memo tx {{ a.tx }} ↗</a>
-        } @else { memo tx {{ a.tx }} }
-        <span class="t-3">· {{ a.status }} · slot {{ a.slot }}</span>
-      </dd>
-      } @if (run().anchorVerification; as av) {
-      <dt>batch verify</dt>
-      <dd class="mono">
-        valid={{ av.valid }} · rootMatches={{ av.rootMatches }} · proofsValid={{
-        av.proofsValid }} · memoMatches={{ av.memoMatches }} · onChain.found={{
-        av.onChain?.found }}
-      </dd>
-      }
-    </dl>
-    @if (run().proposal; as p) {
-    <a class="t-2" [routerLink]="['/live', p.id]"
-      >full execution detail in /live →</a
-    >
-    }
-  </section>
-  } @if (run().steps.length) {
-  <div class="grid">
-    <section class="panel">
-      <div class="panel__head">
-        <h2>Pipeline</h2>
-        <span class="t-3 mono">same model as /live · 8 stages</span>
-      </div>
-      @if (stages().length) {
-      <app-execution-detail [stages]="stages()" />
-      } @else {
-      <p class="t-3">The pipeline starts with the intent.</p>
-      }
-    </section>
-
-    <section class="panel">
-      <div class="panel__head">
-        <h2>Run</h2>
-        <span class="t-3 mono">{{ run().trace.length }} calls</span>
-      </div>
-      <ol class="runsteps">
-        @for (s of run().steps; track s.id) {
-        <li class="runstep st--{{ s.state }}">
-          <span class="runstep__marker" aria-hidden="true">{{ glyph(s) }}</span>
-          <div>
-            <div class="runstep__title">
-              <strong>{{ s.label }}</strong>
-              <span class="t-3 mono tnum">{{ took(s) }}</span>
-            </div>
-            @if (s.detail) {
-            <div class="runstep__detail mono">{{ s.detail }}</div>
-            }
-          </div>
+  @if (run().scenario === 'failure') {
+    <ol class="story" aria-label="Failure and recovery">
+      @for (n of story(); track n.step) {
+        <li class="story__node st--{{ n.state }}">
+          <span class="st-dot" aria-hidden="true"></span>
+          <span>{{ n.label }}</span>
         </li>
+      }
+    </ol>
+    @if (run().operationId) {
+      <p class="opid t-2">
+        operationId <span class="mono">{{ run().operationId }}</span>
+        @if (run().phase === 'verified') {
+          → after recovery <span class="mono">{{ run().proposal?.operationId }}</span>
+          @if (sameOperation()) {
+            <span class="badge badge--ok">same key</span>
+          } @else {
+            <span class="badge badge--err">changed</span>
+          }
         }
-      </ol>
-      <details class="trace">
-        <summary>API calls</summary>
-        <ol class="mono">
-          @for (t of run().trace; track $index) {
-          <li>{{ t }}</li>
+      </p>
+    }
+  }
+
+  @if (run().phase === 'running') {
+    <div class="waiting panel" aria-live="polite">
+      <span class="st-dot st--active" aria-hidden="true"></span>
+      @if (run().waiting; as w) {
+        <span>waiting on <strong>{{ w.what }}</strong></span>
+        @if (countdown() !== null) {
+          <span class="mono tnum waiting__count">{{ countdown() }} s</span>
+        }
+      } @else {
+        <span>calling the control plane…</span>
+      }
+      <button type="button" class="ghost" (click)="cancel()">Stop</button>
+    </div>
+  }
+
+  @if (run().error; as e) {
+    <div class="err panel" role="alert">
+      <strong>{{ e.status ? 'HTTP ' + e.status : 'Stopped' }}{{ e.code ? ' · ' + e.code : '' }}</strong> — {{ e.message }}
+      @if (run().proposal; as p) {
+        <a [routerLink]="['/live', p.id]">open the proposal in /live →</a>
+      }
+    </div>
+  }
+
+  @if (run().phase === 'verified') {
+    <section class="panel result">
+      <div class="result__head">
+        @if (run().scenario === 'failure') {
+          <span class="result__badge">RECOVERED · FINALIZED</span>
+          <span class="t-2">in <strong class="mono">{{ elapsed() }}</strong> · <strong>1 transaction on chain</strong> · no duplicate execution</span>
+        } @else {
+          <span class="result__badge">VERIFIED</span>
+          <span class="t-2">in <strong class="mono">{{ elapsed() }}</strong> end to end</span>
+        }
+      </div>
+      <dl class="facts">
+        @if (run().proposal; as p) {
+          <dt>{{ run().scenario === 'failure' ? 'the transaction' : 'transaction' }}</dt>
+          <dd class="mono">
+            @if (explorer(); as href) {
+              <a [href]="href" target="_blank" rel="noopener">{{ p.execution?.signature }} ↗</a>
+            } @else {
+              {{ p.execution?.signature }}
+            }
+            <span class="t-3">· {{ p.execution?.confirmationStatus }} · {{ p.cluster }}</span>
+          </dd>
+          <dt>operationId</dt>
+          <dd class="mono">{{ run().operationId }}</dd>
+        }
+        @if (run().scenario === 'failure') {
+          @if (previousSignature(); as prev) {
+            <dt>attempt 1</dt>
+            <dd class="mono">
+              @if (previousExplorer(); as href) {
+                <a [href]="href" target="_blank" rel="noopener">{{ prev }} ↗</a>
+              } @else {
+                {{ prev }}
+              }
+              <span class="t-3">· signed, never broadcast (RPC down) · superseded by the retry (retries={{ run().proposal?.execution?.retries }})</span>
+            </dd>
+          }
+          @if (run().deadLetter; as dl) {
+            <dt>dead letter</dt>
+            <dd class="mono">
+              {{ dl.id }} <span class="t-3">· {{ dl.payload['kind'] || dl.source }} · {{ dl.reason }} · {{ dl.outcome }} by {{ dl.resolvedBy }}</span>
+            </dd>
+          }
+          @if (run().duplicate; as d) {
+            <dt>idempotency check</dt>
+            <dd>
+              <span class="badge badge--ok">HTTP 409</span> <strong>duplicate prevented</strong>
+              <span class="t-3 mono">· second requeue: {{ d.message }}</span>
+            </dd>
+          }
+        }
+        @if (run().receipt; as r) {
+          <dt>receipt</dt>
+          <dd class="mono">{{ r.receiptHash }} <span class="t-3">· verify valid, signature valid ({{ run().receiptVerification?.keyId }})</span></dd>
+        }
+        @if (run().receiptVerification?.anchor; as a) {
+          <dt>inclusion proof</dt>
+          <dd>
+            <span class="badge badge--ok">proofValid</span>
+            <span class="mono">{{ a.proof.length }} siblings → root {{ a.root }}</span>
+            @if (run().proof.inclusion === true) {
+              <span class="t-3">· re-folded in this browser ✓</span>
+            }
+            <ol class="proof mono">
+              @for (s of a.proof; track $index) {
+                <li>{{ s }}</li>
+              }
+            </ol>
+          </dd>
+          <dt>anchor</dt>
+          <dd class="mono">
+            @if (anchorExplorer(); as href) {
+              <a [href]="href" target="_blank" rel="noopener">memo tx {{ a.tx }} ↗</a>
+            } @else {
+              memo tx {{ a.tx }}
+            }
+            <span class="t-3">· {{ a.status }} · slot {{ a.slot }}</span>
+          </dd>
+        }
+        @if (run().anchorVerification; as av) {
+          <dt>batch verify</dt>
+          <dd class="mono">
+            valid={{ av.valid }} · rootMatches={{ av.rootMatches }} · proofsValid={{ av.proofsValid }} · memoMatches={{ av.memoMatches }} · onChain.found={{
+              av.onChain?.found
+            }}
+          </dd>
+        }
+      </dl>
+      @if (run().proposal; as p) {
+        <a class="t-2" [routerLink]="['/live', p.id]">full execution detail in /live →</a>
+      }
+    </section>
+  }
+
+  @if (run().steps.length) {
+    <div class="grid">
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Pipeline</h2>
+          <span class="t-3 mono">same model as /live · 8 stages</span>
+        </div>
+        @if (stages().length) {
+          <app-execution-detail [stages]="stages()" />
+        } @else {
+          <p class="t-3">The pipeline starts with the intent.</p>
+        }
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Run</h2>
+          <span class="t-3 mono">{{ run().trace.length }} calls</span>
+        </div>
+        <ol class="runsteps">
+          @for (s of run().steps; track s.id) {
+            <li class="runstep st--{{ s.state }}">
+              <span class="runstep__marker" aria-hidden="true">{{ glyph(s) }}</span>
+              <div>
+                <div class="runstep__title">
+                  <strong>{{ s.label }}</strong> <span class="t-3 mono tnum">{{ took(s) }}</span>
+                </div>
+                @if (s.detail) {
+                  <div class="runstep__detail mono">{{ s.detail }}</div>
+                }
+              </div>
+            </li>
           }
         </ol>
-      </details>
-    </section>
-  </div>
+        <details class="trace">
+          <summary>API calls</summary>
+          <ol class="mono">
+            @for (t of run().trace; track $index) {
+              <li>{{ t }}</li>
+            }
+          </ol>
+        </details>
+      </section>
+    </div>
   }
 </main>

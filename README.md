@@ -89,6 +89,15 @@ pipeline is the `/live` component fed by the run. Waits the service imposes are 
 policy `COOLDOWN` (60 s by default after an execution; the blocked intent stays in the history) is read
 from the violation message and counted down before the intent is created again.
 
+**Scenario B · SIMULATE FAILURE (KAN-786)**, the order of `e2e-devnet.sh --chaos rpc-down`: same intent →
+approve → timelock, then `PUT /demo/chaos {"broadcast":"rpc-down","shots":-1}` → `execute` (signed, the
+broadcast is lost: `EXECUTION_BROADCAST_UNCERTAIN`) → the reconciler gets no verdict and dead-letters
+(`GET /dead-letters?proposalId=`; 3 attempts × interval + grace ≈ 90 s with the defaults, shown as it
+happens) → `DELETE /demo/chaos` → `POST /dead-letters/{id}/requeue` → a second requeue, whose **409** is shown
+as *IDEMPOTENCY CHECK: duplicate prevented* → the retry lands under the **same `operationId`** with a new
+signature (`previousSignature` = attempt 1) → receipt/anchor/verify as in A. The fault is always disarmed on
+the way out, also when the run fails. Needs `cryptobot.chaos.enabled=true` and a RUNTIME_ADMIN token.
+
 Open it with a demo token: `scripts/demo/ui-url.sh --path /demo` (cryptobot-service repo). `config.js`
 may carry `demoWallet` (`UI_DEMO_WALLET` in the container); otherwise the page asks for the address once.
 
