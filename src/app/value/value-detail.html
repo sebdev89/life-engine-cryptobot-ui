@@ -74,7 +74,7 @@
           <table class="grid">
             <thead><tr><th>Who</th><th>Kind</th><th>Role</th><th class="num">Units</th></tr></thead>
             <tbody>
-              @for (c of ev.contributions; track c.identityId) {
+              @for (c of ev.contributions; track $index) {
                 <tr>
                   <td><a [routerLink]="['/value/identities', c.identityId]">{{ c.displayName }}</a> <span class="mono small t-3">{{ c.identityId }}</span></td>
                   <td><span class="chip chip--{{ c.kind.toLowerCase() }}"><b>{{ c.kind }}</b></span></td>
@@ -193,7 +193,7 @@
 
         <section class="panel pad" data-section="future">
           <h2>Future participation</h2>
-          <p class="t-2">Contribution Units: {{ ev.totalUnits }} — V6. Units are a record of contribution, not a promise of payment or return.</p>
+          <p class="t-2">Contribution Units: {{ ev.totalUnits }}. Units are a record of contribution, not a promise of payment or return.</p>
           @if (ev.revenueShares?.length) {
             <h3 class="small">Revenue shares</h3>
             <ul class="shares" data-testid="revenue-shares">

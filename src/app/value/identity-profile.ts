@@ -2,7 +2,7 @@ import { Component, effect, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
-import { IdentityProfile as Profile, getIdentity } from '../value-events-api';
+import { IdentityProfile as Profile, getIdentity, payoutCount } from '../value-events-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
@@ -25,6 +25,7 @@ export class IdentityProfilePage {
   readonly profile = signal<Profile | null>(null);
   readonly explorerAddressUrl = explorerAddressUrl;
   readonly sol = lamportsToSol;
+  readonly payoutCount = payoutCount;
   readonly anchorClass = (s: string) => statusClass(s === 'ANCHORED' ? 'ANCHORED' : 'RECORDED');
 
   constructor() {

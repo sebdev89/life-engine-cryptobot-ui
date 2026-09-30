@@ -184,6 +184,12 @@
   gap: 4px;
 }
 
+.shares li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
 .simulated-banner {
   margin-bottom: var(--space-3, 12px);
 }

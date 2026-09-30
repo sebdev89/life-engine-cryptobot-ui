@@ -66,3 +66,17 @@ explorer links), limitations and roadmap: the service README.
 ## License
 
 No license file yet: **pending the owner's decision**. Until one is added, all rights are reserved.
+
+## Screenshots de Proof of Value (KAN-831)
+
+Captura manual (no corre en CI ni en `npm test`) de las pantallas `/value*`, `/live/:id` y `/proof/:root` contra un stack vivo:
+
+```bash
+npx playwright install chromium          # una vez
+UI_URL=http://127.0.0.1:4204 UI_TOKEN=<jwt> npm run screenshots
+```
+
+`UI_TOKEN` sólo por entorno (nunca en el repo; en el demo se acuña con `scripts/demo/ui-url.sh` de cryptobot-service). Elige los ids reales desde la API
+(último ValueEvent ANCHORED con distribución y revenue, último proposal, su root). Salida: `docs/screenshots/*.{desktop,mobile}.png` (1440×900 y 390×844,
+página completa, paleta PNG8 si pasa de 300 KB). Opcionales: `API_URL`, `OUT_DIR`, `DUMP_DIR` (texto visible por página), `UI_DIST=dist/cryptobot-ui/browser`
+(sirve un build local bajo el origen de `UI_URL`, para probar un cambio sin mergear contra el backend real).
