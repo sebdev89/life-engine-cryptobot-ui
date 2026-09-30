@@ -105,7 +105,8 @@ export interface IdentityRewards {
   confirmedLamports: number;
   /** V7 (KAN-832): confirmed lamports that came from revenue events; absent on an older backend. */
   revenueLamports?: number | null;
-  payouts: Payout[];
+  /** The real backend returns the COUNT of confirmed payouts (`"payouts": 5`); older fixtures carried the rows. */
+  payouts: number | Payout[];
 }
 
 export interface EventKnowledgeAsset {
@@ -326,4 +327,9 @@ export function createRevenueEvent(req: RevenueEventRequest): Promise<RevenueEve
 
 export function getTreasury(identityId: string): Promise<Treasury> {
   return apiFetch(`/treasury/${encodeURIComponent(identityId)}`).then((r) => json<Treasury>(r));
+}
+
+/** Payout count of an identity's rewards, whether the API sent the count or the rows. */
+export function payoutCount(payouts: number | Payout[] | null | undefined): number {
+  return Array.isArray(payouts) ? payouts.length : (payouts ?? 0);
 }

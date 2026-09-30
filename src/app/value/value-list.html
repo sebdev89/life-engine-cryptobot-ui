@@ -59,7 +59,7 @@
                     </td>
                     <td>
                       <ul class="chips">
-                        @for (c of ev.contributions; track c.identityId) {
+                        @for (c of ev.contributions; track $index) {
                           <li class="chip chip--{{ c.kind.toLowerCase() }}" [title]="c.displayName + ' · ' + c.role">
                             <b>{{ c.kind }}</b> <a [routerLink]="['/value/identities', c.identityId]">{{ c.displayName }}</a> <span class="t-3">· {{ c.role }}</span>
                           </li>

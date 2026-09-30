@@ -172,7 +172,7 @@ describe('ValueDetail (/value/:id)', () => {
     expect(t).toContain('No compute receipts attached');
     expect(t).toContain('Compute cost is recorded separately from economic value.');
     expect(t).toContain('No immediate reward distributed yet');
-    expect(t).toContain('Contribution Units: 100 — V6');
+    expect(t).toContain('Contribution Units: 100. Units');
     expect(t).toContain('NOT verified');
   });
 
@@ -529,6 +529,13 @@ describe('IdentityProfilePage rewards (V5)', () => {
     const el: HTMLElement = (await mount(IdentityProfilePage, { id: 'i1' })).nativeElement;
     expect(el.querySelector('[data-testid="rewards-sol"]')?.textContent).toContain('0.0250 SOL');
     expect(el.querySelector('[data-testid="rewards-count"]')?.textContent?.trim()).toBe('1');
+  });
+
+  it('KAN-831: the real backend sends the payout COUNT (rewards.payouts is a number), not the rows', async () => {
+    route({ '/identities/i1': json({ ...profile({ id: 'i1' }), rewards: { confirmedLamports: 5_600_000, revenueLamports: 3_600_000, payouts: 5 } }) });
+    const el: HTMLElement = (await mount(IdentityProfilePage, { id: 'i1' })).nativeElement;
+    expect(el.querySelector('[data-testid="rewards-count"]')?.textContent?.trim()).toBe('5');
+    expect(el.querySelector('[data-testid="rewards-total"]')?.textContent).toContain('0.0092 SOL');
   });
 
   it('says so when there are no rewards', async () => {

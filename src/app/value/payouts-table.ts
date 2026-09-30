@@ -13,7 +13,7 @@ import { explorerAddressUrl, lamportsToSol, payoutClass, short, shortWallet, txE
       <table class="grid" data-testid="payouts">
         <thead><tr><th>Contributor</th><th>Wallet</th><th class="num">SOL</th><th>Status</th><th>Transaction</th></tr></thead>
         <tbody>
-          @for (p of payouts(); track p.identityId) {
+          @for (p of payouts(); track $index) {
             <tr>
               <td><a [routerLink]="['/value/identities', p.identityId]">{{ p.displayName }}</a></td>
               <td>
