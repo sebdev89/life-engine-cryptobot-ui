@@ -121,6 +121,14 @@ A source that answers 403 (dead letters need RUNTIME_ADMIN) shows `—` with the
 shown: the service counts it only in Prometheus (`duplicate_trade_suppressed_total`), no endpoint or audit event carries it.
 Without a session the page asks for a token instead of failing.
 
+## Proof view (KAN-788)
+
+`/proof` lists the anchor batches (`GET /anchors?limit=50`: root, status, receipts, slot, memo tx). `/proof/:root[?receipt=]` reads
+`GET /anchors/{root}` (the batch and the caller's members with their siblings), folds the chosen member to the root in the
+browser (`merkle.proofPath`: leaf, every `L`/`R` sibling and the node it produced) and, on **Verify on server**, shows
+`POST /anchors/{root}/verify` check by check (`rootMatches`, `countMatches`, `proofsValid`, `memoMatches`, `onChain.found`, `valid`).
+PROVE in `/live/:id` and the result of `/demo` link here with the EXECUTION receipt preselected; so does the proof column of `/tower`.
+
 ## Glossary
 
 `src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the

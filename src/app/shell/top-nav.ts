@@ -19,6 +19,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       <nav class="nav__links" aria-label="Primary">
         <a routerLink="/tower" routerLinkActive="is-active">Control Tower</a>
         <a routerLink="/live" routerLinkActive="is-active">Execution</a>
+        <a routerLink="/proof" routerLinkActive="is-active">Proof</a>
         <a routerLink="/demo" routerLinkActive="is-active">Demo Mode</a>
         <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="nav__quiet">Console</a>
       </nav>

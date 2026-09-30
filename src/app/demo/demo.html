@@ -170,6 +170,9 @@
               memo tx {{ a.tx }}
             }
             <span class="t-3">· {{ a.status }} · slot {{ a.slot }}</span>
+            @if (proofLink(); as pl) {
+              · <a [routerLink]="['/proof', pl.root]" [queryParams]="pl.receipt ? { receipt: pl.receipt } : {}">open in Proof view →</a>
+            }
           </dd>
         }
         @if (run().anchorVerification; as av) {
@@ -195,7 +198,7 @@
           <span class="t-3 mono">same model as /live · 8 stages</span>
         </div>
         @if (stages().length) {
-          <app-execution-detail [stages]="stages()" />
+          <app-execution-detail [stages]="stages()" [proofLink]="proofLink()" />
         } @else {
           <p class="t-3">The pipeline starts with the intent.</p>
         }

@@ -154,7 +154,13 @@
                           <span class="st--{{ pv.state }} inline-st">
                             <span class="st-dot" aria-hidden="true"></span>
                             @if (pv.state === 'done') {
-                              root <span class="mono">{{ shortRoot(r.proofRoot) }}</span>
+                              @if (r.proofRoot) {
+                                <a class="mono" [routerLink]="['/proof', r.proofRoot]" [queryParams]="r.proofReceipt ? { receipt: r.proofReceipt } : {}"
+                                  >root {{ shortRoot(r.proofRoot) }}</a
+                                >
+                              } @else {
+                                anchored
+                              }
                             } @else {
                               {{ pv.state === 'active' ? 'anchoring…' : pv.state }}
                             }
