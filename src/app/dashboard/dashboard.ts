@@ -31,6 +31,7 @@ import { clearCryptobotSession, getAccessToken, setCryptobotSession } from '../s
 import { Glossary } from '../glossary/glossary';
 import { Lineage } from '../lineage/lineage';
 import { Receipts } from '../receipts/receipts';
+import { TopNav } from '../shell/top-nav';
 
 interface RuntimeEventFrame {
   type: string;
@@ -59,7 +60,7 @@ const QUICK_PROMPTS = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, SlicePipe, RouterLink, Glossary, Lineage, Receipts],
+  imports: [FormsModule, SlicePipe, RouterLink, Glossary, Lineage, Receipts, TopNav],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

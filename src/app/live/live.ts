@@ -19,6 +19,7 @@ import { IntelligenceReceipt, listProposalReceipts } from '../receipts-api';
 import { loadProof } from './proof-loader';
 import { proofLinkOf } from '../proof/proof-model';
 import { ExecutionDetail } from './execution-detail/execution-detail';
+import { TopNav } from '../shell/top-nav';
 import {
   CHAOS_MODES,
   ChaosMode,
@@ -83,7 +84,7 @@ export interface LastAnswer {
 @Component({
   selector: 'app-live-operation',
   standalone: true,
-  imports: [RouterLink, SlicePipe, Lineage, Receipts, ExecutionDetail],
+  imports: [RouterLink, SlicePipe, Lineage, Receipts, ExecutionDetail, TopNav],
   templateUrl: './live.html',
   styleUrl: './live.scss',
 })
@@ -195,7 +196,7 @@ export class LiveOperation implements OnInit {
 
   async ngOnInit(): Promise<void> {
     if (!getAccessToken()) {
-      await this.router.navigateByUrl('/');
+      await this.router.navigateByUrl('/console');
       return;
     }
     await Promise.all([this.loadProposals(), this.refreshDlq(), this.probeChaos()]);
@@ -500,7 +501,7 @@ export class LiveOperation implements OnInit {
   private handleAuth(e: unknown): void {
     if (e instanceof AuthRequiredError) {
       this.stopTimer();
-      void this.router.navigateByUrl('/');
+      void this.router.navigateByUrl('/console');
     }
   }
 }

@@ -1,7 +1,7 @@
 <main class="demo">
+  <app-top-nav />
   <header class="demo__header">
     <div>
-      <a routerLink="/" class="back">← Dashboard</a>
       <h1>Demo Mode</h1>
       <p class="t-2">One click, the real stack: every state below is an API answer, every wait is one the service imposes.</p>
     </div>
@@ -14,9 +14,7 @@
   </header>
 
   @if (!signedIn()) {
-    <p class="err" role="alert">
-      No session. Open this page with <code>?token=…</code> (a demo JWT with RUNTIME_ADMIN) or sign in from the <a routerLink="/">dashboard</a>.
-    </p>
+    <app-token-gate why="Demo Mode drives the real stack: it needs an operator token with RUNTIME_ADMIN (the failure scenario requeues a dead letter)." (saved)="onSignedIn()" />
   }
 
   @if (signedIn()) {

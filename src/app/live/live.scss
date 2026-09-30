@@ -35,18 +35,6 @@
   }
 }
 
-.back {
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--text);
-  }
-}
 
 .live__status {
   display: flex;

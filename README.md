@@ -49,8 +49,8 @@ Covers:
 
 `/live[/:proposalId]` (`src/app/live/`) shows the demo path of
 `Products/CryptoBot-Hackathon-Demo-Path-2026-09-20.md` §2 as one screen, without a console.
-The root is now a router shell (`app.ts` → `<router-outlet>`); the dashboard moved to
-`src/app/dashboard/` unchanged, plus a **● Operación en vivo** link in its header. The live
+The root is now a router shell (`app.ts` → `<router-outlet>`); the dashboard lives in
+`src/app/dashboard/` and is served at `/console` since KAN-789, plus a **● Operación en vivo** link in its header. The live
 route is lazy, so the dashboard's initial bundle does not pay for it.
 
 What it shows, and where each piece comes from (nothing is computed client-side beyond the
@@ -128,6 +128,15 @@ Without a session the page asks for a token instead of failing.
 browser (`merkle.proofPath`: leaf, every `L`/`R` sibling and the node it produced) and, on **Verify on server**, shows
 `POST /anchors/{root}/verify` check by check (`rootMatches`, `countMatches`, `proofsValid`, `memoMatches`, `onChain.found`, `valid`).
 PROVE in `/live/:id` and the result of `/demo` link here with the EXECUTION receipt preselected; so does the proof column of `/tower`.
+
+## Landing and navigation (KAN-789)
+
+`/` is the public landing (no session, no API call, eager in the main bundle): hero, the problem in three lines, the
+8-stage strip, the failure scene in one line and two CTAs — **Watch Trusted Execution** → `/demo`, **Open Control Tower** →
+`/tower`. `/?token=` is consumed like on any route (`main.ts` → `session.ts`), so the CTA reaches `/demo` signed in; without a
+token `/demo` (and `/tower`, `/proof`) ask for one in a field (`app-token-gate`). The operator dashboard moved to `/console`
+(lazy); every screen shares `app-top-nav` (Control Tower · Execution · Proof · Demo Mode · Console). The logo is
+`public/brand/cryptobot-mark.svg`, copied from `cryptobot-service/docs/brand/`.
 
 ## Glossary
 

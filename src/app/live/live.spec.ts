@@ -380,7 +380,7 @@ describe('LiveOperation', () => {
     fixture.componentRef.setInput('pollMs', 0);
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(nav).toHaveBeenCalledWith('/');
+    expect(nav).toHaveBeenCalledWith('/console');
     expect(calls.length).toBe(0);
   });
 

@@ -12,7 +12,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   template: `
     <header class="nav">
       <a routerLink="/" class="nav__brand" aria-label="CryptoBot home">
-        <span class="nav__mark" aria-hidden="true"></span>
+        <img class="nav__mark" src="/brand/cryptobot-mark.svg" alt="" width="22" height="22" />
         <span>CryptoBot</span>
         <span class="nav__tag">trusted agent execution</span>
       </a>
@@ -21,7 +21,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <a routerLink="/live" routerLinkActive="is-active">Execution</a>
         <a routerLink="/proof" routerLinkActive="is-active">Proof</a>
         <a routerLink="/demo" routerLinkActive="is-active">Demo Mode</a>
-        <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" class="nav__quiet">Console</a>
+        <a routerLink="/console" routerLinkActive="is-active" class="nav__quiet">Console</a>
       </nav>
     </header>
   `,
@@ -46,10 +46,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       text-decoration: none;
     }
     .nav__mark {
-      width: 12px;
-      height: 12px;
-      border-radius: 2px;
-      background: var(--chain-gradient);
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
     }
     .nav__tag {
       font-family: var(--font-mono);
