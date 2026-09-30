@@ -1,0 +1,50 @@
+<main class="landing">
+  <app-top-nav />
+
+  <section class="hero" aria-labelledby="hero-title">
+    <p class="eyebrow hero__eyebrow">Trusted agent execution · Solana</p>
+    <h1 id="hero-title" class="hero__title">
+      <span class="hero__line">Agents can think.&ngsp;</span>
+      <span class="hero__line hero__accent">CryptoBot lets them safely act with money.</span>
+    </h1>
+    <p class="hero__sub">Trusted execution infrastructure for financial AI agents — reference implementation on Solana.</p>
+    <div class="hero__cta">
+      <a routerLink="/demo" class="btn btn--primary btn--lg">Watch Trusted Execution</a>
+      <a routerLink="/tower" class="btn btn--lg">Open Control Tower</a>
+    </div>
+  </section>
+
+  <section class="problem" aria-label="The problem">
+    <p><span class="problem__n mono">01</span>Agents already analyze, decide and call APIs. Handing one a private key is not a plan.</p>
+    <p><span class="problem__n mono">02</span>Between a decision and money moving, things fail: duplicates, timeouts, partial errors, dangerous retries.</p>
+    <p><span class="problem__n mono">03</span>CryptoBot is the layer in between — policy-bound, idempotent, recoverable, reconciled against the chain, provable.</p>
+  </section>
+
+  <section class="pipeline" aria-labelledby="pipeline-title">
+    <h2 id="pipeline-title" class="eyebrow">From intent to proof — eight stages, none trusted to the agent</h2>
+    <ol class="strip">
+      @for (s of stages; track s.id; let i = $index) {
+        <li class="strip__stage" [class.strip__stage--prove]="s.id === 'PROVE'">
+          <span class="strip__n mono">{{ pad(i + 1) }}</span>
+          <strong class="strip__id mono">{{ s.id }}</strong>
+          <span class="strip__what">{{ s.what }}</span>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <section class="failure" aria-labelledby="failure-title">
+    <h2 id="failure-title" class="eyebrow">When it fails</h2>
+    <p class="failure__line mono">
+      @for (f of failure; track f; let last = $last) {
+        <span [class.failure__end]="last">{{ f }}</span>
+        @if (!last) {
+          <span class="failure__arrow" aria-hidden="true">&ngsp;→&ngsp;</span>
+        }
+      }
+    </p>
+    <p class="t-2 failure__note">The money does not move twice. Both scenes run live against the stack in Demo Mode.</p>
+  </section>
+
+  <footer class="foot mono">reference implementation · devnet · not a trading bot</footer>
+</main>

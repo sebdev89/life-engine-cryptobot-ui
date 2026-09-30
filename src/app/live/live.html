@@ -1,7 +1,7 @@
 <main class="live">
+  <app-top-nav />
   <header class="live__header">
     <div>
-      <a routerLink="/" class="back">← Dashboard</a>
       <h1>Operación en vivo <span class="muted small">· el demo path, sin consola</span></h1>
       <p class="muted"><span class="mono">INTENT → POLICY → APPROVAL → SIGN → EXECUTE → FINALIZE → RECONCILE → PROVE</span>. Cada etapa, como el servicio la dejó: estado, duración y evidencia.</p>
     </div>
@@ -27,7 +27,7 @@
       <span class="muted small">{{ proposals().length }} del operador · la más reciente primero</span>
     </div>
     @if (!proposals().length) {
-      <p class="muted">Sin propuestas todavía. Creá una desde el <a routerLink="/">dashboard</a> (Simulate rebalance) o con <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
+      <p class="muted">Sin propuestas todavía. Creá una desde la <a routerLink="/console">consola</a>, con el <a routerLink="/demo">Demo Mode</a> (Simulate rebalance) o con <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
     }
     <div class="chips">
       @for (p of proposals(); track p.id) {

@@ -7,6 +7,8 @@ import { uiConfig } from '../config';
 import { WalletView } from '../control-plane-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { DemoRunner, RunStep, runExplorerUrl } from './demo-runner';
+import { TokenGate } from '../shell/token-gate';
+import { TopNav } from '../shell/top-nav';
 import { explorerTxUrlFor } from '../live/live-model';
 import { proofLinkOf } from '../proof/proof-model';
 
@@ -28,7 +30,7 @@ export const FAILURE_STORY: readonly { step: string; label: string }[] = [
 @Component({
   selector: 'app-demo',
   standalone: true,
-  imports: [RouterLink, ExecutionDetail],
+  imports: [RouterLink, ExecutionDetail, TopNav, TokenGate],
   templateUrl: './demo.html',
   styleUrl: './demo.scss',
 })
@@ -81,20 +83,28 @@ export class DemoMode {
   constructor() {
     bootstrapSessionFromQuery();
     this.signedIn.set(!!getAccessToken());
-    if (this.signedIn()) {
-      this.runner
-        .findWallet()
-        .then((w) => {
-          this.wallet.set(w);
-          this.needsAddress.set(!w);
-        })
-        .catch(() => this.needsAddress.set(false));
-    }
+    if (this.signedIn()) this.loadWallet();
     const timer = setInterval(() => this.now.set(Date.now()), 250);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(timer);
       this.runner.cancel();
     });
+  }
+
+  /** KAN-789: without a session /demo asks for the token instead of failing; once given, the run is possible. */
+  onSignedIn(): void {
+    this.signedIn.set(true);
+    this.loadWallet();
+  }
+
+  private loadWallet(): void {
+    this.runner
+      .findWallet()
+      .then((w) => {
+        this.wallet.set(w);
+        this.needsAddress.set(!w);
+      })
+      .catch(() => this.needsAddress.set(false));
   }
 
   start(scenario: 'success' | 'failure' = 'success'): void {

@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
-import { Dashboard } from './dashboard/dashboard';
+import { Landing } from './landing/landing';
+
+// KAN-789: the operator dashboard moved to /console; lazy now that `/` is the public landing.
+const consoleView = () => import('./dashboard/dashboard').then((m) => m.Dashboard);
 
 // KAN-576: the demo path as one live screen; lazy so the dashboard's initial bundle does not pay for it.
 const live = () => import('./live/live').then((m) => m.LiveOperation);
@@ -14,7 +17,8 @@ const tower = () => import('./tower/tower').then((m) => m.ControlTower);
 const proof = () => import('./proof/proof').then((m) => m.ProofView);
 
 export const routes: Routes = [
-  { path: '', component: Dashboard, pathMatch: 'full' },
+  { path: '', component: Landing, pathMatch: 'full' },
+  { path: 'console', loadComponent: consoleView },
   { path: 'live', loadComponent: live },
   { path: 'live/:proposalId', loadComponent: live },
   { path: 'demo', loadComponent: demo },

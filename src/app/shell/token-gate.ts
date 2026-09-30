@@ -26,6 +26,8 @@ import { setCryptobotSession } from '../session';
   styles: `
     .gate {
       max-width: 640px;
+      padding: var(--sp-4) var(--sp-5);
+      margin-bottom: var(--sp-4);
       display: grid;
       gap: var(--sp-3);
     }
