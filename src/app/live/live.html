@@ -3,7 +3,7 @@
     <div>
       <a routerLink="/" class="back">← Dashboard</a>
       <h1>Operación en vivo <span class="muted small">· el demo path, sin consola</span></h1>
-      <p class="muted">Intent → simulación → política → aprobación humana → validador independiente → signer aislado → cadena → reconciliación → recibo. Cada paso, como el servicio lo dejó.</p>
+      <p class="muted"><span class="mono">INTENT → POLICY → APPROVAL → SIGN → EXECUTE → FINALIZE → RECONCILE → PROVE</span>. Cada etapa, como el servicio la dejó: estado, duración y evidencia.</p>
     </div>
     <div class="live__status" aria-live="polite">
       @if (paused()) {
@@ -49,34 +49,10 @@
             <span class="badge badge--{{ statusClass(p.status) }} badge--lg">{{ p.status }}</span>
             {{ p.plan.summary }}
           </h2>
-          <span class="muted small">{{ doneCount() }}/{{ timeline().length }} pasos · id {{ shortId(p.id) }} · {{ p.walletAddress | slice: 0 : 4 }}…{{ p.walletAddress | slice: -4 }} · {{ p.cluster }}</span>
+          <span class="muted small mono">{{ doneStages() }}/{{ stages().length }} etapas · {{ timeline().length }} pasos · total {{ totalTime() }} · id {{ shortId(p.id) }} · {{ p.walletAddress | slice: 0 : 4 }}…{{ p.walletAddress | slice: -4 }} · {{ p.cluster }}</span>
         </div>
 
-        <ol class="steps" aria-label="Estados de la propuesta">
-          @for (s of timeline(); track s.id) {
-            <li class="step step--{{ s.state }}">
-              <span class="step__marker" aria-hidden="true">
-                @switch (s.state) {
-                  @case ('done') { ✓ }
-                  @case ('failed') { ✗ }
-                  @case ('uncertain') { ? }
-                  @case ('active') { ● }
-                  @case ('skipped') { – }
-                  @default { ○ }
-                }
-              </span>
-              <div class="step__body">
-                <div class="step__title">
-                  <strong>{{ s.n }} · {{ s.label }}</strong>
-                  <span class="badge badge--state-{{ s.state }}">{{ s.state }}</span>
-                  @if (s.at) { <span class="muted small mono">{{ s.at | slice: 11 : 19 }} UTC</span> }
-                </div>
-                <div class="muted small">{{ s.who }}</div>
-                @if (s.note) { <div class="step__note small">{{ s.note }}</div> }
-              </div>
-            </li>
-          }
-        </ol>
+        <app-execution-detail [stages]="stages()" />
 
         <details class="audit">
           <summary>Audit trail <span class="muted small">{{ audit().length }} eventos · <code>GET /proposals/{{ shortId(p.id) }}…/audit</code></span></summary>
