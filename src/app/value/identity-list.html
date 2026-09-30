@@ -1,0 +1,49 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <p class="eyebrow">Proof of Value</p>
+    <h1>Identities</h1>
+    <p class="t-2 thesis">Humans and agents that contributed to accepted outcomes. Reputation is a plain count, not a formula.</p>
+  </header>
+  <app-value-nav />
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Identities are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (identities(); as list) {
+      @if (!list.length) {
+        <section class="panel empty">
+          <p class="eyebrow">Nothing recorded</p>
+          <p class="t-2">No identities registered yet.</p>
+        </section>
+      } @else {
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="grid" data-testid="identities">
+              <thead>
+                <tr><th>Identity</th><th>Kind</th><th>Wallet</th><th class="num">Accepted outcomes</th><th class="num">Total units</th></tr>
+              </thead>
+              <tbody>
+                @for (i of list; track i.id) {
+                  <tr>
+                    <td><a [routerLink]="['/value/identities', i.id]">{{ i.displayName }}</a> <span class="mono small t-3">{{ i.id }}</span></td>
+                    <td><span class="chip chip--{{ i.kind.toLowerCase() }}"><b>{{ i.kind }}</b></span></td>
+                    <td class="mono small">{{ short(i.wallet, 6, 4) }}</td>
+                    <td class="mono num">{{ i.reputation?.acceptedOutcomes ?? '—' }}</td>
+                    <td class="mono num">{{ i.reputation?.totalUnits ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+    } @else if (loading()) {
+      <p class="t-2 loading" aria-busy="true">Reading /identities…</p>
+    }
+  }
+</main>

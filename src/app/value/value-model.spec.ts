@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptanceStages, contributionSummary, short, statusClass, statusLabel } from './value-model';
+import { acceptanceStages, contributionSummary, explorerAddressUrl, formatMicroUsd, ledgerTotal, short, statusClass, statusLabel } from './value-model';
 
 describe('value-model', () => {
   it('never invents a check: no acceptance object means five unknowns, in the fixed order', () => {
@@ -31,5 +31,22 @@ describe('value-model', () => {
         ],
       }),
     ).toEqual({ humans: 1, agents: 1 });
+  });
+});
+
+describe('value-model KAN-830 helpers', () => {
+  it('builds the devnet address link', () => {
+    expect(explorerAddressUrl('ABC')).toBe('https://explorer.solana.com/address/ABC?cluster=devnet');
+  });
+  it('converts micro USD to dollars and never invents a missing value', () => {
+    expect(formatMicroUsd(4200)).toBe('$0.004200');
+    expect(formatMicroUsd(2_500_000)).toBe('$2.500000');
+    expect(formatMicroUsd(0)).toBe('$0.000000');
+    expect(formatMicroUsd(null)).toBe('—');
+    expect(formatMicroUsd(undefined)).toBe('—');
+  });
+  it('sums ledger rows', () => {
+    expect(ledgerTotal([{ totalUnits: 60 }, { totalUnits: 40 }])).toBe(100);
+    expect(ledgerTotal([])).toBe(0);
   });
 });

@@ -130,3 +130,38 @@
 .notyet {
   padding: var(--sp-4);
 }
+
+.subnav {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+
+  a {
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--border, currentColor);
+    border-radius: 999px;
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+    text-decoration: none;
+
+    &.on {
+      color: var(--text-1, inherit);
+      font-weight: 600;
+    }
+  }
+}
+
+.seg {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+
+  .btn.on {
+    font-weight: 700;
+  }
+}
+
+.cost-note {
+  margin-top: var(--sp-2);
+}

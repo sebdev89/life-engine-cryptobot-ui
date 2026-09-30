@@ -1,0 +1,89 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <a routerLink="/value/identities" class="back">← All identities</a>
+    <p class="eyebrow">Proof of Value · identity</p>
+    <h1>{{ profile()?.displayName ?? 'Identity' }}</h1>
+  </header>
+  <app-value-nav />
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Identities are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (profile(); as p) {
+      <div class="sections">
+        <section class="panel pad" data-section="profile">
+          <h2>Profile</h2>
+          <dl class="facts">
+            <div><dt>kind</dt><dd><span class="chip chip--{{ p.kind.toLowerCase() }}"><b>{{ p.kind }}</b></span></dd></div>
+            <div><dt>id</dt><dd class="mono">{{ p.id }}</dd></div>
+            <div>
+              <dt>wallet</dt>
+              <dd>
+                @if (p.wallet; as w) {
+                  <a class="mono" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener" data-testid="wallet">{{ w }} ↗</a>
+                } @else {
+                  <span class="t-3">none</span>
+                }
+              </dd>
+            </div>
+            @if (p.ownerId; as o) {
+              <div><dt>owner</dt><dd><a class="mono" [routerLink]="['/value/identities', o]" data-testid="owner">{{ o }}</a></dd></div>
+            }
+            @if (p.operatorId; as o) {
+              <div><dt>operator</dt><dd><a class="mono" [routerLink]="['/value/identities', o]" data-testid="operator">{{ o }}</a></dd></div>
+            }
+            @if (p.createdAt) {
+              <div><dt>created</dt><dd class="mono">{{ p.createdAt | date: 'yyyy-MM-dd HH:mm' }}</dd></div>
+            }
+          </dl>
+        </section>
+
+        <section class="panel pad" data-section="reputation">
+          <h2>Reputation</h2>
+          @if (p.reputation; as r) {
+            <dl class="facts">
+              <div><dt>accepted outcomes</dt><dd class="mono">{{ r.acceptedOutcomes }}</dd></div>
+              <div><dt>total units</dt><dd class="mono">{{ r.totalUnits }}</dd></div>
+              <div><dt>first accepted</dt><dd class="mono">{{ r.firstAcceptedAt ? (r.firstAcceptedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</dd></div>
+              <div><dt>last accepted</dt><dd class="mono">{{ r.lastAcceptedAt ? (r.lastAcceptedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</dd></div>
+            </dl>
+          } @else {
+            <p class="t-2">No reputation reported.</p>
+          }
+          <p class="t-3 small">Reputation is the count of accepted outcomes and the units accumulated. There is no hidden score.</p>
+        </section>
+
+        <section class="panel pad" data-section="history">
+          <h2>History</h2>
+          @if (!p.history.length) {
+            <p class="t-2">No accepted outcomes in this identity's history yet.</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="grid" data-testid="history">
+                <thead><tr><th>Outcome</th><th>Role</th><th class="num">Units</th><th>Accepted</th><th>Anchor</th></tr></thead>
+                <tbody>
+                  @for (h of p.history; track h.valueEventId) {
+                    <tr>
+                      <td><a [routerLink]="['/value', h.valueEventId]">{{ h.title }}</a></td>
+                      <td>{{ h.role }}</td>
+                      <td class="mono num">{{ h.units }}</td>
+                      <td class="mono small t-2">{{ h.acceptedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+                      <td><span class="st-badge st--{{ anchorClass(h.anchorStatus) }}">{{ h.anchorStatus }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+    } @else if (!error()) {
+      <p class="t-2 loading" aria-busy="true">Reading identity…</p>
+    }
+  }
+</main>

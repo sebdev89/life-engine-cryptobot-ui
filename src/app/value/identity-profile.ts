@@ -2,35 +2,29 @@ import { Component, effect, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
-import { ValueEvent, ValueProof, getValueEvent, getValueProof } from '../value-events-api';
+import { IdentityProfile as Profile, getIdentity } from '../value-events-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
-import { acceptanceStages, formatMicroUsd, short, statusClass, statusLabel } from './value-model';
+import { explorerAddressUrl, statusClass } from './value-model';
 
-/** `/value/:id` (KAN-828): one ValueEvent, section by section, with what V1 does not cover said plainly. */
+/** `/value/identities/:id` (KAN-830): kind, wallet, owner/operator, explicit reputation and the history behind it. */
 @Component({
-  selector: 'app-value-detail',
+  selector: 'app-identity-profile',
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
-  templateUrl: './value-detail.html',
+  templateUrl: './identity-profile.html',
   styleUrl: './value.scss',
 })
-export class ValueDetail {
+export class IdentityProfilePage {
   readonly id = input<string | undefined>();
 
   readonly signedIn = signal(false);
   readonly error = signal<string | null>(null);
-  readonly event = signal<ValueEvent | null>(null);
-  readonly proof = signal<ValueProof | null>(null);
-  readonly proofError = signal<string | null>(null);
-
-  readonly short = short;
-  readonly formatMicroUsd = formatMicroUsd;
-  readonly statusLabel = statusLabel;
-  readonly statusClass = statusClass;
-  readonly stages = acceptanceStages;
+  readonly profile = signal<Profile | null>(null);
+  readonly explorerAddressUrl = explorerAddressUrl;
+  readonly anchorClass = (s: string) => statusClass(s === 'ANCHORED' ? 'ANCHORED' : 'RECORDED');
 
   constructor() {
     bootstrapSessionFromQuery();
@@ -49,19 +43,10 @@ export class ValueDetail {
   }
 
   async load(id: string): Promise<void> {
-    this.event.set(null);
-    this.proof.set(null);
-    this.proofError.set(null);
+    this.profile.set(null);
     try {
-      const ev = await getValueEvent(id);
-      this.event.set(ev);
+      this.profile.set(await getIdentity(id));
       this.error.set(null);
-      // Only an anchored event has a proof worth asking for; a recorded one says so instead of erroring.
-      if (ev.status === 'ANCHORED') {
-        getValueProof(id)
-          .then((p) => this.proof.set(p))
-          .catch((e) => this.proofError.set((e as Error)?.message ?? String(e)));
-      }
     } catch (e) {
       if (e instanceof AuthRequiredError) {
         this.signedIn.set(false);
@@ -69,7 +54,7 @@ export class ValueDetail {
         return;
       }
       const status = (e as { apiError?: { status?: number } })?.apiError?.status;
-      this.error.set(status === 404 ? 'No value event with this id.' : `API: ${(e as Error)?.message ?? e}`);
+      this.error.set(status === 404 ? 'No identity with this id.' : `API: ${(e as Error)?.message ?? e}`);
     }
   }
 }
