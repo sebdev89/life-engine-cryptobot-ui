@@ -1,4 +1,4 @@
-import { ValueEvent } from '../value-events-api';
+import { DistributionSummary, PayoutStatus, ValueEvent } from '../value-events-api';
 
 /** The five acceptance stages, in the fixed order of P-16: MERGED, BUILT, DEPLOYED, RUNNING, ACCEPTED. */
 export const ACCEPTANCE_STAGES = ['MERGED', 'BUILT', 'DEPLOYED', 'RUNNING', 'ACCEPTED'] as const;
@@ -61,3 +61,40 @@ export const LEDGER_GROUPS = [
 
 export const UNITS_DISCLAIMER =
   'Contribution Units are an attribution primitive inside the protocol — not equity, not a promise of financial return.';
+
+export const DISTRIBUTION_NOTE = 'devnet SOL stands in for stablecoin settlement in this demo.';
+
+/** lamports to SOL, 4 decimals: `0.0500`. */
+export function lamportsToSol(l: number | null | undefined): string {
+  if (l === null || l === undefined || Number.isNaN(l)) return '—';
+  return (l / 1_000_000_000).toFixed(4);
+}
+
+export function payoutClass(s: PayoutStatus): 'done' | 'active' | 'failed' | 'uncertain' {
+  switch (s) {
+    case 'CONFIRMED':
+      return 'done';
+    case 'FAILED':
+      return 'failed';
+    case 'UNFUNDED':
+      return 'uncertain';
+    default:
+      return 'active';
+  }
+}
+
+/** Label for the list column; null when nothing was distributed. */
+export function paidLabel(d: DistributionSummary | null | undefined): string | null {
+  if (!d) return null;
+  if (d.status === 'COMPLETE') return 'Paid';
+  if (d.status === 'PARTIAL') return 'Partially paid';
+  return null;
+}
+
+export function txExplorerUrl(sig: string): string {
+  return `https://explorer.solana.com/tx/${encodeURIComponent(sig)}?cluster=devnet`;
+}
+
+export function shortWallet(w: string): string {
+  return w.length <= 11 ? w : `${w.slice(0, 4)}…${w.slice(-4)}`;
+}

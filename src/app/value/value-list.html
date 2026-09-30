@@ -45,6 +45,9 @@
                       @if (ev.anchor?.explorerUrl; as href) {
                         <a class="small" [href]="href" target="_blank" rel="noopener">explorer ↗</a>
                       }
+                      @if (paidLabel(ev.distribution); as pl) {
+                        <span class="st-badge st--{{ ev.distribution?.status === 'COMPLETE' ? 'done' : 'active' }}" data-testid="paid">{{ pl }}</span>
+                      }
                     </td>
                     <td>
                       <ul class="chips">

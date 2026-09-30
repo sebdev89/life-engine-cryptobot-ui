@@ -7,7 +7,7 @@ import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
-import { short, statusClass, statusLabel } from './value-model';
+import { paidLabel, short, statusClass, statusLabel } from './value-model';
 
 const LIST_LIMIT = 50;
 
@@ -28,6 +28,7 @@ export class ValueList {
   readonly short = short;
   readonly statusLabel = statusLabel;
   readonly statusClass = statusClass;
+  readonly paidLabel = paidLabel;
 
   constructor() {
     bootstrapSessionFromQuery();

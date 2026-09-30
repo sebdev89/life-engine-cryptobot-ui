@@ -7,7 +7,7 @@ import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
-import { explorerAddressUrl, statusClass } from './value-model';
+import { explorerAddressUrl, lamportsToSol, statusClass } from './value-model';
 
 /** `/value/identities/:id` (KAN-830): kind, wallet, owner/operator, explicit reputation and the history behind it. */
 @Component({
@@ -24,6 +24,7 @@ export class IdentityProfilePage {
   readonly error = signal<string | null>(null);
   readonly profile = signal<Profile | null>(null);
   readonly explorerAddressUrl = explorerAddressUrl;
+  readonly sol = lamportsToSol;
   readonly anchorClass = (s: string) => statusClass(s === 'ANCHORED' ? 'ANCHORED' : 'RECORDED');
 
   constructor() {

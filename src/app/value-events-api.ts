@@ -58,6 +58,45 @@ export interface ValueEvent {
   /** V3/V4 (KAN-830): absent on a V1 backend, empty when nothing was attributed. */
   knowledgeAssets?: EventKnowledgeAsset[] | null;
   computeReceipts?: ComputeReceipt[] | null;
+  /** V5 (KAN-822): null/absent until an immediate reward distribution exists. */
+  distribution?: DistributionSummary | null;
+}
+
+export type DistributionStatus = 'PARTIAL' | 'COMPLETE' | 'FAILED';
+export type PayoutStatus = 'PENDING' | 'SUBMITTED' | 'CONFIRMED' | 'FAILED' | 'UNFUNDED';
+
+export interface DistributionSummary {
+  status: DistributionStatus;
+  poolLamports: number;
+  confirmedLamports: number;
+}
+
+export interface Payout {
+  identityId: string;
+  displayName: string;
+  wallet: string | null;
+  lamports: number;
+  status: PayoutStatus;
+  txSignature: string | null;
+  explorerUrl: string | null;
+  error: string | null;
+}
+
+/** `GET|POST /value-events/{id}/distribution|distribute`. */
+export interface Distribution {
+  id: string;
+  valueEventId: string;
+  poolLamports: number;
+  policy: string;
+  status: DistributionStatus;
+  receiptHash: string;
+  anchor: ValueAnchor | null;
+  payouts: Payout[];
+}
+
+export interface IdentityRewards {
+  confirmedLamports: number;
+  payouts: Payout[];
 }
 
 export interface EventKnowledgeAsset {
@@ -120,6 +159,8 @@ export interface HistoryEntry {
 
 export interface IdentityProfile extends Identity {
   history: HistoryEntry[];
+  /** V5 (KAN-822): absent on an older backend. */
+  rewards?: IdentityRewards | null;
 }
 
 export interface KnowledgeAsset {
@@ -188,4 +229,16 @@ export function getKnowledgeAsset(id: string): Promise<KnowledgeAsset> {
 
 export function getUnitsLedger(groupBy: LedgerGroupBy): Promise<UnitsLedger> {
   return apiFetch(`/units/ledger?groupBy=${groupBy}`).then((r) => json<UnitsLedger>(r));
+}
+
+/** 404 means no distribution yet: returned as null, not thrown. */
+export async function getDistribution(id: string): Promise<Distribution | null> {
+  const res = await apiFetch(`/value-events/${encodeURIComponent(id)}/distribution`);
+  if (res.status === 404) return null;
+  return json<Distribution>(res);
+}
+
+/** Needs RUNTIME_ADMIN; 409 when the event is not ANCHORED. */
+export function distributeValueEvent(id: string): Promise<Distribution> {
+  return apiFetch(`/value-events/${encodeURIComponent(id)}/distribute`, { method: 'POST' }).then((r) => json<Distribution>(r));
 }

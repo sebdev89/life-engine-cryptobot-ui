@@ -58,6 +58,19 @@
           <p class="t-3 small">Reputation is the count of accepted outcomes and the units accumulated. There is no hidden score.</p>
         </section>
 
+        <section class="panel pad" data-section="rewards">
+          <h2>Rewards received</h2>
+          @if (p.rewards; as r) {
+            <dl class="facts">
+              <div><dt>confirmed</dt><dd class="mono" data-testid="rewards-sol">{{ sol(r.confirmedLamports) }} SOL</dd></div>
+              <div><dt>payouts</dt><dd class="mono" data-testid="rewards-count">{{ r.payouts.length }}</dd></div>
+            </dl>
+          } @else {
+            <p class="t-2">No rewards received yet.</p>
+          }
+          <p class="t-3 small">devnet SOL stands in for stablecoin settlement in this demo.</p>
+        </section>
+
         <section class="panel pad" data-section="history">
           <h2>History</h2>
           @if (!p.history.length) {
