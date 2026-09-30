@@ -40,7 +40,8 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  flex-shrink: 0;
+  flex-wrap: wrap; // KAN-792: wraps at 390 px instead of widening the page
+  min-width: 0;
   font-family: var(--font-mono);
 }
 

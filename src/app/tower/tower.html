@@ -23,7 +23,7 @@
     }
 
     @if (!loaded()) {
-      <p class="t-2">Reading /proposals, /dead-letters, /anchors…</p>
+      <p class="t-2 loading" aria-busy="true">Reading /proposals, /dead-letters, /anchors…</p>
     } @else {
       @let k = kpis();
       <section class="kpis" aria-label="Key metrics">

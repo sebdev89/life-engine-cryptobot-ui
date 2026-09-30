@@ -70,7 +70,7 @@
         </section>
       }
     } @else if (!error()) {
-      <p class="t-2">Reading /anchors…</p>
+      <p class="t-2 loading" aria-busy="true">Reading /anchors…</p>
     }
   } @else {
     <!-- ── detail ───────────────────────────────────────────────────────────────────── -->
@@ -233,7 +233,7 @@
         }
       </section>
     } @else if (!error()) {
-      <p class="t-2">Reading /anchors/{{ root() }}…</p>
+      <p class="t-2 loading" aria-busy="true">Reading /anchors/{{ root() }}…</p>
     }
   }
 </main>

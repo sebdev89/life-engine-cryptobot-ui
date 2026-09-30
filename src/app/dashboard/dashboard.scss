@@ -24,13 +24,14 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap; // KAN-792: 390 px
 }
 
 .page__tools {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 // KAN-576: link to the live-operation route, styled like a ghost button.

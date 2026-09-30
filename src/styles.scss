@@ -35,7 +35,7 @@
   // ---- text --------------------------------------------------------------------------------
   --text: #e8edf3; // primary — 15.6:1 on --bg
   --text-2: #98a4b3; // secondary — labels, metadata (7.4:1)
-  --text-3: #5d6978; // tertiary — separators, disabled, timestamps in dense lists
+  --text-3: #7a8696; // tertiary — metadata, timestamps in dense lists (KAN-792: 5.4:1 on --bg, 4.8:1 on --surface-2; was #5d6978 = 3.6:1)
   --on-accent: #041018; // text on a filled accent/state button
 
   // ---- accent + chain ----------------------------------------------------------------------
@@ -161,6 +161,42 @@ a {
   outline: none;
   box-shadow: var(--focus-ring);
   border-radius: var(--r-md);
+}
+
+// ---- shared screen states (KAN-792): one look for loading, error and empty on every screen ----
+.banner-err {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid rgba(255, 95, 109, 0.4);
+  background: var(--err-bg);
+  color: var(--err);
+  border-radius: var(--r-md);
+}
+
+.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text-2);
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: le-loading 1.2s var(--ease) infinite;
+  }
+}
+
+@keyframes le-loading {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 ::selection {

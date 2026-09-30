@@ -352,7 +352,7 @@ describe('LiveOperation', () => {
     const fixture = await mount();
     expect(fixture.componentInstance.lineageAvailable()).toBe(false);
     expect(fixture.nativeElement.querySelector('app-lineage')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('este service no expone');
+    expect(fixture.nativeElement.textContent).toContain('this service does not expose');
   });
 
   it('polls every 2 s by default even when the route binder passes pollMs as undefined', async () => {
