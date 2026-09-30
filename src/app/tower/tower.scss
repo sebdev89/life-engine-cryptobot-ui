@@ -1,0 +1,254 @@
+.tower {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 0 var(--sp-5) var(--sp-6);
+}
+
+@media (max-width: 640px) {
+  .tower {
+    padding: 0 var(--sp-4) var(--sp-5);
+  }
+}
+
+.tower__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+
+  h1 {
+    margin: var(--sp-1) 0;
+    font-size: var(--fs-xl);
+  }
+}
+
+.tower__sub {
+  margin: 0;
+}
+
+.tower__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+
+.banner-err {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid rgba(255, 95, 109, 0.4);
+  background: var(--err-bg);
+  color: var(--err);
+  border-radius: var(--r-md);
+}
+
+// ---- KPI strip ------------------------------------------------------------------------------
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.kpi {
+  display: grid;
+  gap: var(--sp-1);
+  align-content: start;
+  padding: var(--sp-4);
+  background: var(--surface-1);
+  border-top: 2px solid transparent;
+  box-shadow: 1px 1px 0 var(--border);
+}
+
+.kpi__v {
+  font-size: 2.1rem;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.kpi__src {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.kpi--ok {
+  border-top-color: var(--ok);
+
+  .kpi__v {
+    color: var(--ok);
+  }
+}
+
+.kpi--chain {
+  border-top-color: var(--chain);
+}
+
+.kpi--warn {
+  border-top-color: var(--warn);
+
+  .kpi__v {
+    color: var(--warn);
+  }
+}
+
+.kpis__foot {
+  margin: var(--sp-2) 0 var(--sp-5);
+  font-size: var(--fs-xs);
+}
+
+// ---- empty ----------------------------------------------------------------------------------
+.empty {
+  padding: var(--sp-6);
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: start;
+
+  h2 {
+    margin: 0;
+    font-size: var(--fs-lg);
+  }
+
+  p {
+    margin: 0;
+    max-width: 60ch;
+  }
+
+  .btn {
+    margin-top: var(--sp-3);
+  }
+}
+
+// ---- table ----------------------------------------------------------------------------------
+.latest {
+  padding: 0;
+  overflow: hidden;
+}
+
+.latest__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+
+  h2 {
+    margin: 0;
+    font-size: var(--fs-md);
+  }
+}
+
+.latest__toggle {
+  font-size: var(--fs-xs);
+  padding: var(--sp-1) var(--sp-3);
+}
+
+.latest__none {
+  padding: var(--sp-4);
+  margin: 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+
+  th {
+    text-align: left;
+    padding: var(--sp-2) var(--sp-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+    white-space: nowrap;
+    background: var(--surface-inset);
+  }
+
+  td {
+    padding: var(--sp-2) var(--sp-2);
+    border-top: 1px solid var(--border-subtle);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-2);
+  }
+
+  .num {
+    text-align: right;
+  }
+
+  .small {
+    font-size: var(--fs-xs);
+  }
+}
+
+.phase {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border-strong);
+  color: var(--st, var(--text));
+  background: var(--st-bg, transparent);
+  text-decoration: none;
+  font-size: var(--fs-xs);
+
+  .mono {
+    color: var(--text-3);
+  }
+
+  &:hover {
+    border-color: var(--st, var(--accent));
+    color: var(--st, var(--text));
+  }
+}
+
+.inline-st {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text-2);
+
+  .st-dot {
+    flex: none;
+  }
+}
+
+.sub {
+  display: block;
+  font-size: var(--fs-2xs);
+  color: var(--text-3);
+}
+
+.grid td.clip {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid td.clip .inline-st {
+  display: inline;
+
+  .st-dot {
+    display: inline-block;
+    margin-right: var(--sp-2);
+    vertical-align: middle;
+  }
+}

@@ -101,6 +101,26 @@ the way out, also when the run fails. Needs `cryptobot.chaos.enabled=true` and a
 Open it with a demo token: `scripts/demo/ui-url.sh --path /demo` (cryptobot-service repo). `config.js`
 may carry `demoWallet` (`UI_DEMO_WALLET` in the container); otherwise the page asks for the address once.
 
+## Control Tower (KAN-787)
+
+`/tower` — KPIs counted in the browser every 5 s from `GET /proposals?limit=100`, `GET /dead-letters?resolved=all&limit=500`
+and `GET /anchors?limit=200` (the API clamps), and the latest 10 executions with their current stage of the 8, read from
+`GET /proposals/{id}` + `/proposals/{id}/receipts` + `GET /anchors/{root}` only when a row changed.
+
+| KPI | counted as |
+|---|---|
+| executions | proposals with `operationId` (execute attempted) |
+| finalized | `status = EXECUTED` |
+| recovered | EXECUTED proposals that have a dead letter |
+| DLQ open | `open` of the dead-letter page (system-wide) |
+| retries | sum of `execution.retries` (same operationId) |
+| proofs | `FINALIZED` anchor batches (system-wide) and their `receiptCount` |
+| latency | mean of `execution.confirmedAt − createdAt` over EXECUTED (approval and timelock included) |
+
+A source that answers 403 (dead letters need RUNTIME_ADMIN) shows `—` with the reason, never 0. "Duplicate prevented" is not
+shown: the service counts it only in Prometheus (`duplicate_trade_suppressed_total`), no endpoint or audit event carries it.
+Without a session the page asks for a token instead of failing.
+
 ## Glossary
 
 `src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the
