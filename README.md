@@ -150,6 +150,18 @@ reason, proposal and its status, reconciliation attempts / retries, timestamps, 
 the endpoint answers 404/403). A letter whose proposal belongs to another operator shows "other
 operator" instead of a guessed status. Model: `recovery/recovery-model.ts` (+ spec).
 
+## Policies (KAN-791)
+
+`/policies` shows the policy a proposal was decided under, read from `GET /proposals/{id}` (no policy
+endpoint): verdict (ALLOW / DENY / ESCALATE, tier, escalation), `R_v`, `H_R` and `H(I,S)`; the **13 core
+rules** of `PolicyEngine` with their state (pass · fail with the service's message · pending · not
+evaluated) and one line each; autonomy tiers with the current one; asset allowlist with the oracle
+sources; timelock (approval → executableAt); the 11 predicates with the expression they evaluate; the
+5 price-integrity rules with the oracle limits; the 3 signer caps; and the `(I, S)` facts.
+`TIMELOCK_ELAPSED` is not in the recorded decision (the service checks it at execute), so its state
+comes from the approval and whether execute was accepted. `?proposal=<id>` selects one; default is the
+newest proposal with a policy record. Model: `policies/policies-model.ts` (+ spec).
+
 ## Glossary
 
 `src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the

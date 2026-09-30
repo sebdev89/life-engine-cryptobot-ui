@@ -1,0 +1,236 @@
+<main class="pol">
+  <app-top-nav />
+
+  <header class="pol__head">
+    <div>
+      <p class="eyebrow">Code decides, not the prompt</p>
+      <h1>Policies</h1>
+      <p class="t-2 pol__sub">The exact rules a proposal was decided under, as the service recorded them. A prompt can suggest; these checks decide.</p>
+    </div>
+    @if (list(); as l) {
+      @if (l.length) {
+        <label class="pick">
+          <span class="t-3 small">Proposal</span>
+          <select class="field mono" [value]="current()?.id ?? ''" (change)="onPick($event)" aria-label="Choose a proposal">
+            @for (p of l; track p.id) {
+              <option [value]="p.id">{{ label(p) }}</option>
+            }
+          </select>
+        </label>
+      }
+    }
+  </header>
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Policies are read from each proposal in the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (list() === null) {
+      <p class="t-2 loading" aria-busy="true">Reading /proposals…</p>
+    } @else if (!current()) {
+      <section class="panel empty">
+        <p class="eyebrow">No proposal yet</p>
+        <h2>A policy is shown for a decision, and nothing was decided yet.</h2>
+        <p class="t-2">Run one trusted execution; its verdict, rules and hash appear here.</p>
+        <a routerLink="/demo" class="btn btn--primary">Watch Trusted Execution →</a>
+      </section>
+    } @else {
+      @let p = current()!;
+      @let v = verdict();
+      <section class="verdict panel" [class.is-loading]="loading()" aria-labelledby="verdict-h">
+        <div class="verdict__main">
+          <p class="eyebrow" id="verdict-h">Verdict · proposal <a class="mono" [routerLink]="['/live', p.id]">{{ p.id.slice(0, 8) }}</a></p>
+          @if (v) {
+            <p class="verdict__decision">
+              <span class="badge badge--{{ decisionClass(v.decision) }} big">{{ v.decision }}</span>
+              <span class="mono">tier {{ v.tier }}</span>
+              @if (v.escalation !== 'NONE') {
+                <span class="mono t-2">· {{ v.escalation }}</span>
+              }
+            </p>
+          } @else {
+            <p class="t-2">No deterministic verdict on this proposal (older than KAN-436, or never evaluated).</p>
+          }
+          <p class="small t-2">
+            {{ p.title }} · status <span class="mono">{{ p.status }}</span> · allowed <span class="mono">{{ p.policy?.allowed ?? '—' }}</span> · executable
+            <span class="mono">{{ p.policy?.executable ?? '—' }}</span>
+            @if (p.policy?.evaluatedAt) {
+              · evaluated {{ p.policy!.evaluatedAt | date: 'MMM d, HH:mm:ss' }}
+            }
+          </p>
+        </div>
+        @if (v) {
+          <dl class="hashes mono small">
+            <div><dt>R_v</dt><dd>{{ v.policyVersion }}</dd></div>
+            <div><dt>H_R</dt><dd class="hash" [title]="v.policyHash">{{ v.policyHash }}</dd></div>
+            <div><dt>H(I,S)</dt><dd class="hash" [title]="v.inputHash">{{ v.inputHash }}</dd></div>
+          </dl>
+        }
+      </section>
+
+      <section class="panel" aria-labelledby="core-h">
+        <header class="sec-head">
+          <h2 id="core-h">Core rules <span class="t-3 mono">13</span></h2>
+          @let c = coreCounts();
+          <span class="mono small counts">
+            <span class="st--done inline-st"><span class="st-dot" aria-hidden="true"></span>{{ c.PASS }} pass</span>
+            <span class="st--failed inline-st"><span class="st-dot" aria-hidden="true"></span>{{ c.FAIL }} fail</span>
+            @if (c.PENDING) {
+              <span class="st--active inline-st"><span class="st-dot" aria-hidden="true"></span>{{ c.PENDING }} pending</span>
+            }
+            @if (c.NOT_EVALUATED) {
+              <span class="st--pending inline-st"><span class="st-dot" aria-hidden="true"></span>{{ c.NOT_EVALUATED }} not evaluated</span>
+            }
+          </span>
+        </header>
+        <ol class="rules">
+          @for (r of core(); track r.id) {
+            <li class="rule" [class.rule--fail]="r.state === 'FAIL'">
+              <span class="st-badge st--{{ stateClass(r.state) }}">{{ stateLabel(r.state) }}</span>
+              <div class="rule__body">
+                <p class="rule__id mono">{{ r.id }} <span class="stage">{{ r.stage === 'proposal' ? 'blocks the proposal' : 'blocks execution' }}</span></p>
+                <p class="rule__what">{{ r.what }}</p>
+                @for (m of r.messages; track m) {
+                  <p class="rule__msg mono">{{ m }}</p>
+                }
+                @if (r.detail) {
+                  <p class="rule__detail mono small t-3">{{ r.detail }}</p>
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+
+      <div class="cols">
+        <section class="panel" aria-labelledby="tiers-h">
+          <header class="sec-head"><h2 id="tiers-h">Autonomy tiers</h2><span class="t-3 small">by trade value</span></header>
+          <ol class="tiers">
+            @for (t of tiers; track t.id) {
+              <li class="tier" [class.is-current]="v?.tier === t.id" [attr.aria-current]="v?.tier === t.id ? 'true' : null">
+                <span class="mono tier__id">{{ t.id }}</span>
+                <span class="mono small t-2">{{ t.band }}</span>
+                <span class="small">{{ t.outcome }}</span>
+              </li>
+            }
+          </ol>
+          @if (facts().length) {
+            <p class="small t-3 pad">Trade value for this proposal: <span class="mono">{{ tradeCents() ?? '—' }}</span> cents. The band limits live in the policy (H_R); the API does not expose them.</p>
+          }
+        </section>
+
+        <section class="panel" aria-labelledby="allow-h">
+          <header class="sec-head">
+            <h2 id="allow-h">Asset allowlist</h2>
+            <span class="st-badge st--{{ stateClass(allowlist().state) }}">{{ stateLabel(allowlist().state) }}</span>
+          </header>
+          <ul class="assets">
+            @for (a of assets(); track a.asset) {
+              <li>
+                <span class="mono">{{ a.asset }}</span>
+                <span class="small t-2">
+                  @if (a.price !== null) {
+                    $<span class="mono">{{ a.price }}</span> · {{ a.sources.length }} sources ({{ a.sources.join(', ') }})
+                  } @else {
+                    no oracle reading recorded
+                  }
+                </span>
+              </li>
+            } @empty {
+              <li class="t-3 small">The plan touches no asset.</li>
+            }
+          </ul>
+          @for (m of allowlist().messages; track m) {
+            <p class="rule__msg mono pad">{{ m }}</p>
+          }
+        </section>
+
+        <section class="panel" aria-labelledby="tl-h">
+          <header class="sec-head">
+            <h2 id="tl-h">Timelock</h2>
+            @if (timelock(); as t) {
+              <span class="st-badge st--{{ stateClass(t.state) }}">{{ stateLabel(t.state) }}</span>
+            }
+          </header>
+          @if (p.approval; as a) {
+            <dl class="kv small">
+              <div><dt>decision</dt><dd class="mono">{{ a.decision }} by {{ a.by }}</dd></div>
+              <div><dt>at</dt><dd class="mono">{{ a.at | date: 'MMM d, HH:mm:ss' }}</dd></div>
+              <div><dt>executableAt</dt><dd class="mono">{{ a.executableAt ? (a.executableAt | date: 'MMM d, HH:mm:ss') : '—' }}</dd></div>
+              <div><dt>lock</dt><dd class="mono">{{ timelock()?.seconds === 0 ? 'none (0 s) — the verdict did not escalate' : (timelock()?.seconds ?? '—') + ' s' }}</dd></div>
+            </dl>
+          } @else {
+            <p class="small t-2 pad">Not approved: the timelock starts at approval.</p>
+          }
+        </section>
+      </div>
+
+      <section class="panel" aria-labelledby="pred-h">
+        <header class="sec-head"><h2 id="pred-h">Predicates of the verdict</h2><span class="t-3 small">deterministic, over (I, S, R_v)</span></header>
+        <ul class="preds">
+          @for (pr of predicates(); track pr.id) {
+            <li>
+              <span class="st--{{ stateClass(pr.state) }} inline-st"><span class="st-dot" aria-hidden="true"></span><span class="mono">{{ pr.id }}</span></span>
+              <code class="small">{{ pr.expr }}</code>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <div class="cols cols--2">
+        <section class="panel" aria-labelledby="price-h">
+          <header class="sec-head">
+            <h2 id="price-h">Price integrity <span class="t-3 mono">5</span></h2>
+            @if (limits(); as l) {
+              <span class="mono small t-3">min {{ l.minSources }} sources · max age {{ l.maxAgeSeconds }} s · dev {{ l.maxDeviationBps }} bps · move {{ l.maxMoveBps }} bps / {{ l.moveIntervalSeconds }} s</span>
+            }
+          </header>
+          <ol class="rules rules--compact">
+            @for (r of price(); track r.id) {
+              <li class="rule" [class.rule--fail]="r.state === 'FAIL'">
+                <span class="st-badge st--{{ stateClass(r.state) }}">{{ stateLabel(r.state) }}</span>
+                <div class="rule__body">
+                  <p class="rule__id mono">{{ r.id }}</p>
+                  <p class="rule__what">{{ r.what }}</p>
+                  @for (m of r.messages; track m) {
+                    <p class="rule__msg mono">{{ m }}</p>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+        <section class="panel" aria-labelledby="signer-h">
+          <header class="sec-head"><h2 id="signer-h">Signer caps <span class="t-3 mono">3</span></h2><span class="t-3 small">the signer re-checks them on its own bytes</span></header>
+          <ol class="rules rules--compact">
+            @for (r of signer(); track r.id) {
+              <li class="rule" [class.rule--fail]="r.state === 'FAIL'">
+                <span class="st-badge st--{{ stateClass(r.state) }}">{{ stateLabel(r.state) }}</span>
+                <div class="rule__body">
+                  <p class="rule__id mono">{{ r.id }}</p>
+                  <p class="rule__what">{{ r.what }}</p>
+                  @for (m of r.messages; track m) {
+                    <p class="rule__msg mono">{{ m }}</p>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+      </div>
+
+      @if (facts().length) {
+        <section class="panel" aria-labelledby="in-h">
+          <header class="sec-head"><h2 id="in-h">Input (I, S)</h2><span class="t-3 small">the exact facts the verdict was computed over · hashed as H(I,S)</span></header>
+          <dl class="facts mono small">
+            @for (f of facts(); track f.group + f.key) {
+              <div><dt><span class="t-3">{{ f.group }}.</span>{{ f.key }}</dt><dd>{{ f.value }}</dd></div>
+            }
+          </dl>
+        </section>
+      }
+    }
+  }
+</main>

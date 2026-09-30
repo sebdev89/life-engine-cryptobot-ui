@@ -19,6 +19,9 @@ const proof = () => import('./proof/proof').then((m) => m.ProofView);
 // KAN-790: Recovery — the dead-letter queue, the human decision on each letter, and demo-only chaos.
 const recovery = () => import('./recovery/recovery').then((m) => m.RecoveryView);
 
+// KAN-791: Policies — the rules a proposal was decided under, read from the proposal itself.
+const policies = () => import('./policies/policies').then((m) => m.PoliciesView);
+
 export const routes: Routes = [
   { path: '', component: Landing, pathMatch: 'full' },
   { path: 'console', loadComponent: consoleView },
@@ -29,5 +32,6 @@ export const routes: Routes = [
   { path: 'proof', loadComponent: proof },
   { path: 'proof/:root', loadComponent: proof },
   { path: 'recovery', loadComponent: recovery },
+  { path: 'policies', loadComponent: policies },
   { path: '**', redirectTo: '' },
 ];
