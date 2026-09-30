@@ -11,7 +11,7 @@
       } @else {
         <span class="badge badge--ok pulse">● live</span>
       }
-      <span class="muted small">polling 2 s (sin SSE en el service) · {{ fmtTime(lastTick()) }}</span>
+      <span class="muted small mono">polling 2 s (sin SSE en el service) · {{ fmtTime(lastTick()) }}</span>
       <button type="button" class="ghost" (click)="togglePause()">{{ paused() ? 'Resume' : 'Pause' }}</button>
     </div>
   </header>
@@ -69,7 +69,7 @@
                 <div class="step__title">
                   <strong>{{ s.n }} · {{ s.label }}</strong>
                   <span class="badge badge--state-{{ s.state }}">{{ s.state }}</span>
-                  @if (s.at) { <span class="muted small">{{ s.at | slice: 11 : 19 }} UTC</span> }
+                  @if (s.at) { <span class="muted small mono">{{ s.at | slice: 11 : 19 }} UTC</span> }
                 </div>
                 <div class="muted small">{{ s.who }}</div>
                 @if (s.note) { <div class="step__note small">{{ s.note }}</div> }

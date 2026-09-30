@@ -51,7 +51,7 @@
 
 .badge {
   display: inline-block;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 1px 8px;
   font-size: 0.72rem;
   font-weight: 700;
@@ -89,7 +89,7 @@ button.mini {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   cursor: pointer;
 
   &:disabled {

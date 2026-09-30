@@ -10,8 +10,9 @@
 
 .page__header h1 {
   margin: 0 0 6px;
-  font-size: 1.5rem;
-  color: var(--accent);
+  font-size: var(--fs-xl);
+  font-weight: 650;
+  color: var(--text);
 }
 
 .page__header p {
@@ -35,7 +36,7 @@
 // KAN-576: link to the live-operation route, styled like a ghost button.
 .live-link {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   padding: 8px 14px;
   color: var(--ok);
   text-decoration: none;
@@ -98,7 +99,7 @@ button.link {
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
@@ -121,9 +122,10 @@ button.link {
 
 .panel h4 {
   margin: 0 0 6px;
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
   color: var(--text-muted);
 }
 
@@ -144,16 +146,16 @@ button.link {
 // ---- controls -----------------------------------------------------------------------------
 button {
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--accent);
-  color: #082f49;
+  color: var(--on-accent);
   padding: 8px 14px;
   font-weight: 600;
 
   &:hover:not(:disabled) {
     background: var(--accent-strong);
-    color: #fff;
+    color: var(--on-accent);
   }
 
   &:disabled {
@@ -184,12 +186,12 @@ button.mini {
 
 button.ok-btn {
   background: var(--ok);
-  color: #052e16;
+  color: var(--on-accent);
 }
 
 button.exec-btn {
-  background: #a78bfa;
-  color: #2e1065;
+  background: var(--chain-gradient);
+  color: var(--on-accent);
 }
 
 input,
@@ -197,7 +199,7 @@ select {
   background: var(--panel-elev);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   padding: 8px 10px;
   font-size: 0.95rem;
 }
@@ -210,7 +212,7 @@ select {
 
 .wallet__address {
   flex: 1 1 380px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
 }
 
@@ -242,10 +244,11 @@ select {
 
 .badge {
   display: inline-block;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 1px 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
   letter-spacing: 0.03em;
   background: var(--panel-elev);
   color: var(--text-muted);
@@ -255,17 +258,20 @@ select {
 
 .badge--ok {
   color: var(--ok);
-  border-color: var(--ok);
+  background: var(--ok-bg);
+  border-color: rgba(61, 220, 151, 0.35);
 }
 
 .badge--warn {
   color: var(--warn);
-  border-color: var(--warn);
+  background: var(--warn-bg);
+  border-color: rgba(242, 201, 76, 0.35);
 }
 
 .badge--err {
   color: var(--err);
-  border-color: var(--err);
+  background: var(--err-bg);
+  border-color: rgba(255, 95, 109, 0.4);
 }
 
 .badge--lg {
@@ -294,8 +300,11 @@ select {
 }
 
 .total__value {
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .delta {
@@ -331,12 +340,13 @@ select {
 
   td {
     padding: 5px 6px;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 
 .num {
   text-align: right;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -370,7 +380,7 @@ select {
 }
 
 .activity a {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
 }
 
@@ -385,7 +395,7 @@ select {
 }
 
 .turn {
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 10px 12px;
   max-width: 92%;
   line-height: 1.45;
@@ -398,8 +408,8 @@ select {
 
 .turn--user {
   align-self: flex-end;
-  background: rgba(56, 189, 248, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: var(--accent-bg);
+  border: 1px solid rgba(92, 200, 255, 0.35);
 }
 
 .turn--assistant {
@@ -463,12 +473,12 @@ select {
 
 .proposal {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(30, 41, 59, 0.35);
+  background: var(--surface-2);
 }
 
 .proposal__head {
@@ -522,9 +532,9 @@ select {
 }
 
 .logs {
-  background: #020617;
+  background: var(--surface-inset);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   padding: 8px;
   font-size: 0.72rem;
   max-height: 180px;
@@ -560,8 +570,9 @@ select {
 
 .login__card {
   background: var(--panel);
+  box-shadow: var(--shadow-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 28px;
   width: 100%;
   max-width: 380px;
@@ -571,8 +582,8 @@ select {
 
   h1 {
     margin: 0 0 4px;
-    font-size: 1.4rem;
-    color: var(--accent);
+    font-size: var(--fs-lg);
+    color: var(--text);
   }
 
   input {
