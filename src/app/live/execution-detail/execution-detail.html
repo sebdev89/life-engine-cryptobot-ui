@@ -1,0 +1,79 @@
+<div class="xd">
+  <!-- ── pipeline: one node per stage ─────────────────────────────────────────────── -->
+  <ol class="pipeline" aria-label="Pipeline de ejecución · 8 etapas">
+    @for (s of stages(); track s.id) {
+      <li class="pipe st--{{ s.state }}" [class.pipe--running]="s.running">
+        <button type="button" class="pipe__btn" (click)="focus(s.id)" [attr.aria-label]="s.id + ': ' + s.state + ', ' + duration(s)">
+          <span class="pipe__top">
+            <span class="st-dot" aria-hidden="true"></span>
+            <span class="pipe__n">{{ pad(s.n) }}</span>
+          </span>
+          <span class="pipe__id">{{ s.id }}</span>
+          <span class="pipe__dur">{{ short(s) }}</span>
+        </button>
+      </li>
+    }
+  </ol>
+
+  <!-- ── stages: evidence + the original steps ────────────────────────────────────── -->
+  <ol class="stages" aria-label="Detalle por etapa">
+    @for (s of stages(); track s.id) {
+      <li class="stage st--{{ s.state }}" [id]="'stage-' + s.id">
+        <details [open]="opensByDefault(s)">
+          <summary class="stage__row">
+            <span class="stage__marker" aria-hidden="true">{{ glyph(s) }}</span>
+            <span class="stage__n">{{ pad(s.n) }}</span>
+            <span class="stage__name">
+              <strong>{{ s.id }}</strong>
+              <span class="stage__label">{{ s.label }}</span>
+            </span>
+            <span class="st-badge">{{ s.state }}</span>
+            <span class="stage__dur" [class.stage__dur--running]="s.running">{{ duration(s) }}</span>
+          </summary>
+          <div class="stage__body">
+            <ol class="steps" [attr.aria-label]="'Pasos de ' + s.id">
+              @for (x of s.steps; track x.id) {
+                <li class="step step--{{ x.state }}">
+                  <span class="step__marker" aria-hidden="true">{{ glyph(x) }}</span>
+                  <div class="step__body">
+                    <div class="step__title">
+                      <strong>{{ x.n }} · {{ x.label }}</strong>
+                      <span class="badge badge--state-{{ x.state }}">{{ x.state }}</span>
+                      @if (x.at) { <span class="step__at">{{ x.at | slice: 11 : 19 }} UTC</span> }
+                    </div>
+                    <div class="step__who">{{ x.who }}</div>
+                    @if (x.note) { <div class="step__note">{{ x.note }}</div> }
+                  </div>
+                </li>
+              }
+              @for (x of s.checks; track x.id) {
+                <li class="check check--{{ x.state }}">
+                  <span class="step__marker" aria-hidden="true">{{ glyph(x) }}</span>
+                  <div class="step__body">
+                    <div class="step__title">
+                      <strong>{{ x.label }}</strong>
+                      <span class="badge badge--state-{{ x.state }}">{{ x.state }}</span>
+                      @if (x.at) { <span class="step__at">{{ x.at | slice: 11 : 19 }} UTC</span> }
+                    </div>
+                    <div class="step__who">{{ x.who }}</div>
+                    @if (x.note) { <div class="step__note">{{ x.note }}</div> }
+                  </div>
+                </li>
+              }
+            </ol>
+          </div>
+        </details>
+        @if (s.evidence; as ev) {
+          <div class="stage__ev">
+            <span class="eyebrow">evidence</span>
+            @if (ev.href) {
+              <a [href]="ev.href" target="_blank" rel="noopener">{{ ev.text }} ↗</a>
+            } @else {
+              <span>{{ ev.text }}</span>
+            }
+          </div>
+        }
+      </li>
+    }
+  </ol>
+</div>

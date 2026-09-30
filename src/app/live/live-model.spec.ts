@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { ActionProposal, AuditEvent, PolicyDecision } from '../control-plane-api';
+import { IntelligenceReceipt } from '../receipts-api';
 import {
   EV,
+  NO_PROOF,
+  ProofInput,
+  STAGE_MAP,
+  aggregateState,
   auditFacts,
+  buildStages,
   buildTimeline,
+  formatDuration,
+  parseInstant,
+  stepDurations,
+  totalDuration,
   deadLetterKind,
   describeFailure,
   explorerTxUrlFor,
@@ -403,5 +413,234 @@ describe('small helpers', () => {
     const b = newOperationId();
     expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(a).not.toBe(b);
+  });
+});
+
+// ---- KAN-784: the 12 steps as the 8 stages of the product -------------------------------------
+
+const ROOT = 'sha256:' + '9f'.repeat(32);
+const ANCHOR_TX = '2vXa9mMemoAnchorTx8Qw1zPp3kLr6YtUe5sDfGhJkL9nBvCxZa1s2d3f4g5h6j7k8m9n1p2q3r4s5t6u7v8w9';
+
+function execReceipt(anchored: boolean): IntelligenceReceipt {
+  return {
+    receiptHash: 'sha256:' + 'd3'.repeat(32),
+    body: {
+      kind: 'EXECUTION',
+      agentId: 'cryptobot.execution',
+      reproducibility: 'L1_REPRODUCIBLE',
+      parents: [],
+      model: null,
+      engine: null,
+      runtime: null,
+      output: { hash: 'sha256:' + 'ee'.repeat(32), schema: null },
+      completedAt: '2026-09-20T17:27:25Z',
+    },
+    signature: { alg: 'ed25519', keyId: 'k' },
+    anchor: anchored ? { chain: 'solana-devnet', tx: ANCHOR_TX, slot: 412998877, root: ROOT, proof: ['L:' + ROOT, 'R:' + ROOT] } : null,
+    createdAt: '2026-09-20T17:27:25Z',
+  };
+}
+
+function proofOf(over: Partial<ProofInput> & { status?: 'PENDING' | 'SUBMITTED' | 'FINALIZED' | 'FAILED' } = {}): ProofInput {
+  const status = over.status ?? 'FINALIZED';
+  return {
+    receipt: execReceipt(status === 'FINALIZED'),
+    batch: {
+      root: ROOT,
+      chain: 'solana-devnet',
+      status,
+      memo: 'm',
+      receiptCount: 3,
+      tx: status === 'PENDING' ? null : ANCHOR_TX,
+      slot: status === 'FINALIZED' ? 412998877 : null,
+      attempts: 1,
+      createdAt: '2026-09-20T17:27:30Z',
+      finalizedAt: status === 'FINALIZED' ? '2026-09-20T17:27:40Z' : null,
+    },
+    batchExplorerUrl: `https://explorer.solana.com/tx/${ANCHOR_TX}?cluster=devnet`,
+    proof: ['L:' + ROOT, 'R:' + ROOT],
+    inclusion: true,
+    ...over,
+  };
+}
+
+const EXECUTED = () =>
+  proposal({
+    status: 'EXECUTED',
+    operationId: 'ef13435b-aa4c-4f02-bd13-c2d2886eb3bb',
+    execution: { status: 'EXECUTED', signature: SIG1 } as ActionProposal['execution'],
+  });
+
+const stageStates = (stages: ReturnType<typeof buildStages>) => Object.fromEntries(stages.map((s) => [s.id, s.state]));
+const stageDur = (stages: ReturnType<typeof buildStages>) => Object.fromEntries(stages.map((s) => [s.id, s.durationMs]));
+
+describe('buildStages — 12 steps → INTENT · POLICY · APPROVAL · SIGN · EXECUTE · FINALIZE · RECONCILE · PROVE', () => {
+  it('maps each of the 12 steps to exactly one stage', () => {
+    expect(STAGE_MAP.map((s) => s.id)).toEqual(['INTENT', 'POLICY', 'APPROVAL', 'SIGN', 'EXECUTE', 'FINALIZE', 'RECONCILE', 'PROVE']);
+    const ids = buildTimeline(EXECUTED(), HAPPY, ['EXECUTION']).map((s) => s.id);
+    // Same 12, each once (preconditions reads under POLICY, so the order is the product's, not the 12-step one).
+    expect([...STAGE_MAP.flatMap((s) => s.steps)].sort()).toEqual([...ids].sort());
+    const stages = buildStages(EXECUTED(), buildTimeline(EXECUTED(), HAPPY, ['EXECUTION']), proofOf());
+    expect(stages.flatMap((s) => s.steps.map((x) => x.id)).sort()).toEqual([...ids].sort());
+    expect(stages.find((s) => s.id === 'POLICY')!.steps.map((x) => x.id)).toEqual(['simulation', 'policy', 'preconditions']);
+    expect(stages.find((s) => s.id === 'PROVE')!.checks.map((x) => x.id)).toEqual(['anchor', 'inclusion']);
+  });
+
+  it('an EXECUTED proposal with a valid inclusion proof: 7 stages done, reconciliation not needed, durations add up', () => {
+    const steps = buildTimeline(EXECUTED(), HAPPY, ['EXECUTION']);
+    const stages = buildStages(EXECUTED(), steps, proofOf());
+    expect(stageStates(stages)).toEqual({
+      INTENT: 'done',
+      POLICY: 'done',
+      APPROVAL: 'done',
+      SIGN: 'done',
+      EXECUTE: 'done',
+      FINALIZE: 'done',
+      RECONCILE: 'skipped',
+      PROVE: 'done',
+    });
+    // HAPPY events are 1 s apart (17:27:10 → :19); the timelock closes at EXECUTION_STARTED (:15),
+    // the receipt is written at :25 and the anchor batch finalizes at :40.
+    expect(stageDur(stages)).toEqual({
+      INTENT: null,
+      POLICY: 2000,
+      APPROVAL: 3000,
+      SIGN: 2000,
+      EXECUTE: 1000,
+      FINALIZE: 1000,
+      RECONCILE: null,
+      PROVE: 21000,
+    });
+    expect(totalDuration(stages)).toBe(30000); // 17:27:10 → 17:27:40, first event to the anchor
+    expect(stages.some((s) => s.running)).toBe(false);
+  });
+
+  it('gives each stage one line of evidence, with the explorer link where there is a transaction', () => {
+    const stages = buildStages(EXECUTED(), buildTimeline(EXECUTED(), HAPPY, ['EXECUTION']), proofOf());
+    const ev = Object.fromEntries(stages.map((s) => [s.id, s.evidence]));
+    const explorer = `https://explorer.solana.com/tx/${SIG1}?cluster=devnet`;
+    expect(ev['INTENT']!.text).toContain('SELL 0.3999 SOL');
+    expect(ev['POLICY']!.text).toBe('ALLOW · tier AUTONOMOUS · H_R sha256:1882cd…dff2');
+    expect(ev['SIGN']).toEqual({ text: `signature ${SIG1.slice(0, 8)}…${SIG1.slice(-6)}`, href: explorer });
+    expect(ev['EXECUTE']!.href).toBe(explorer);
+    expect(ev['FINALIZE']!.text).toBe('EXECUTED · confirmed');
+    expect(ev['RECONCILE']!.text).toBe('not needed: closed by confirmation');
+    expect(ev['PROVE']).toEqual({ text: 'inclusion proof valid · root sha256:9f9f9f…9f9f', href: `https://explorer.solana.com/tx/${ANCHOR_TX}?cluster=devnet` });
+  });
+
+  it('PROVE follows the receipt, the batch and the proof check', () => {
+    const steps = buildTimeline(EXECUTED(), HAPPY, ['EXECUTION']);
+    const prove = (p: ProofInput) => buildStages(EXECUTED(), steps, p).find((s) => s.id === 'PROVE')!;
+
+    const noReceipt = buildStages(EXECUTED(), buildTimeline(EXECUTED(), HAPPY, []), NO_PROOF).find((s) => s.id === 'PROVE')!;
+    expect(noReceipt.state).toBe('active');
+    expect(noReceipt.checks.map((c) => c.state)).toEqual(['pending', 'pending']);
+
+    const submitted = prove(proofOf({ status: 'SUBMITTED', inclusion: null }));
+    expect(submitted.state).toBe('active');
+    expect(submitted.checks[0].note).toBe('batch SUBMITTED · waiting for finality');
+
+    const unchecked = prove(proofOf({ inclusion: null }));
+    expect(unchecked.state).toBe('active');
+    expect(unchecked.checks[1].note).toContain('not checked here');
+
+    const broken = prove(proofOf({ inclusion: false }));
+    expect(broken.state).toBe('failed');
+    expect(broken.evidence!.text).toBe('proof does NOT fold to the anchored root');
+
+    expect(prove(proofOf({ status: 'FAILED', inclusion: null })).state).toBe('failed');
+  });
+
+  it('an active stage is running: its duration grows with `now`', () => {
+    const awaiting = proposal({ status: 'AWAITING_APPROVAL' });
+    const steps = buildTimeline(awaiting, HAPPY.slice(0, 4));
+    const now = parseInstant('2026-09-20T17:27:42Z')!;
+    const stages = buildStages(awaiting, steps, NO_PROOF, [], now);
+    expect(stageStates(stages)).toMatchObject({ INTENT: 'done', POLICY: 'done', APPROVAL: 'active', SIGN: 'pending', PROVE: 'pending' });
+    expect(stages.filter((s) => s.running).map((s) => s.id)).toEqual(['APPROVAL']); // one clock at a time
+    const approval = stages.find((s) => s.id === 'APPROVAL')!;
+    expect(approval.running).toBe(true);
+    expect(approval.durationMs).toBe(30000); // last event 17:27:12 (policy) → now
+    expect(buildStages(awaiting, steps, NO_PROOF, [], null).find((s) => s.id === 'APPROVAL')!.durationMs).toBeNull();
+  });
+
+  it('BLOCKED_BY_POLICY fails POLICY and skips every stage after it', () => {
+    const blocked = trail([EV.CREATED, EV.SIMULATED, [EV.POLICY, { decision: 'DENY', tier: 'OVER_LIMIT', policyHash: H_R }], EV.BLOCKED]);
+    const p = proposal({ status: 'BLOCKED_BY_POLICY' });
+    const stages = buildStages(p, buildTimeline(p, blocked));
+    expect(stageStates(stages)).toEqual({
+      INTENT: 'done',
+      POLICY: 'failed',
+      APPROVAL: 'skipped',
+      SIGN: 'skipped',
+      EXECUTE: 'skipped',
+      FINALIZE: 'skipped',
+      RECONCILE: 'skipped',
+      PROVE: 'skipped',
+    });
+    expect(stages[1].evidence!.text).toContain('BLOCKED_BY_POLICY');
+  });
+
+  it('chaos rpc-down: EXECUTE uncertain, then RECONCILE uncertain with the dead letter id', () => {
+    const t = trail([
+      EV.CREATED,
+      EV.SIMULATED,
+      EV.POLICY,
+      EV.AWAITING,
+      EV.APPROVED,
+      EV.STARTED,
+      EV.VALIDATED,
+      [EV.SIGNED, { signature: SIG1 }],
+      [EV.BROADCAST_UNCERTAIN, { error: 'chaos: rpc down' }],
+      [EV.AMBIGUOUS, { reason: 'No verdict after 3 reconciliation attempts' }],
+    ]);
+    const p = proposal({ status: 'EXECUTING' });
+    const stages = buildStages(p, buildTimeline(p, t), NO_PROOF, [{ id: '3a88532c-70e1-40d0-8b84-205162ad23fb', resolvedAt: null }]);
+    expect(stageStates(stages)).toMatchObject({ SIGN: 'done', EXECUTE: 'uncertain', FINALIZE: 'active', RECONCILE: 'uncertain', PROVE: 'pending' });
+    expect(stages.find((s) => s.id === 'EXECUTE')!.evidence!.text).toContain('broadcast uncertain');
+    expect(stages.find((s) => s.id === 'RECONCILE')!.evidence!.text).toMatch(/^dead letter 3a88532c open · RECONCILIATION_AMBIGUOUS/);
+  });
+
+  it('returns nothing without steps', () => {
+    expect(buildStages(null, [])).toEqual([]);
+  });
+});
+
+describe('stage helpers', () => {
+  it('aggregateState: failed > uncertain > active > done; skipped and later pending checks do not hold done back', () => {
+    expect(aggregateState(['done', 'failed', 'uncertain'])).toBe('failed');
+    expect(aggregateState(['done', 'uncertain', 'active'])).toBe('uncertain');
+    expect(aggregateState(['done', 'active'])).toBe('active');
+    expect(aggregateState(['done', 'pending'])).toBe('done'); // POLICY waiting on its execution-time preconditions
+    expect(aggregateState(['done', 'done'])).toBe('done');
+    expect(aggregateState(['done', 'skipped'])).toBe('done');
+    expect(aggregateState(['skipped', 'skipped'])).toBe('skipped');
+    expect(aggregateState(['pending', 'skipped'])).toBe('pending');
+    expect(aggregateState([])).toBe('pending');
+  });
+
+  it('stepDurations: chronological deltas, ties in pipeline order, steps without a time ignored', () => {
+    const d = stepDurations([
+      { id: 'a', n: 1, label: '', who: '', state: 'done', at: '2026-09-20T17:27:10Z', note: null },
+      { id: 'b', n: 2, label: '', who: '', state: 'done', at: '2026-09-20T17:27:12.500Z', note: null },
+      { id: 'c', n: 3, label: '', who: '', state: 'pending', at: null, note: null },
+      { id: 'd', n: 4, label: '', who: '', state: 'done', at: '2026-09-20T17:27:11Z', note: null },
+    ]);
+    expect(Object.fromEntries(d)).toEqual({ d: 1000, b: 1500 });
+  });
+
+  it('parseInstant keeps millisecond precision of nanosecond instants', () => {
+    expect(parseInstant('2026-09-20T17:27:29.158597140Z')).toBe(Date.UTC(2026, 8, 20, 17, 27, 29, 158));
+    expect(parseInstant(null)).toBeNull();
+    expect(parseInstant('nope')).toBeNull();
+  });
+
+  it('formatDuration', () => {
+    expect(formatDuration(null)).toBe('—');
+    expect(formatDuration(420)).toBe('420 ms');
+    expect(formatDuration(1400)).toBe('1.4 s');
+    expect(formatDuration(36_200)).toBe('36 s');
+    expect(formatDuration(76_000)).toBe('1 m 16 s');
+    expect(formatDuration(7_500_000)).toBe('2 h 05 m');
   });
 });

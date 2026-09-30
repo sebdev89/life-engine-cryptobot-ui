@@ -15,7 +15,9 @@ import {
 } from '../control-plane-api';
 import { AuthRequiredError } from '../cryptobot-api';
 import { getProposalLineage } from '../lineage-api';
-import { listProposalReceipts } from '../receipts-api';
+import { AnchorDetail, IntelligenceReceipt, explorerTxUrl, getAnchor, listAnchors, listProposalReceipts } from '../receipts-api';
+import { inclusionProofValid } from '../merkle';
+import { ExecutionDetail } from './execution-detail/execution-detail';
 import {
   CHAOS_MODES,
   ChaosMode,
@@ -35,8 +37,12 @@ import { Receipts } from '../receipts/receipts';
 import {
   ApiFailure,
   auditFacts,
+  NO_PROOF,
+  ProofInput,
+  buildStages,
   buildTimeline,
   deadLetterKind,
+  formatDuration,
   describeFailure,
   explorerTxUrlFor,
   isMainnetFailClosed,
@@ -47,9 +53,12 @@ import {
   proposalChanged,
   shortId,
   shortSig,
+  totalDuration,
 } from './live-model';
 
 const DEFAULT_POLL_MS = 2000;
+/** While an EXECUTED proposal waits for its anchor, PROVE is re-read every N ticks (≈10 s at 2 s). */
+const PROOF_EVERY_TICKS = 5;
 
 /** What the control plane answered to the last click — the 409s are the demo, not an error to hide. */
 export interface LastAnswer {
@@ -73,7 +82,7 @@ export interface LastAnswer {
 @Component({
   selector: 'app-live-operation',
   standalone: true,
-  imports: [RouterLink, SlicePipe, Lineage, Receipts],
+  imports: [RouterLink, SlicePipe, Lineage, Receipts, ExecutionDetail],
   templateUrl: './live.html',
   styleUrl: './live.scss',
 })
@@ -98,6 +107,8 @@ export class LiveOperation implements OnInit {
   readonly audit = signal<AuditEvent[]>([]);
   readonly events = signal<ProposalEvents | null>(null);
   readonly receiptKinds = signal<string[]>([]);
+  /** PROVE (KAN-784): EXECUTION receipt + its anchor batch + the inclusion proof folded here. */
+  readonly proof = signal<ProofInput>(NO_PROOF);
   readonly loadError = signal<string | null>(null);
   /** Bumped when the row moved (status/updatedAt) so lineage + receipts reload — not on every tick. */
   readonly panelsVersion = signal(0);
@@ -148,7 +159,11 @@ export class LiveOperation implements OnInit {
     const p = this.proposal();
     return p ? (p.operationId ?? this.operationIds.get(p.id) ?? null) : null;
   });
-  readonly doneCount = computed(() => this.timeline().filter((s) => s.state === 'done').length);
+  readonly stages = computed(() =>
+    buildStages(this.proposal(), this.timeline(), this.proof(), this.events()?.deadLetters ?? [], this.lastTick()?.getTime() ?? null),
+  );
+  readonly doneStages = computed(() => this.stages().filter((s) => s.state === 'done').length);
+  readonly totalTime = computed(() => formatDuration(totalDuration(this.stages())));
   readonly terminal = computed(() => {
     const p = this.proposal();
     return !!p && isTerminal(p.status);
@@ -162,6 +177,7 @@ export class LiveOperation implements OnInit {
   readonly deadLetterKind = deadLetterKind;
 
   private timer: ReturnType<typeof setInterval> | null = null;
+  private proofTicks = 0;
   private inFlight = false;
 
   constructor() {
@@ -269,13 +285,57 @@ export class LiveOperation implements OnInit {
         ]);
         this.receiptKinds.set(receipts.map((r) => r.body.kind));
         this.lineageAvailable.set(lineage);
+        this.proof.set(await this.loadProof(receipts));
         this.panelsVersion.update((v) => v + 1);
+      } else if (full.proposal.status === 'EXECUTED' && this.proof().inclusion !== true && ++this.proofTicks % PROOF_EVERY_TICKS === 0) {
+        // Anchoring runs after execution, in its own batch: the row does not move when the root
+        // finalizes, so PROVE is re-read on its own (every few ticks) until the proof checks out.
+        const receipts = await listProposalReceipts(id).catch(() => [] as IntelligenceReceipt[]);
+        const before = this.proof();
+        const next = await this.loadProof(receipts);
+        this.receiptKinds.set(receipts.map((r) => r.body.kind));
+        this.proof.set(next);
+        if (next.inclusion !== before.inclusion || next.batch?.status !== before.batch?.status) this.panelsVersion.update((v) => v + 1);
       }
       this.loadError.set(null);
     } catch (e) {
       this.loadError.set(this.message(e));
       this.handleAuth(e);
     }
+  }
+
+  /**
+   * PROVE from existing endpoints only: the EXECUTION receipt (`/proposals/{id}/receipts`), the
+   * batch that anchors it (`GET /anchors/{root}`; while the receipt carries no anchor yet, the
+   * open batches of `GET /anchors?limit=` are checked for it), and the Merkle proof folded here.
+   */
+  private async loadProof(receipts: readonly IntelligenceReceipt[]): Promise<ProofInput> {
+    const receipt = receipts.find((r) => r.body.kind === 'EXECUTION') ?? null;
+    if (!receipt) return NO_PROOF;
+    let detail: AnchorDetail | null = null;
+    if (receipt.anchor?.root) {
+      detail = await getAnchor(receipt.anchor.root).catch(() => null);
+    } else {
+      const open = (await listAnchors(5).catch(() => [])).filter((a) => a.anchor.status !== 'FINALIZED' && a.anchor.createdAt >= receipt.createdAt);
+      for (const a of open.slice(0, 3)) {
+        const d = await getAnchor(a.anchor.root).catch(() => null);
+        if (d?.myReceipts?.some((m) => m.receiptHash === receipt.receiptHash)) {
+          detail = d;
+          break;
+        }
+      }
+    }
+    const member = detail?.myReceipts?.find((m) => m.receiptHash === receipt.receiptHash);
+    const proof = member?.proof ?? receipt.anchor?.proof ?? null;
+    const root = detail?.anchor.root ?? receipt.anchor?.root ?? null;
+    const finalized = detail ? detail.anchor.status === 'FINALIZED' : !!receipt.anchor?.tx;
+    return {
+      receipt,
+      batch: detail?.anchor ?? null,
+      batchExplorerUrl: detail?.explorerUrl ?? explorerTxUrl(receipt.anchor?.chain, receipt.anchor?.tx),
+      proof,
+      inclusion: finalized ? await inclusionProofValid(receipt.receiptHash, proof, root) : null,
+    };
   }
 
   // ---- actions (the same endpoints the dashboard uses; nothing new) ------------------------

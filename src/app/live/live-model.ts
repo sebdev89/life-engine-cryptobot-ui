@@ -7,6 +7,7 @@
  * reconciliation ambiguous), `active` when it is the next thing the service will do.
  */
 import { ActionProposal, AuditEvent, DeadLetter, PolicyDecision, ProposalStatus } from '../control-plane-api';
+import { AnchorBatch, IntelligenceReceipt } from '../receipts-api';
 
 export type StepState = 'pending' | 'active' | 'done' | 'failed' | 'uncertain' | 'skipped';
 
@@ -200,7 +201,8 @@ export function buildTimeline(proposal: ActionProposal | null, audit: readonly A
     'Timelock',
     'PolicyEngine.executableAt',
     timelockState,
-    cancelled ?? (started ? approved : null),
+    // The event that closes the timelock is EXECUTION_STARTED (the first moment it was over and used).
+    cancelled ?? started,
     cancelled ? `CANCELLED by ${cancelled.actor}` : executableAt ? `executable at ${executableAt.replace('T', ' ').slice(0, 19)} UTC` : null,
   );
 
@@ -362,6 +364,272 @@ export function buildTimeline(proposal: ActionProposal | null, audit: readonly A
     }
   }
   return steps;
+}
+
+// ---- the 8 product stages (KAN-784) --------------------------------------------------------
+
+export type StageId = 'INTENT' | 'POLICY' | 'APPROVAL' | 'SIGN' | 'EXECUTE' | 'FINALIZE' | 'RECONCILE' | 'PROVE';
+
+/** One line of evidence; `href` when it points somewhere a judge can click (explorer). */
+export interface Evidence {
+  text: string;
+  href: string | null;
+}
+
+export interface Stage {
+  id: StageId;
+  n: number;
+  /** What happens in the stage, in product words. */
+  label: string;
+  state: StepState;
+  /** Sum of the time its sub-steps took (see `stepDurations`); null when nothing in it closed yet. */
+  durationMs: number | null;
+  /** Active: the duration keeps growing (time since the last event, as of `now`). */
+  running: boolean;
+  /** When the stage closed (last `at` of its sub-steps). */
+  endedAt: string | null;
+  evidence: Evidence | null;
+  /** The original steps of the 12-step model that make up this stage (all 12 stay reachable). */
+  steps: DemoStep[];
+  /** PROVE only: checks that are not one of the 12 steps (anchor batch, inclusion proof). */
+  checks: DemoStep[];
+}
+
+/** INTENT · POLICY · APPROVAL · SIGN · EXECUTE · FINALIZE · RECONCILE · PROVE ← the 12 steps. */
+export const STAGE_MAP: readonly { id: StageId; label: string; steps: readonly string[] }[] = [
+  { id: 'INTENT', label: 'Agent intent → plan', steps: ['intent'] },
+  { id: 'POLICY', label: 'Simulation · 13 rules · execution preconditions', steps: ['simulation', 'policy', 'preconditions'] },
+  { id: 'APPROVAL', label: 'Human approval · timelock', steps: ['approval', 'timelock'] },
+  { id: 'SIGN', label: 'Independent validator · isolated signer', steps: ['validator', 'signer'] },
+  { id: 'EXECUTE', label: 'Broadcast to Solana', steps: ['submit'] },
+  { id: 'FINALIZE', label: 'On-chain confirmation', steps: ['confirm'] },
+  { id: 'RECONCILE', label: 'Reconciliation · dead-letter queue', steps: ['reconcile'] },
+  { id: 'PROVE', label: 'Signed receipt · Merkle anchor · inclusion proof', steps: ['receipt'] },
+];
+
+/** What PROVE is built from: the EXECUTION receipt, the batch that anchors it, and the client-side proof check. */
+export interface ProofInput {
+  receipt: IntelligenceReceipt | null;
+  /** The anchor batch (`GET /anchors/{root}` or the matching one of `GET /anchors`). */
+  batch: AnchorBatch | null;
+  batchExplorerUrl: string | null;
+  /** Merkle siblings of the receipt (from the batch detail, else the receipt's own anchor). */
+  proof: string[] | null;
+  /** `merkle.inclusionProofValid`: true/false when folded, null when not (yet) checked. */
+  inclusion: boolean | null;
+}
+
+export const NO_PROOF: ProofInput = { receipt: null, batch: null, batchExplorerUrl: null, proof: null, inclusion: null };
+
+/**
+ * failed if any failed · uncertain if any · active if any active · done if all done (skipped ones
+ * do not hold it back) · skipped if all skipped · pending if nothing started.
+ *
+ * Done + pending with nothing active reads as done: the only such case is POLICY, whose
+ * execution-time preconditions run after APPROVAL. They do not reopen the stage (two stages would
+ * "run" at once while the human decides); if they fail, the stage fails.
+ */
+export function aggregateState(states: readonly StepState[]): StepState {
+  if (!states.length) return 'pending';
+  if (states.includes('failed')) return 'failed';
+  if (states.includes('uncertain')) return 'uncertain';
+  if (states.includes('active')) return 'active';
+  if (states.includes('done')) return 'done';
+  if (states.includes('pending')) return 'pending';
+  return 'skipped';
+}
+
+/** Instant as the service renders it (nanosecond fractions included) → epoch ms. */
+export function parseInstant(at: string | null | undefined): number | null {
+  if (!at) return null;
+  const ms = Date.parse(at.replace(/(\.\d{3})\d+/, '$1'));
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/**
+ * How long each step took: from the previous event of the run (chronologically) to the event that
+ * closed it. Summing these per stage makes the stage durations add up to the whole run (human
+ * approval, the timelock wait and a recovery included, where they belong), which a first→last
+ * `at` inside each stage cannot do: a one-step stage would always read 0, and POLICY's
+ * execution-time preconditions would stretch it across the approval. Ties keep pipeline order.
+ */
+export function stepDurations(steps: readonly DemoStep[]): Map<string, number> {
+  const out = new Map<string, number>();
+  const timed = steps
+    .map((s, i) => ({ id: s.id, t: parseInstant(s.at), i }))
+    .filter((x): x is { id: string; t: number; i: number } => x.t !== null)
+    .sort((a, b) => a.t - b.t || a.i - b.i);
+  for (let k = 1; k < timed.length; k++) out.set(timed[k].id, timed[k].t - timed[k - 1].t);
+  return out;
+}
+
+/** `420 ms` · `1.4 s` · `36 s` · `1 m 16 s` · `2 h 05 m`. */
+export function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined || !Number.isFinite(ms)) return '—';
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  const s = ms / 1000;
+  if (s < 10) return `${s.toFixed(1)} s`;
+  if (s < 60) return `${Math.round(s)} s`;
+  const totalS = Math.round(s);
+  if (totalS < 3600) return `${Math.floor(totalS / 60)} m ${String(totalS % 60).padStart(2, '0')} s`;
+  return `${Math.floor(totalS / 3600)} h ${String(Math.floor((totalS % 3600) / 60)).padStart(2, '0')} m`;
+}
+
+function proveChecks(receiptStep: DemoStep | undefined, proof: ProofInput): DemoStep[] {
+  const upstream = receiptStep?.state ?? 'pending';
+  const notYet: StepState = upstream === 'skipped' ? 'skipped' : 'pending';
+  const b = proof.batch;
+  const receiptAnchored = !!proof.receipt?.anchor?.tx;
+  const batchState: StepState = !proof.receipt
+    ? notYet
+    : b?.status === 'FINALIZED' || (!b && receiptAnchored)
+      ? 'done'
+      : b?.status === 'FAILED' || b?.status === 'ABANDONED'
+        ? 'failed'
+        : 'active';
+  const root = b?.root ?? proof.receipt?.anchor?.root ?? null;
+  const tx = b?.tx ?? proof.receipt?.anchor?.tx ?? null;
+  const slot = b?.slot ?? proof.receipt?.anchor?.slot ?? null;
+  const anchor: DemoStep = {
+    id: 'anchor',
+    n: 13,
+    label: 'Merkle root anchored on devnet (memo tx)',
+    who: 'AnchorService · GET /anchors/{root}',
+    state: batchState,
+    at: b?.finalizedAt ?? null,
+    note:
+      batchState === 'done'
+        ? `root ${short(root, 13, 4)} · ${b?.receiptCount ?? '?'} receipts · slot ${slot ?? '—'} · tx ${short(tx)}`
+        : batchState === 'failed'
+          ? `batch ${b?.status}`
+          : proof.receipt
+            ? b
+              ? `batch ${b.status} · waiting for finality`
+              : 'waiting for the next anchoring batch'
+            : null,
+  };
+  const inclusionState: StepState =
+    batchState !== 'done' ? (batchState === 'failed' ? 'skipped' : notYet) : proof.inclusion === true ? 'done' : proof.inclusion === false ? 'failed' : 'active';
+  const inclusion: DemoStep = {
+    id: 'inclusion',
+    n: 14,
+    label: 'Inclusion proof folds to the root (checked in this browser)',
+    who: 'merkle.ts · SHA-256(0x00‖leaf), SHA-256(0x01‖L‖R)',
+    state: inclusionState,
+    at: null,
+    note:
+      proof.inclusion === true
+        ? `receipt ∈ root · ${proof.proof?.length ?? 0} sibling(s) · valid`
+        : proof.inclusion === false
+          ? 'proof does NOT fold to the anchored root'
+          : batchState === 'done'
+            ? 'not checked here (needs WebCrypto) — use Verify below'
+            : null,
+  };
+  return [anchor, inclusion];
+}
+
+function evidenceFor(
+  id: StageId,
+  steps: readonly DemoStep[],
+  checks: readonly DemoStep[],
+  proposal: ActionProposal | null,
+  proof: ProofInput,
+  deadLetters: readonly Pick<DeadLetter, 'id' | 'resolvedAt'>[],
+): Evidence | null {
+  const all = [...steps, ...checks];
+  const bad = all.find((s) => (s.state === 'failed' || s.state === 'uncertain') && s.note);
+  const explorer = proposal ? explorerTxUrlFor(proposal.cluster, proposal.execution?.signature, proposal.execution?.explorerUrl) : null;
+  const note = (sid: string) => all.find((s) => s.id === sid)?.note ?? null;
+  const line = (text: string | null, href: string | null = null): Evidence | null => (text ? { text, href } : null);
+  if (id === 'RECONCILE' && deadLetters.length) {
+    const open = deadLetters.find((d) => !d.resolvedAt);
+    const dl = open ?? deadLetters[0];
+    return line(`dead letter ${shortId(dl.id)} ${open ? 'open' : 'closed'}${note('reconcile') ? ' · ' + note('reconcile') : ''}`);
+  }
+  if (bad) return line(bad.note);
+  switch (id) {
+    case 'INTENT':
+      return line(note('intent'));
+    case 'POLICY':
+      return line(note('policy') ?? note('simulation'));
+    case 'APPROVAL':
+      return line(note('approval') ?? note('timelock'));
+    case 'SIGN': {
+      const sig = proposal?.execution?.signature;
+      return sig && all.find((s) => s.id === 'signer')?.state === 'done' ? line(`signature ${shortSig(sig)}`, explorer) : line(note('validator'));
+    }
+    case 'EXECUTE':
+      return line(note('submit'), all.find((s) => s.id === 'submit')?.state === 'done' ? explorer : null);
+    case 'FINALIZE':
+      return line(note('confirm'), all.find((s) => s.id === 'confirm')?.state === 'done' ? explorer : null);
+    case 'RECONCILE':
+      return line(note('reconcile'));
+    case 'PROVE': {
+      if (proof.inclusion === true) {
+        const root = proof.batch?.root ?? proof.receipt?.anchor?.root ?? null;
+        return line(`inclusion proof valid · root ${short(root, 13, 4)}`, proof.batchExplorerUrl);
+      }
+      return line(note('anchor') ?? (proof.receipt ? `EXECUTION receipt ${short(proof.receipt.receiptHash, 13, 4)}` : null), proof.batchExplorerUrl);
+    }
+  }
+}
+
+/**
+ * The 12 steps regrouped into the 8 stages of the product, each with an aggregated state, a
+ * duration, one line of evidence and its original steps. `now` (epoch ms) lets an active stage
+ * show its running time; pure otherwise.
+ */
+export function buildStages(
+  proposal: ActionProposal | null,
+  steps: readonly DemoStep[],
+  proof: ProofInput = NO_PROOF,
+  deadLetters: readonly Pick<DeadLetter, 'id' | 'resolvedAt'>[] = [],
+  now: number | null = null,
+): Stage[] {
+  if (!steps.length) return [];
+  const byId = new Map(steps.map((s) => [s.id, s]));
+  // PROVE closes when the receipt is written: give step 12 the receipt's time for the duration.
+  const receiptStep = byId.get('receipt');
+  const timed: DemoStep[] = steps.map((s) => (s.id === 'receipt' && proof.receipt && s.state === 'done' ? { ...s, at: proof.receipt.createdAt } : s));
+  const checks = proveChecks(receiptStep, proof);
+  const durations = stepDurations([...timed, ...checks]);
+  const timedById = new Map([...timed, ...checks].map((s) => [s.id, s]));
+  let lastAt: number | null = null;
+  for (const s of [...timed, ...checks]) {
+    const t = parseInstant(s.at);
+    if (t !== null) lastAt = lastAt === null ? t : Math.max(lastAt, t);
+  }
+
+  return STAGE_MAP.map((def, i) => {
+    const own = def.steps.map((id) => byId.get(id)).filter((s): s is DemoStep => !!s);
+    const extra = def.id === 'PROVE' ? checks : [];
+    const state = aggregateState([...own, ...extra].map((s) => s.state));
+    const members = [...def.steps, ...extra.map((c) => c.id)];
+    const measured = members.filter((id) => durations.has(id));
+    let durationMs: number | null = measured.length ? measured.reduce((n, id) => n + durations.get(id)!, 0) : null;
+    const running = state === 'active';
+    if (running && now !== null && lastAt !== null) durationMs = (durationMs ?? 0) + Math.max(0, now - lastAt);
+    const ends = members.map((id) => timedById.get(id)?.at ?? null).filter((a): a is string => !!a);
+    return {
+      id: def.id,
+      n: i + 1,
+      label: def.label,
+      state,
+      durationMs,
+      running,
+      endedAt: ends.length ? ends.reduce((a, b) => ((parseInstant(b) ?? 0) > (parseInstant(a) ?? 0) ? b : a)) : null,
+      evidence: evidenceFor(def.id, own, extra, proposal, proof, deadLetters),
+      steps: own,
+      checks: extra,
+    };
+  });
+}
+
+/** Wall time from the first to the last event of the run (what the header shows). */
+export function totalDuration(stages: readonly Stage[]): number | null {
+  const sum = stages.reduce((n, s) => n + (s.durationMs ?? 0), 0);
+  return stages.some((s) => s.durationMs !== null) ? sum : null;
 }
 
 // ---- policy ---------------------------------------------------------------------------------
