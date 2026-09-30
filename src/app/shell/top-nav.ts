@@ -20,6 +20,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <a routerLink="/tower" routerLinkActive="is-active">Control Tower</a>
         <a routerLink="/live" routerLinkActive="is-active">Execution</a>
         <a routerLink="/proof" routerLinkActive="is-active">Proof</a>
+        <a routerLink="/recovery" routerLinkActive="is-active">Recovery</a>
         <a routerLink="/demo" routerLinkActive="is-active">Demo Mode</a>
         <a routerLink="/console" routerLinkActive="is-active" class="nav__quiet">Console</a>
       </nav>

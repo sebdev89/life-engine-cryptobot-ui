@@ -16,6 +16,9 @@ const tower = () => import('./tower/tower').then((m) => m.ControlTower);
 // KAN-788: Proof view — anchors, inclusion path folded in the browser, server verification.
 const proof = () => import('./proof/proof').then((m) => m.ProofView);
 
+// KAN-790: Recovery — the dead-letter queue, the human decision on each letter, and demo-only chaos.
+const recovery = () => import('./recovery/recovery').then((m) => m.RecoveryView);
+
 export const routes: Routes = [
   { path: '', component: Landing, pathMatch: 'full' },
   { path: 'console', loadComponent: consoleView },
@@ -25,5 +28,6 @@ export const routes: Routes = [
   { path: 'tower', loadComponent: tower },
   { path: 'proof', loadComponent: proof },
   { path: 'proof/:root', loadComponent: proof },
+  { path: 'recovery', loadComponent: recovery },
   { path: '**', redirectTo: '' },
 ];
