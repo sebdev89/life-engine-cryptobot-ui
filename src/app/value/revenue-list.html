@@ -1,0 +1,64 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <p class="eyebrow">Proof of Value · revenue</p>
+    <h1>Revenue events</h1>
+  </header>
+  <app-value-nav />
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Revenue data is read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    <p class="t-3 small cost-note" data-testid="settlement-note">{{ note }}</p>
+    @if (events(); as list) {
+      @if (!list.length) {
+        <section class="panel empty">
+          <p class="eyebrow">Nothing recorded</p>
+          <p class="t-2">No revenue events yet.</p>
+        </section>
+      } @else {
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="grid" data-testid="revenue-list">
+              <thead><tr><th>Date</th><th>Source</th><th class="num">Amount (SOL)</th><th class="num">Pool</th><th class="num">Fee</th><th class="num">Retained</th><th>Status</th><th>Anchor</th></tr></thead>
+              <tbody>
+                @for (r of list; track r.id) {
+                  <tr>
+                    <td class="mono small t-2"><a [routerLink]="['/value/revenue', r.id]">{{ r.createdAt | date: 'yyyy-MM-dd HH:mm' }}</a></td>
+                    <td>
+                      {{ r.source.kind }} <span class="mono small t-3">{{ r.source.ref }}</span>
+                      @if (r.simulated) {
+                        <span class="st-badge st--uncertain" data-testid="simulated">SIMULATED</span>
+                      }
+                    </td>
+                    <td class="mono num">{{ sol(r.amountLamports) }}</td>
+                    <td class="mono num">{{ sol(r.contributorPoolLamports) }}</td>
+                    <td class="mono num">{{ sol(r.protocolFeeLamports) }}</td>
+                    <td class="mono num">{{ sol(r.retainedLamports) }}</td>
+                    <td><span class="st-badge st--{{ statusClass(r.status) }}">{{ r.status }}</span></td>
+                    <td>
+                      @if (r.anchor?.explorerUrl; as href) {
+                        <a class="small" [href]="href" target="_blank" rel="noopener">explorer ↗</a>
+                      } @else {
+                        <span class="t-3">not anchored</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (hasSimulated()) {
+            <p class="t-3 small cost-note" data-testid="simulated-note">{{ simulatedNote }}</p>
+          }
+        </section>
+      }
+    } @else if (loading()) {
+      <p class="t-2 loading" aria-busy="true">Reading /revenue-events…</p>
+    }
+  }
+</main>

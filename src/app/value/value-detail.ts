@@ -7,13 +7,14 @@ import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
+import { PayoutsTable } from './payouts-table';
 import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd, lamportsToSol, payoutClass, short, shortWallet, statusClass, statusLabel, txExplorerUrl } from './value-model';
 
 /** `/value/:id` (KAN-828): one ValueEvent, section by section, with what V1 does not cover said plainly. */
 @Component({
   selector: 'app-value-detail',
   standalone: true,
-  imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
+  imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav, PayoutsTable],
   templateUrl: './value-detail.html',
   styleUrl: './value.scss',
 })

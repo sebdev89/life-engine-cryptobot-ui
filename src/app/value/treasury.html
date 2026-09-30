@@ -1,0 +1,100 @@
+<main class="value">
+  <app-top-nav />
+
+  <header class="value__head">
+    <p class="eyebrow">Proof of Value · treasury</p>
+    <h1>Treasury</h1>
+  </header>
+  <app-value-nav />
+
+  @if (!signedIn()) {
+    <app-token-gate [why]="error() ?? 'Revenue data is read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else {
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    <div class="seg" role="group" aria-label="Agent identity">
+      @for (a of agents(); track a.id) {
+        <button type="button" class="btn" [class.on]="identityId() === a.id" [attr.aria-pressed]="identityId() === a.id" (click)="select(a.id)">{{ a.displayName }}</button>
+      }
+    </div>
+    <p class="t-3 small cost-note" data-testid="treasury-note">{{ treasuryNote }}</p>
+    @if (treasury(); as t) {
+      <div class="sections">
+        <section class="panel pad" data-section="current">
+          <h2>Current treasury</h2>
+          <dl class="facts">
+            <div>
+              <dt>on-chain balance</dt>
+              <dd class="mono" data-testid="balance">
+                @if (t.onChainBalanceLamports === null || t.onChainBalanceLamports === undefined) {
+                  unknown
+                } @else {
+                  {{ sol(t.onChainBalanceLamports) }} SOL
+                }
+                @if (t.wallet; as w) {
+                  <a class="small" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener" data-testid="wallet">{{ shortWallet(w) }} ↗</a>
+                }
+              </dd>
+            </div>
+            <div><dt>income</dt><dd class="mono" data-testid="income">{{ sol(t.incomeLamports) }} SOL</dd></div>
+            <div><dt>contributor payouts</dt><dd class="mono" data-testid="payouts-total">{{ sol(t.contributorPayoutsLamports) }} SOL</dd></div>
+            <div><dt>protocol fee</dt><dd class="mono" data-testid="fee">{{ sol(t.protocolFeeLamports) }} SOL</dd></div>
+            <div><dt>compute cost</dt><dd class="mono" data-testid="compute">{{ formatMicroUsd(t.computeCostMicroUsd) }}</dd></div>
+            <div><dt>retained</dt><dd class="mono" data-testid="retained">{{ sol(t.retainedLamports) }} SOL</dd></div>
+          </dl>
+          <p class="t-3 small cost-note">Compute cost is in USD and is not economic value.</p>
+        </section>
+
+        <section class="panel pad" data-section="policies">
+          <h2>Policies</h2>
+          <dl class="facts" data-testid="policies">
+            @for (r of policyRows(t); track r.label) {
+              <div><dt>{{ r.label }}</dt><dd class="mono">{{ r.value }}</dd></div>
+            }
+          </dl>
+        </section>
+
+        <section class="panel pad" data-section="recent">
+          <h2>Recent events</h2>
+          @if (!t.recentEvents.length) {
+            <p class="t-2">No treasury activity yet.</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="grid" data-testid="recent">
+                <thead><tr><th>Kind</th><th>Id</th><th class="num">SOL</th><th>When</th><th>Transaction</th></tr></thead>
+                <tbody>
+                  @for (e of t.recentEvents; track e.kind + e.id) {
+                    <tr>
+                      <td><span class="chip"><b>{{ e.kind }}</b></span></td>
+                      <td class="mono small">
+                        @if (e.kind === 'VALUE') {
+                          <a [routerLink]="['/value', e.id]">{{ e.id }}</a>
+                        } @else if (e.kind === 'REVENUE') {
+                          <a [routerLink]="['/value/revenue', e.id]">{{ e.id }}</a>
+                        } @else {
+                          {{ e.id }}
+                        }
+                      </td>
+                      <td class="mono num">{{ sol(e.lamports) }}</td>
+                      <td class="mono small t-2">{{ e.at | date: 'yyyy-MM-dd HH:mm' }}</td>
+                      <td>
+                        @if (e.txSignature; as sig) {
+                          <a class="mono small" [href]="txExplorerUrl(sig)" target="_blank" rel="noopener">{{ short(sig, 6, 4) }} ↗</a>
+                        } @else {
+                          <span class="t-3">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+    } @else if (loading()) {
+      <p class="t-2 loading" aria-busy="true">Reading /treasury…</p>
+    }
+  }
+</main>

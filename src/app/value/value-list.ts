@@ -2,12 +2,12 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
-import { ValueEvent, listValueEvents } from '../value-events-api';
+import { RevenueEvent, ValueEvent, listRevenueEvents, listValueEvents } from '../value-events-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
-import { paidLabel, short, statusClass, statusLabel } from './value-model';
+import { confirmedLamports, lamportsToSol, paidLabel, short, statusClass, statusLabel } from './value-model';
 
 const LIST_LIMIT = 50;
 
@@ -24,6 +24,9 @@ export class ValueList {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly events = signal<ValueEvent[] | null>(null);
+  /** null = not read (or unreadable): the KPI says so instead of showing 0. */
+  readonly revenue = signal<RevenueEvent[] | null>(null);
+  readonly sol = lamportsToSol;
 
   readonly short = short;
   readonly statusLabel = statusLabel;
@@ -40,6 +43,20 @@ export class ValueList {
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
+  /** Header numbers (Control Tower style). Distributed SOL = confirmed immediate rewards + confirmed revenue payouts. */
+  kpis(): { accepted: number; anchored: number; distributedLamports: number | null; revenueEvents: number | null } | null {
+    const list = this.events();
+    if (!list) return null;
+    const rev = this.revenue();
+    const immediate = list.reduce((a, e) => a + (e.distribution?.confirmedLamports ?? 0), 0);
+    return {
+      accepted: list.length,
+      anchored: list.filter((e) => e.status === 'ANCHORED').length,
+      distributedLamports: rev ? immediate + rev.reduce((a, r) => a + confirmedLamports(r.payouts), 0) : null,
+      revenueEvents: rev ? rev.length : null,
+    };
+  }
+
   onSignedIn(): void {
     this.signedIn.set(true);
     void this.load();
@@ -50,6 +67,8 @@ export class ValueList {
     try {
       this.events.set(await listValueEvents(LIST_LIMIT));
       this.error.set(null);
+      // Revenue is optional for this page: an older backend has no /revenue-events and the events must still render.
+      listRevenueEvents().then((r) => this.revenue.set(r)).catch(() => this.revenue.set(null));
     } catch (e) {
       if (e instanceof AuthRequiredError) {
         this.signedIn.set(false);
