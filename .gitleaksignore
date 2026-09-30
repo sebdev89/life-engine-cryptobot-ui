@@ -1,0 +1,3 @@
+# gitleaks allowlist — false positives only (no secrets)
+# Angular template expression "lv.key.split(...)" matched generic-api-key; it is a map key name, not a credential.
+src/app/lineage/lineage.html:generic-api-key:10

@@ -1,11 +1,10 @@
-# CI de cryptobot-ui (KAN-799): tests + build, y la imagen nginx por digest en GHCR con el
-# workflow reusable de la plataforma — el mismo caller que genera App Factory
-# (deploy: factory/templates/frontend-angular/.github/workflows/ui-image.yml).
+# CI de cryptobot-ui: tests + build, y verificación de que la imagen del repo (Dockerfile propio,
+# el mismo que usa el compose del demo) construye. Repo público desde 2026-09-30: un repo público
+# no puede llamar workflows reutilizables de un repo privado, así que la imagen de plataforma
+# (reusable de deploy) queda fuera de este CI. La imagen de GHCR no la consume ningún despliegue.
 #
-# Imagen: ghcr.io/sebdev89/life-engine-cryptobot-ui:sha-<commit7> (el reusable la nombra por el
-# repo que llama). Runner hosted: el repo no tiene runner propio en le-ci; es privado, así que
-# gasta cuota de Actions de la cuenta y un job que "no arranca" no es un fallo de código.
-# No despliega: publicar en uat es KAN-800 (gitops).
+# Runner hosted: el repo no tiene runner propio.
+# No despliega: la publicación en uat se hace por GitOps (internal ticket).
 #
 # Config en runtime: la imagen de la plataforma inyecta `window.__CRYPTOBOT_ENV = {...}` en
 # index.html (UI_ENV_GLOBAL=__CRYPTOBOT_ENV, UI_ENV_JSON='{"cryptobotBase":"…","authBase":"…"}');
@@ -43,17 +42,18 @@ jobs:
       - run: npx ng build
 
   image:
+    name: docker image (repo Dockerfile, no push)
     needs: test
-    uses: sebdev89/life-engine-deploy/.github/workflows/ui-image.yml@main
-    with:
-      runner: '["ubuntu-latest"]'
-      app: cryptobot
-      # Fuera de dist/: el reusable construye con contexto `.` y el .dockerignore del repo
-      # excluye dist (lo necesita el Dockerfile propio, que compila adentro). Run 36664487601.
-      build: npx ng build --configuration production --output-path ci-image
-      dist: ci-image/browser
-      push: ${{ github.event_name != 'pull_request' }}
-    permissions:
-      contents: read
-      packages: write
-    secrets: inherit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image from the repo Dockerfile
+        run: docker build --pull -t life-engine-cryptobot-ui:ci .
+      - name: Smoke the image (nginx serves index.html)
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name ui-ci -p 8080:80 life-engine-cryptobot-ui:ci
+          for i in $(seq 1 20); do curl -fsS localhost:8080/ >/dev/null 2>&1 && break; sleep 1; done
+          curl -fsS localhost:8080/ | grep -qi '<app-root' && echo "index.html OK"
+          docker stop ui-ci >/dev/null
