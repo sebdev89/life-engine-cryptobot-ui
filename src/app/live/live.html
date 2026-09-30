@@ -52,7 +52,7 @@
           <span class="muted small mono">{{ doneStages() }}/{{ stages().length }} etapas · {{ timeline().length }} pasos · total {{ totalTime() }} · id {{ shortId(p.id) }} · {{ p.walletAddress | slice: 0 : 4 }}…{{ p.walletAddress | slice: -4 }} · {{ p.cluster }}</span>
         </div>
 
-        <app-execution-detail [stages]="stages()" />
+        <app-execution-detail [stages]="stages()" [proofLink]="proofLink()" />
 
         <details class="audit">
           <summary>Audit trail <span class="muted small">{{ audit().length }} eventos · <code>GET /proposals/{{ shortId(p.id) }}…/audit</code></span></summary>

@@ -115,6 +115,7 @@ export class ControlTower {
         reconcile,
         prove,
         proofRoot: d?.proof.batch?.root ?? d?.proof.receipt?.anchor?.root ?? null,
+        proofReceipt: d?.proof.receipt?.receiptHash ?? null,
         loading: !d,
       };
     });

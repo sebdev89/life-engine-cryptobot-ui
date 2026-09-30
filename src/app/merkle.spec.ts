@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Sha256, hashBytes, inclusionProofValid, leafHash, renderHash, rootFromProof, webCryptoSha256 } from './merkle';
+import { Sha256, hashBytes, inclusionProofValid, leafHash, proofPath, renderHash, rootFromProof, webCryptoSha256 } from './merkle';
 
 // Independent reference: a plain-JS SHA-256 (FIPS 180-4) and the whole tree built the way
 // MerkleTree.of does (sorted leaves, 0x00/0x01 prefixes, odd node promoted), proofs like proofFor.
@@ -117,5 +117,44 @@ describe('merkle — inclusion proof folded in the client', () => {
     expect(await inclusionProofValid(null, [], h('a'), sha)).toBeNull();
     expect(await inclusionProofValid(h('a'), [], null, sha)).toBeNull();
     expect(await inclusionProofValid(h('a'), [], h('a'), null)).toBeNull();
+  });
+});
+
+describe('merkle — proofPath (Proof view, KAN-788)', () => {
+  // The member of the demo anchor sha256:a605…6a1f (cryptobot-demo-main, 2026-09-30): 7 receipts, 3 siblings.
+  const REAL = {
+    root: 'sha256:a60533998c19247079f4178d10588b40b482d9ec0515014f6ad7a6d9f91b6a1f',
+    receipt: 'sha256:29d47e9c853bdde41b32172129fec4d6ecf02ae0bc37b19c80f43d59439aada0',
+    proof: [
+      'R:sha256:8884c4786124f576d71274d011ca81fb2f73d93f09fd26a8f420dedff3437d64',
+      'R:sha256:9aed32ac27ce792053dd4f963dd43b9e575ae9ff41cf33ac00ff0f95e0df369d',
+      'R:sha256:947532621620f4e9a376fd31be9712f19a4b8357b07cf7a39332173c5c5f603d',
+    ],
+  };
+
+  it('folds a real anchored receipt to the root the service anchored', async () => {
+    const p = await proofPath(REAL.receipt, REAL.proof, sha);
+    expect(p.root).toBe(REAL.root);
+    expect(p.steps.map((s) => s.side)).toEqual(['R', 'R', 'R']);
+    expect(p.steps[0].from).toBe(p.leaf);
+    expect(p.steps[1].from).toBe(p.steps[0].node);
+  });
+
+  it('keeps every intermediate node and agrees with rootFromProof on every member', async () => {
+    const t = tree(RECEIPTS);
+    for (const r of RECEIPTS) {
+      const p = await proofPath(r, t.proofFor(r), sha);
+      expect(p.root).toBe(await rootFromProof(r, t.proofFor(r), sha));
+      expect(p.root).toBe(t.root);
+      expect(p.leaf).toBe(leaf(r));
+      p.steps.forEach((s, i) => expect(s.level).toBe(i + 1));
+    }
+  });
+
+  it('an empty proof is the single-leaf tree; a malformed step throws', async () => {
+    const p = await proofPath(h('a'), [], sha);
+    expect(p.steps).toEqual([]);
+    expect(p.root).toBe(p.leaf);
+    await expect(proofPath(h('a'), ['X:' + h('b')], sha)).rejects.toThrow(/malformed/);
   });
 });

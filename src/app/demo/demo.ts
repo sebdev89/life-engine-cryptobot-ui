@@ -8,6 +8,7 @@ import { WalletView } from '../control-plane-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
 import { DemoRunner, RunStep, runExplorerUrl } from './demo-runner';
 import { explorerTxUrlFor } from '../live/live-model';
+import { proofLinkOf } from '../proof/proof-model';
 
 /** Scenario B's story, one node per step of the runner (states come from the run, not from a script). */
 export const FAILURE_STORY: readonly { step: string; label: string }[] = [
@@ -56,6 +57,7 @@ export class DemoMode {
     return Math.max(0, Math.ceil((w.until - this.now()) / 1000));
   });
   readonly explorer = computed(() => runExplorerUrl(this.run()));
+  readonly proofLink = computed(() => proofLinkOf(this.run().proof));
   readonly anchorExplorer = computed(() => {
     const v = this.run().receiptVerification?.anchor;
     return v ? (v.explorerUrl ?? explorerTxUrl(v.chain, v.tx)) : null;

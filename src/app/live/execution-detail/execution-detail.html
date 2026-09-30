@@ -71,6 +71,9 @@
             } @else {
               <span>{{ ev.text }}</span>
             }
+            @if (s.id === 'PROVE' && proofLink(); as pl) {
+              <a class="stage__proof" [routerLink]="['/proof', pl.root]" [queryParams]="pl.receipt ? { receipt: pl.receipt } : {}">open proof →</a>
+            }
           </div>
         }
       </li>

@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { SlicePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { DemoStep, Stage, formatDuration } from '../live-model';
 
 /**
@@ -10,12 +11,14 @@ import { DemoStep, Stage, formatDuration } from '../live-model';
 @Component({
   selector: 'app-execution-detail',
   standalone: true,
-  imports: [SlicePipe],
+  imports: [SlicePipe, RouterLink],
   templateUrl: './execution-detail.html',
   styleUrl: './execution-detail.scss',
 })
 export class ExecutionDetail {
   readonly stages = input<Stage[]>([]);
+  /** KAN-788: PROVE opens the Proof view of its batch (`/proof/:root?receipt=`) once the receipt is anchored. */
+  readonly proofLink = input<{ root: string; receipt: string | null } | null>(null);
 
   duration(s: Stage): string {
     if (s.running) return s.durationMs !== null ? `en curso · ${formatDuration(s.durationMs)}` : 'en curso';

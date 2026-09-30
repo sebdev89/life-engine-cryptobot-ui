@@ -17,6 +17,7 @@ import { AuthRequiredError } from '../cryptobot-api';
 import { getProposalLineage } from '../lineage-api';
 import { IntelligenceReceipt, listProposalReceipts } from '../receipts-api';
 import { loadProof } from './proof-loader';
+import { proofLinkOf } from '../proof/proof-model';
 import { ExecutionDetail } from './execution-detail/execution-detail';
 import {
   CHAOS_MODES,
@@ -109,6 +110,7 @@ export class LiveOperation implements OnInit {
   readonly receiptKinds = signal<string[]>([]);
   /** PROVE (KAN-784): EXECUTION receipt + its anchor batch + the inclusion proof folded here. */
   readonly proof = signal<ProofInput>(NO_PROOF);
+  readonly proofLink = computed(() => proofLinkOf(this.proof()));
   readonly loadError = signal<string | null>(null);
   /** Bumped when the row moved (status/updatedAt) so lineage + receipts reload — not on every tick. */
   readonly panelsVersion = signal(0);

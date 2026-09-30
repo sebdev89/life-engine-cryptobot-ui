@@ -404,3 +404,11 @@
 .badge--state-pending {
   color: var(--text-3);
 }
+
+.stage__ev .stage__proof {
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  word-break: normal;
+  color: var(--chain);
+}

@@ -1,0 +1,239 @@
+<main class="proof">
+  <app-top-nav />
+
+  @if (!signedIn()) {
+    <header class="proof__head">
+      <p class="eyebrow">Verifiable execution</p>
+      <h1>Proof</h1>
+    </header>
+    <app-token-gate [why]="error() ?? 'Anchors and receipts are read from the live API; it needs an operator token.'" (saved)="onSignedIn()" />
+  } @else if (!root()) {
+    <!-- ── list ─────────────────────────────────────────────────────────────────────── -->
+    <header class="proof__head">
+      <p class="eyebrow">Verifiable execution</p>
+      <h1>Merkle anchors</h1>
+      <p class="t-2">
+        Every signed receipt is batched into a Merkle tree; the root goes on Solana in a memo transaction. Pick a root to fold a receipt to it and to
+        verify it.
+      </p>
+    </header>
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (anchors(); as list) {
+      @if (!list.length) {
+        <section class="panel empty">
+          <p class="eyebrow">No anchors yet</p>
+          <p class="t-2">A batch is anchored after the first execution writes its receipt.</p>
+          <a routerLink="/demo" class="btn btn--primary">Watch Trusted Execution →</a>
+        </section>
+      } @else {
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th>Merkle root</th>
+                  <th>Status</th>
+                  <th class="num">Receipts</th>
+                  <th class="num">Slot</th>
+                  <th>Memo tx</th>
+                  <th>Anchored</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of list; track a.anchor.root) {
+                  <tr>
+                    <td class="mono">
+                      <a [routerLink]="['/proof', a.anchor.root]" [title]="a.anchor.root">sha256:{{ shortHex(a.anchor.root, 16, 6) }}</a>
+                    </td>
+                    <td><span class="st-badge st--{{ anchorState(a.anchor.status) }}">{{ a.anchor.status }}</span></td>
+                    <td class="mono num">{{ a.anchor.receiptCount }}</td>
+                    <td class="mono num">{{ a.anchor.slot ?? '—' }}</td>
+                    <td class="mono small">
+                      @if (a.anchor.tx) {
+                        @if (anchorExplorer(a); as href) {
+                          <a [href]="href" target="_blank" rel="noopener">{{ shortHex(a.anchor.tx, 8, 6) }} ↗</a>
+                        } @else {
+                          {{ shortHex(a.anchor.tx, 8, 6) }}
+                        }
+                      } @else {
+                        <span class="t-3">—</span>
+                      }
+                    </td>
+                    <td class="mono small t-2">{{ a.anchor.finalizedAt ?? a.anchor.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+    } @else if (!error()) {
+      <p class="t-2">Reading /anchors…</p>
+    }
+  } @else {
+    <!-- ── detail ───────────────────────────────────────────────────────────────────── -->
+    <header class="proof__head">
+      <a routerLink="/proof" class="back">← All anchors</a>
+      <p class="eyebrow">Merkle anchor</p>
+      <h1>Proof</h1>
+    </header>
+    @if (error(); as e) {
+      <p class="banner-err" role="alert">{{ e }}</p>
+    }
+    @if (detail(); as d) {
+      <section class="panel root">
+        <div class="root__top">
+          <span class="eyebrow">Merkle root</span>
+          <span class="st-badge st--{{ batchState() }}">{{ d.anchor.status }}</span>
+        </div>
+        <p class="root__hash mono">{{ d.anchor.root }}</p>
+        <dl class="facts">
+          <div>
+            <dt>memo tx</dt>
+            <dd class="mono">
+              @if (d.anchor.tx) {
+                @if (explorer(); as href) {
+                  <a [href]="href" target="_blank" rel="noopener">{{ d.anchor.tx }} ↗</a>
+                } @else {
+                  {{ d.anchor.tx }}
+                }
+              } @else {
+                <span class="t-3">not sent yet</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>memo</dt>
+            <dd class="mono">{{ d.anchor.memo }}</dd>
+          </div>
+          <div class="facts__row">
+            <div>
+              <dt>chain</dt>
+              <dd class="mono">{{ d.anchor.chain }}</dd>
+            </div>
+            <div>
+              <dt>slot</dt>
+              <dd class="mono">{{ d.anchor.slot ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>receipts in batch</dt>
+              <dd class="mono">{{ d.anchor.receiptCount }}</dd>
+            </div>
+            <div>
+              <dt>yours</dt>
+              <dd class="mono">{{ d.myReceipts.length }}</dd>
+            </div>
+            <div>
+              <dt>finalized</dt>
+              <dd class="mono">{{ d.anchor.finalizedAt ? (d.anchor.finalizedAt | date: 'yyyy-MM-dd HH:mm:ss') : '—' }}</dd>
+            </div>
+          </div>
+        </dl>
+      </section>
+
+      <div class="split">
+        <section class="panel members">
+          <header class="panel__head">
+            <h2>Members</h2>
+            <span class="t-3 small">your receipts in this batch; others' are not disclosed</span>
+          </header>
+          @if (!d.myReceipts.length) {
+            <p class="t-2 pad">None of this batch's receipts belong to this operator.</p>
+          }
+          <ul class="members__list">
+            @for (m of d.myReceipts; track m.receiptHash) {
+              <li>
+                <button type="button" class="member mono" [class.is-selected]="m.receiptHash === selected()" (click)="choose(m.receiptHash)">
+                  {{ shortHex(m.receiptHash, 12, 6) }}
+                  <span class="t-3">· {{ m.proof.length }} sibling{{ m.proof.length === 1 ? '' : 's' }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="panel path">
+          <header class="panel__head">
+            <h2>Inclusion path</h2>
+            <span class="t-3 small mono">leaf = SHA-256(0x00‖receipt) · node = SHA-256(0x01‖L‖R)</span>
+          </header>
+          @if (member(); as m) {
+            <div class="pad">
+              <p class="path__receipt">
+                <span class="eyebrow">receipt</span>
+                <span class="mono">{{ m.receiptHash }}</span>
+                @if (receiptView(); as rv) {
+                  <span class="t-2 small">{{ rv.receipt.body.kind }} · {{ rv.receipt.body.agentId }} · signed {{ rv.receipt.signature.alg }} ({{ rv.receipt.signature.keyId }})</span>
+                }
+              </p>
+              @if (path(); as p) {
+                <ol class="fold mono">
+                  <li class="fold__leaf">
+                    <span class="fold__lvl">leaf</span>
+                    <span class="fold__node">{{ p.leaf }}</span>
+                  </li>
+                  @for (s of p.steps; track s.level) {
+                    <li>
+                      <span class="fold__lvl">{{ s.level }}</span>
+                      <span class="fold__sib"
+                        ><span class="side side--{{ s.side }}">{{ s.side }}</span> sibling {{ s.sibling }}
+                        <span class="t-3">{{ s.side === 'L' ? '(left) ‖ running' : 'running ‖ (right)' }}</span></span
+                      >
+                      <span class="fold__node">→ {{ s.node }}</span>
+                    </li>
+                  }
+                </ol>
+                <p class="fold__verdict st--{{ pathOk() ? 'done' : 'failed' }}">
+                  <span class="st-dot" aria-hidden="true"></span>
+                  @if (pathOk()) {
+                    Folded in this browser to the anchored root — <strong>receipt ∈ root</strong>.
+                  } @else {
+                    The fold does NOT reach the anchored root.
+                  }
+                </p>
+              } @else if (pathOk() === false) {
+                <p class="fold__verdict st--failed"><span class="st-dot" aria-hidden="true"></span> The proof is malformed.</p>
+              } @else {
+                <p class="t-2">This browser cannot hash here (WebCrypto needs a secure context) — use Verify on server.</p>
+              }
+            </div>
+          } @else {
+            <p class="t-2 pad">Pick a member.</p>
+          }
+        </section>
+      </div>
+
+      <section class="panel verify">
+        <header class="panel__head">
+          <h2>Server verification</h2>
+          <button type="button" class="btn btn--primary" (click)="verify()" [disabled]="verifying()">
+            {{ verifying() ? 'Verifying…' : 'Verify on server' }}
+          </button>
+        </header>
+        <p class="t-2 small pad-x">
+          <code>POST /anchors/{{ '{' }}root{{ '}' }}/verify</code>: recomputes the root from every stored member, folds each proof, parses the memo and reads
+          the memo transaction back from the chain.
+        </p>
+        @if (verifyError(); as ve) {
+          <p class="banner-err" role="alert">{{ ve }}</p>
+        }
+        @if (checks().length) {
+          <ul class="checks">
+            @for (c of checks(); track c.id) {
+              <li class="check st--{{ checkClass(c) }}" [class.check--verdict]="c.id === 'valid'">
+                <span class="st-dot" aria-hidden="true"></span>
+                <span class="mono check__id">{{ c.label }}</span>
+                <span class="mono check__v">{{ c.ok === null ? 'n/a' : c.ok }}</span>
+                <span class="t-2 small">{{ c.detail }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    } @else if (!error()) {
+      <p class="t-2">Reading /anchors/{{ root() }}…</p>
+    }
+  }
+</main>

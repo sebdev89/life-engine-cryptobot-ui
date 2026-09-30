@@ -80,3 +80,39 @@ export async function inclusionProofValid(
     return false;
   }
 }
+
+/** One fold of the proof: which side the sibling sits on and the node it produced. */
+export interface ProofStep {
+  level: number;
+  side: 'L' | 'R';
+  sibling: string;
+  /** The running hash before this step (the leaf hash on level 1). */
+  from: string;
+  /** SHA-256(0x01 ‖ left ‖ right) — the next running hash. */
+  node: string;
+}
+
+export interface ProofPath {
+  leaf: string;
+  steps: ProofStep[];
+  /** What the fold ends in; compare with the anchored root. */
+  root: string;
+}
+
+/** The same fold as `rootFromProof`, keeping every intermediate node so the path can be shown (KAN-788). */
+export async function proofPath(receiptHash: string, proof: readonly string[], sha: Sha256): Promise<ProofPath> {
+  const leaf = await leafHash(receiptHash, sha);
+  let current = leaf;
+  const steps: ProofStep[] = [];
+  for (const [i, step] of proof.entries()) {
+    const side = step.slice(0, 2).toUpperCase();
+    const sibling = step.slice(2);
+    let node: string;
+    if (side === 'L:') node = await nodeHash(sibling, current, sha);
+    else if (side === 'R:') node = await nodeHash(current, sibling, sha);
+    else throw new Error(`malformed proof step: ${step}`);
+    steps.push({ level: i + 1, side: side[0] as 'L' | 'R', sibling, from: current, node });
+    current = node;
+  }
+  return { leaf, steps, root: current };
+}

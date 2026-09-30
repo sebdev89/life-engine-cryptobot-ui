@@ -10,11 +10,16 @@ const demo = () => import('./demo/demo').then((m) => m.DemoMode);
 // KAN-787: Control Tower — KPIs counted from the API and the latest executions with their phase.
 const tower = () => import('./tower/tower').then((m) => m.ControlTower);
 
+// KAN-788: Proof view — anchors, inclusion path folded in the browser, server verification.
+const proof = () => import('./proof/proof').then((m) => m.ProofView);
+
 export const routes: Routes = [
   { path: '', component: Dashboard, pathMatch: 'full' },
   { path: 'live', loadComponent: live },
   { path: 'live/:proposalId', loadComponent: live },
   { path: 'demo', loadComponent: demo },
   { path: 'tower', loadComponent: tower },
+  { path: 'proof', loadComponent: proof },
+  { path: 'proof/:root', loadComponent: proof },
   { path: '**', redirectTo: '' },
 ];
