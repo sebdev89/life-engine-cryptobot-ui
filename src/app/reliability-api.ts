@@ -58,6 +58,11 @@ export function listDeadLetters(resolved: 'all' | 'true' | 'false' = 'all', limi
   return apiFetch(`/dead-letters?resolved=${resolved}&limit=${limit}`).then((r) => json<DeadLetterPage>(r));
 }
 
+/** The open letters of one proposal (`?proposalId=`), what the recovery scene waits for. */
+export function listProposalDeadLetters(proposalId: string): Promise<DeadLetterPage> {
+  return apiFetch(`/dead-letters?proposalId=${proposalId}`).then((r) => json<DeadLetterPage>(r));
+}
+
 export function resolveDeadLetter(id: string, note?: string | null): Promise<DeadLetterResolution> {
   return apiFetch(`/dead-letters/${id}/resolve`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ note: note ?? null }) }).then((r) =>
     json<DeadLetterResolution>(r),

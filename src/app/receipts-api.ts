@@ -82,6 +82,32 @@ export interface AnchorDetail extends AnchorView {
   myReceipts: { root: string; receiptHash: string; proof: string[] }[];
 }
 
+/** `POST /anchors?wait=true`: batches the unanchored receipts, signs the memo, waits for finality. */
+export interface AnchorSweep {
+  settled: AnchorBatch[];
+  anchored: AnchorBatch | null;
+  pending: number;
+}
+
+/** `POST /anchors/{root}/verify`: root recomputed, every proof folded, memo parsed, tx read back from the chain. */
+export interface AnchorVerification {
+  root: string;
+  status: AnchorBatch['status'];
+  receiptCount: number;
+  memberCount: number;
+  recomputedRoot: string;
+  rootMatches: boolean;
+  countMatches: boolean;
+  proofsValid: boolean;
+  memoMatches: boolean;
+  memo: string;
+  tx: string | null;
+  slot: number | null;
+  explorerUrl: string | null;
+  onChain: { checked: boolean; found: boolean; failed: boolean; memoMatches: boolean; slot: number | null; error: string | null } | null;
+  valid: boolean;
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     return throwHttp(res);
@@ -107,6 +133,14 @@ export function listAnchors(limit = 5): Promise<AnchorView[]> {
 
 export function getAnchor(root: string): Promise<AnchorDetail> {
   return apiFetch(`/anchors/${root}`).then((r) => json<AnchorDetail>(r));
+}
+
+export function sweepAnchors(wait = true): Promise<AnchorSweep> {
+  return apiFetch(`/anchors?wait=${wait}`, { method: 'POST' }).then((r) => json<AnchorSweep>(r));
+}
+
+export function verifyAnchor(root: string): Promise<AnchorVerification> {
+  return apiFetch(`/anchors/${root}/verify`, { method: 'POST' }).then((r) => json<AnchorVerification>(r));
 }
 
 // ---- pure display helpers (tested) ----
