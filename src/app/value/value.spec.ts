@@ -26,6 +26,14 @@ function event(over: Partial<ValueEvent> = {}): ValueEvent {
       { identityId: 'i1', displayName: 'Sebas', kind: 'HUMAN', role: 'reviewer', units: 50 },
       { identityId: 'i2', displayName: 'dev-agent', kind: 'AGENT', role: 'implementer', units: 50 },
     ],
+    artifact: { commitSha: 'abc1234', prUrl: 'https://github.com/sebdev89/x/pull/7', imageDigest: 'sha256:' + 'ee'.repeat(32) },
+    acceptance: {
+      source: 'uat-k8s',
+      environment: 'k8s-uat',
+      stages: { MERGED: true, BUILT: true, DEPLOYED: true, RUNNING: true, ACCEPTED: true },
+      evidenceRef: 'ledger#1',
+      acceptedAt: '2026-09-30T10:00:00Z',
+    },
     projectId: 'p1',
     taskId: 'KAN-100',
     title: 'Fix login redirect',
@@ -138,6 +146,13 @@ describe('ValueDetail (/value/:id)', () => {
     const el: HTMLElement = f.nativeElement;
     expect(el.querySelectorAll('[data-section="acceptance"] .stage').length).toBe(5);
     expect(el.querySelectorAll('[data-section="acceptance"] .stage--fail').length).toBe(0);
+    expect(el.querySelectorAll('[data-section="acceptance"] .stage--unknown').length).toBe(0);
+    expect(el.querySelector('[data-section="acceptance"]')?.textContent).toContain('uat-k8s');
+    expect(el.querySelector('[data-section="acceptance"]')?.textContent).toContain('k8s-uat');
+    const pr = el.querySelector('[data-section="evidence"] a') as HTMLAnchorElement;
+    expect(pr.href).toBe('https://github.com/sebdev89/x/pull/7');
+    expect(pr.target).toBe('_blank');
+    expect(el.querySelector('[data-section="evidence"]')?.textContent).toContain('abc1234');
     const btn = el.querySelector(`[data-section="solana"] a[href="${EXPLORER}"]`) as HTMLAnchorElement;
     expect(btn.textContent).toContain('Open in explorer');
     expect(btn.target).toBe('_blank');
@@ -153,6 +168,23 @@ describe('ValueDetail (/value/:id)', () => {
     expect(t).toContain('Not yet — V5');
     expect(t).toContain('Contribution Units: 100 — V6');
     expect(t).toContain('NOT verified');
+  });
+
+  it('shows failed and unknown stages, never a check that was not reported', async () => {
+    route({
+      '/value-events/ve-1/proof': json({ receiptHash: 'h', root: null, txSignature: null, verified: false }),
+      '/value-events/ve-1': json(event({ acceptance: { source: 'x', environment: 'y', stages: { MERGED: true, BUILT: false } } })),
+    });
+    const el: HTMLElement = (await mountDetail()).nativeElement;
+    expect(el.querySelectorAll('[data-section="acceptance"] .stage--fail').length).toBe(1);
+    expect(el.querySelectorAll('[data-section="acceptance"] .stage--unknown').length).toBe(3);
+  });
+
+  it('with no acceptance object every stage reads unknown', async () => {
+    route({ '/value-events/ve-1': json(event({ status: 'RECORDED', anchor: null, acceptance: null, artifact: null })) });
+    const el: HTMLElement = (await mountDetail()).nativeElement;
+    expect(el.querySelectorAll('[data-section="acceptance"] .stage--unknown').length).toBe(5);
+    expect(el.querySelector('[data-section="acceptance"]')?.textContent).not.toContain('✓');
   });
 
   it('a recorded event has no explorer link and does not ask for a proof', async () => {

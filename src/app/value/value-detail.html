@@ -29,8 +29,14 @@
           <h2>Evidence</h2>
           <dl class="facts">
             <div><dt>artifact hash</dt><dd class="mono" [title]="ev.artifactHash">{{ ev.artifactHash }}</dd></div>
-            @if (ev.commitSha) {
-              <div><dt>commit</dt><dd class="mono">{{ ev.commitSha }}</dd></div>
+            @if (ev.artifact?.commitSha) {
+              <div><dt>commit</dt><dd class="mono">{{ ev.artifact?.commitSha }}</dd></div>
+            }
+            @if (ev.artifact?.prUrl; as pr) {
+              <div><dt>pull request</dt><dd><a [href]="pr" target="_blank" rel="noopener">{{ pr }} ↗</a></dd></div>
+            }
+            @if (ev.artifact?.imageDigest) {
+              <div><dt>image digest</dt><dd class="mono">{{ ev.artifact?.imageDigest }}</dd></div>
             }
             <div><dt>receipt hash</dt><dd class="mono" [title]="ev.receiptHash">{{ ev.receiptHash }}</dd></div>
           </dl>
@@ -40,15 +46,21 @@
           <h2>Acceptance</h2>
           <ul class="stages">
             @for (s of stages(ev); track s.label) {
-              <li class="stage" [class.stage--fail]="!s.ok">
-                <span class="stage__mark" aria-hidden="true">{{ s.ok ? '✓' : '✗' }}</span> {{ s.label }}
-                @if (!s.reported) {
-                  <span class="t-3 small">(implied: an event is only recorded when all five pass)</span>
+              <li class="stage" [class.stage--fail]="s.state === false" [class.stage--unknown]="s.state === null">
+                <span class="stage__mark" aria-hidden="true">{{ s.state === true ? '✓' : s.state === false ? '✗' : '?' }}</span> {{ s.label }}
+                @if (s.state === null) {
+                  <span class="t-3 small">unknown</span>
                 }
               </li>
             }
           </ul>
           <dl class="facts">
+            @if (ev.acceptance?.source) {
+              <div><dt>source</dt><dd>{{ ev.acceptance?.source }}</dd></div>
+            }
+            @if (ev.acceptance?.environment) {
+              <div><dt>environment</dt><dd>{{ ev.acceptance?.environment }}</dd></div>
+            }
             <div><dt>acceptance hash</dt><dd class="mono" [title]="ev.acceptanceHash">{{ ev.acceptanceHash }}</dd></div>
           </dl>
         </section>

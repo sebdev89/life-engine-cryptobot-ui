@@ -22,6 +22,22 @@ export interface ValueContribution {
   units: number;
 }
 
+export interface ValueArtifact {
+  commitSha?: string | null;
+  prUrl?: string | null;
+  imageDigest?: string | null;
+}
+
+export type StageName = 'MERGED' | 'BUILT' | 'DEPLOYED' | 'RUNNING' | 'ACCEPTED';
+
+export interface ValueAcceptance {
+  source?: string | null;
+  environment?: string | null;
+  stages?: Partial<Record<StageName, boolean>> | null;
+  evidenceRef?: string | null;
+  acceptedAt?: string | null;
+}
+
 export interface ValueEvent {
   id: string;
   receiptHash: string;
@@ -37,10 +53,8 @@ export interface ValueEvent {
   title: string;
   acceptedAt: string;
   createdAt: string;
-  /** Not in the V1 contract; shown only when the body carries it. */
-  commitSha?: string | null;
-  /** Not in the V1 contract; `{stage: passed}` when the body carries it. */
-  acceptance?: { stages?: Record<string, boolean> } | null;
+  artifact?: ValueArtifact | null;
+  acceptance?: ValueAcceptance | null;
 }
 
 /** `GET /value-events/{id}/proof`: shown as received; `verified` is the server's verdict. */

@@ -109,6 +109,10 @@
   color: var(--err, #d64545);
 }
 
+.stage--unknown .stage__mark {
+  color: var(--text-3);
+}
+
 .verdict {
   margin-top: var(--sp-3) !important;
   font-weight: 600;

@@ -2,18 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { acceptanceStages, contributionSummary, short, statusClass, statusLabel } from './value-model';
 
 describe('value-model', () => {
-  it('implies five passed stages when the API sends none', () => {
+  it('never invents a check: no acceptance object means five unknowns, in the fixed order', () => {
     const rows = acceptanceStages({ acceptance: null });
-    expect(rows).toHaveLength(5);
-    expect(rows.every((r) => r.ok && !r.reported)).toBe(true);
+    expect(rows.map((r) => r.label)).toEqual(['MERGED', 'BUILT', 'DEPLOYED', 'RUNNING', 'ACCEPTED']);
+    expect(rows.every((r) => r.state === null)).toBe(true);
   });
 
-  it('shows reported stages as reported, failures included', () => {
-    const rows = acceptanceStages({ acceptance: { stages: { tests: true, review: false } } });
-    expect(rows).toEqual([
-      { label: 'tests', ok: true, reported: true },
-      { label: 'review', ok: false, reported: true },
-    ]);
+  it('maps true, false and missing stages separately', () => {
+    const rows = acceptanceStages({ acceptance: { stages: { MERGED: true, BUILT: true, DEPLOYED: false } } });
+    expect(rows.map((r) => r.state)).toEqual([true, true, false, null, null]);
   });
 
   it('labels the two states honestly', () => {
