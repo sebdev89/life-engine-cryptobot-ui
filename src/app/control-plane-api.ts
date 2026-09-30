@@ -208,6 +208,8 @@ export interface ApprovalRecord {
   by: string;
   at: string;
   note: string | null;
+  /** Timelock (KAN-438): the proposal cannot execute before this instant; null when rejected. */
+  executableAt?: string | null;
 }
 
 export interface ExecutionRecord {

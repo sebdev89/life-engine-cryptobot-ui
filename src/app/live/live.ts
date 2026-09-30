@@ -15,8 +15,8 @@ import {
 } from '../control-plane-api';
 import { AuthRequiredError } from '../cryptobot-api';
 import { getProposalLineage } from '../lineage-api';
-import { AnchorDetail, IntelligenceReceipt, explorerTxUrl, getAnchor, listAnchors, listProposalReceipts } from '../receipts-api';
-import { inclusionProofValid } from '../merkle';
+import { IntelligenceReceipt, listProposalReceipts } from '../receipts-api';
+import { loadProof } from './proof-loader';
 import { ExecutionDetail } from './execution-detail/execution-detail';
 import {
   CHAOS_MODES,
@@ -285,14 +285,14 @@ export class LiveOperation implements OnInit {
         ]);
         this.receiptKinds.set(receipts.map((r) => r.body.kind));
         this.lineageAvailable.set(lineage);
-        this.proof.set(await this.loadProof(receipts));
+        this.proof.set(await loadProof(receipts));
         this.panelsVersion.update((v) => v + 1);
       } else if (full.proposal.status === 'EXECUTED' && this.proof().inclusion !== true && ++this.proofTicks % PROOF_EVERY_TICKS === 0) {
         // Anchoring runs after execution, in its own batch: the row does not move when the root
         // finalizes, so PROVE is re-read on its own (every few ticks) until the proof checks out.
         const receipts = await listProposalReceipts(id).catch(() => [] as IntelligenceReceipt[]);
         const before = this.proof();
-        const next = await this.loadProof(receipts);
+        const next = await loadProof(receipts);
         this.receiptKinds.set(receipts.map((r) => r.body.kind));
         this.proof.set(next);
         if (next.inclusion !== before.inclusion || next.batch?.status !== before.batch?.status) this.panelsVersion.update((v) => v + 1);
@@ -302,40 +302,6 @@ export class LiveOperation implements OnInit {
       this.loadError.set(this.message(e));
       this.handleAuth(e);
     }
-  }
-
-  /**
-   * PROVE from existing endpoints only: the EXECUTION receipt (`/proposals/{id}/receipts`), the
-   * batch that anchors it (`GET /anchors/{root}`; while the receipt carries no anchor yet, the
-   * open batches of `GET /anchors?limit=` are checked for it), and the Merkle proof folded here.
-   */
-  private async loadProof(receipts: readonly IntelligenceReceipt[]): Promise<ProofInput> {
-    const receipt = receipts.find((r) => r.body.kind === 'EXECUTION') ?? null;
-    if (!receipt) return NO_PROOF;
-    let detail: AnchorDetail | null = null;
-    if (receipt.anchor?.root) {
-      detail = await getAnchor(receipt.anchor.root).catch(() => null);
-    } else {
-      const open = (await listAnchors(5).catch(() => [])).filter((a) => a.anchor.status !== 'FINALIZED' && a.anchor.createdAt >= receipt.createdAt);
-      for (const a of open.slice(0, 3)) {
-        const d = await getAnchor(a.anchor.root).catch(() => null);
-        if (d?.myReceipts?.some((m) => m.receiptHash === receipt.receiptHash)) {
-          detail = d;
-          break;
-        }
-      }
-    }
-    const member = detail?.myReceipts?.find((m) => m.receiptHash === receipt.receiptHash);
-    const proof = member?.proof ?? receipt.anchor?.proof ?? null;
-    const root = detail?.anchor.root ?? receipt.anchor?.root ?? null;
-    const finalized = detail ? detail.anchor.status === 'FINALIZED' : !!receipt.anchor?.tx;
-    return {
-      receipt,
-      batch: detail?.anchor ?? null,
-      batchExplorerUrl: detail?.explorerUrl ?? explorerTxUrl(receipt.anchor?.chain, receipt.anchor?.tx),
-      proof,
-      inclusion: finalized ? await inclusionProofValid(receipt.receiptHash, proof, root) : null,
-    };
   }
 
   // ---- actions (the same endpoints the dashboard uses; nothing new) ------------------------

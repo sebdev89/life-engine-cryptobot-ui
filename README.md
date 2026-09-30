@@ -77,6 +77,21 @@ and `live.spec.ts` (the component against a fake `fetch`: 12 steps rendered, cha
 404 / shown on 200, DLQ 403, requeue confirmation + note, execute with a stable `operationId`
 and the 409 shown, explorer link, redirect to login without a session).
 
+## Demo Mode (KAN-785)
+
+`/demo` runs the trusted execution with one click, against whatever stack `config.js` points to, using
+only routes the UI already consumes (`src/app/demo/demo-runner.ts`, the same sequence as
+`scripts/demo/e2e-devnet.sh`): wallet (reused; registered if the operator has none) → `POST
+/wallets/{w}/proposals` → `approve` → timelock countdown (`approval.executableAt`) → `execute` with
+`operationId` in the body → poll `GET /proposals/{id}` to `EXECUTED` → EXECUTION receipt + `verify` →
+`POST /anchors?wait=true` → inclusion proof → `POST /anchors/{root}/verify` → **VERIFIED**. The 8-stage
+pipeline is the `/live` component fed by the run. Waits the service imposes are shown, not hidden: the
+policy `COOLDOWN` (60 s by default after an execution; the blocked intent stays in the history) is read
+from the violation message and counted down before the intent is created again.
+
+Open it with a demo token: `scripts/demo/ui-url.sh --path /demo` (cryptobot-service repo). `config.js`
+may carry `demoWallet` (`UI_DEMO_WALLET` in the container); otherwise the page asks for the address once.
+
 ## Glossary
 
 `src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the
