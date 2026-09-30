@@ -15,7 +15,7 @@ name: ui-image
 
 on:
   push:
-    branches: [main, KAN-799-ui-ci]  # TEMPORAL: verificar el push a GHCR antes del merge; se quita antes del merge
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
