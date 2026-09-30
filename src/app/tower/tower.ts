@@ -47,7 +47,7 @@ function reasonOf(e: unknown): string {
 }
 
 /**
- * `/tower` (KAN-787): Agent Execution Control Tower. KPIs are counted in this browser from the
+ * `/tower`: Agent Execution Control Tower. KPIs are counted in this browser from the
  * API every 5 s; the table shows the latest executions with the stage each one is in.
  */
 @Component({

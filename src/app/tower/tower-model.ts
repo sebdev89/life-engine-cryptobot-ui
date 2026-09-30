@@ -1,5 +1,5 @@
 /**
- * Pure model of the Control Tower (KAN-787). Every number is counted from what the API returned —
+ * Pure model of the Control Tower. Every number is counted from what the API returned —
  * `GET /proposals`, `GET /dead-letters?resolved=all`, `GET /anchors` — and nothing is estimated.
  * A metric whose source is unavailable (403 without RUNTIME_ADMIN, network) is `null` and the
  * UI says why, instead of printing a zero. "Duplicate prevented" is deliberately absent: the

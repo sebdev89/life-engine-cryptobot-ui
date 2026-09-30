@@ -15,7 +15,7 @@ import {
 
 /**
  * The receipts a proposal (or, with no proposal selected, a wallet) left behind, with their
- * devnet anchor (KAN-394): a receipt that is in a FINALIZED batch links to the memo transaction
+ * devnet anchor: a receipt that is in a FINALIZED batch links to the memo transaction
  * on the Solana explorer; "Verify" recomputes hash + signature + parents on the server and folds
  * the Merkle proof back to the root in that transaction.
  */

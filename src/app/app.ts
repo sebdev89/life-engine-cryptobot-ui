@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 
 /**
  * Root shell: one `<router-outlet>`. `/` is the dashboard (login, wallet, advisor, proposals);
- * `/live[/:proposalId]` is the live-operation view of the hackathon demo path (KAN-576).
+ * `/live[/:proposalId]` is the live-operation view of the hackathon demo path.
  */
 @Component({
   selector: 'app-root',

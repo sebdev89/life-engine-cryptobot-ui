@@ -107,9 +107,9 @@ export class Dashboard implements OnInit, OnDestroy {
   readonly proposalError = signal<string | null>(null);
   readonly showLogs = signal(false);
   readonly showTx = signal(false);
-  /** Bumped whenever the selected proposal changes state, so the lineage panel reloads its DAG (KAN-393). */
+  /** Bumped whenever the selected proposal changes state, so the lineage panel reloads its DAG. */
   readonly lineageVersion = signal(0);
-  /** Bumped after approve / execute / refresh so the receipts panel (KAN-394) reloads. */
+  /** Bumped after approve / execute / refresh so the receipts panel reloads. */
   readonly receiptsVersion = signal(0);
 
   readonly wallet = computed(() => this.portfolio()?.wallet ?? null);

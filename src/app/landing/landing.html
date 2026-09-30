@@ -2,16 +2,23 @@
   <app-top-nav />
 
   <section class="hero" aria-labelledby="hero-title">
-    <p class="eyebrow hero__eyebrow">Trusted agent execution · Solana</p>
-    <h1 id="hero-title" class="hero__title">
-      <span class="hero__line">Agents can think.&ngsp;</span>
-      <span class="hero__line hero__accent">CryptoBot lets them safely act with money.</span>
-    </h1>
-    <p class="hero__sub">Trusted execution infrastructure for financial AI agents — reference implementation on Solana.</p>
+    <p class="eyebrow hero__eyebrow">Solana devnet · open source</p>
+    <h1 id="hero-title" class="hero__title">Proof of Value — Verifiable Value Creation on Solana</h1>
+    <p class="hero__sub">AI can create value. Proof of Value makes sure we remember who created it.</p>
     <div class="hero__cta">
-      <a routerLink="/demo" class="btn btn--primary btn--lg">Watch Trusted Execution</a>
-      <a routerLink="/tower" class="btn btn--lg">Open Control Tower</a>
+      <a id="see-proof" [routerLink]="proofLink()" class="btn btn--primary btn--lg">See a real proof</a>
+      <a href="https://github.com/sebdev89/life-engine-cryptobot-ui#run-it-against-the-demo-stack" class="btn btn--lg" rel="noopener">Run the demo</a>
     </div>
+  </section>
+
+  <section class="diagram" aria-label="Architecture">
+    <img src="/proof-of-value.svg" alt="Proof of Value architecture: an accepted outcome becomes a signed ValueEvent, anchored on Solana, with contributors paid" width="1600" height="960" />
+  </section>
+
+  <section class="case" aria-labelledby="case-title">
+    <h2 id="case-title" class="eyebrow">First real case</h2>
+    <p class="case__line">First real case: CryptoBot, an economic agent on Solana devnet. <a routerLink="/demo">Watch it run</a>.</p>
+    <p class="t-2">The same layer that lets it act with money safely — policy-bound, idempotent, recoverable, provable — records who created value.</p>
   </section>
 
   <section class="problem" aria-label="The problem">
@@ -46,5 +53,9 @@
     <p class="t-2 failure__note">The money does not move twice. Both scenes run live against the stack in Demo Mode.</p>
   </section>
 
-  <footer class="foot mono">reference implementation · devnet · not a trading bot</footer>
+  <footer class="foot mono">
+    reference implementation · devnet · not a trading bot ·
+    <a href="https://github.com/sebdev89/life-engine-cryptobot-service" rel="noopener">service</a> ·
+    <a href="https://github.com/sebdev89/life-engine-cryptobot-ui" rel="noopener">UI</a> · Apache-2.0
+  </footer>
 </main>

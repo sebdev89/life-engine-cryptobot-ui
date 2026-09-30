@@ -1,5 +1,5 @@
 /**
- * Client-side inclusion proof for the receipt anchors (KAN-784, PROVE stage). Same fixed scheme as
+ * Client-side inclusion proof for the receipt anchors (PROVE stage). Same fixed scheme as
  * `MerkleTree` in cryptobot-service, reimplemented here so the browser checks
  * `receipt ∈ root` on its own instead of trusting a boolean from the server:
  *
@@ -99,7 +99,7 @@ export interface ProofPath {
   root: string;
 }
 
-/** The same fold as `rootFromProof`, keeping every intermediate node so the path can be shown (KAN-788). */
+/** The same fold as `rootFromProof`, keeping every intermediate node so the path can be shown. */
 export async function proofPath(receiptHash: string, proof: readonly string[], sha: Sha256): Promise<ProofPath> {
   const leaf = await leafHash(receiptHash, sha);
   let current = leaf;

@@ -189,3 +189,24 @@
   letter-spacing: var(--tracking-label);
   color: var(--text-3);
 }
+
+// ---- diagram + first real case ----------------------------------------------------------------
+.diagram {
+  padding: var(--sp-4) 0;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+}
+
+.case {
+  padding: var(--sp-5) 0;
+
+  &__line {
+    font-size: 1.25rem;
+    margin: var(--sp-2) 0;
+  }
+}

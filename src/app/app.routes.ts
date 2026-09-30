@@ -1,28 +1,28 @@
 import { Routes } from '@angular/router';
 import { Landing } from './landing/landing';
 
-// KAN-789: the operator dashboard moved to /console; lazy now that `/` is the public landing.
+// The operator dashboard moved to /console; lazy now that `/` is the public landing.
 const consoleView = () => import('./dashboard/dashboard').then((m) => m.Dashboard);
 
-// KAN-576: the demo path as one live screen; lazy so the dashboard's initial bundle does not pay for it.
+// The demo path as one live screen; lazy so the dashboard's initial bundle does not pay for it.
 const live = () => import('./live/live').then((m) => m.LiveOperation);
 
-// KAN-785: Demo Mode, lazy for the same reason.
+// Demo Mode, lazy for the same reason.
 const demo = () => import('./demo/demo').then((m) => m.DemoMode);
 
-// KAN-787: Control Tower — KPIs counted from the API and the latest executions with their phase.
+// Control Tower — KPIs counted from the API and the latest executions with their phase.
 const tower = () => import('./tower/tower').then((m) => m.ControlTower);
 
-// KAN-788: Proof view — anchors, inclusion path folded in the browser, server verification.
+// Proof view — anchors, inclusion path folded in the browser, server verification.
 const proof = () => import('./proof/proof').then((m) => m.ProofView);
 
-// KAN-790: Recovery — the dead-letter queue, the human decision on each letter, and demo-only chaos.
+// Recovery — the dead-letter queue, the human decision on each letter, and demo-only chaos.
 const recovery = () => import('./recovery/recovery').then((m) => m.RecoveryView);
 
-// KAN-791: Policies — the rules a proposal was decided under, read from the proposal itself.
+// Policies — the rules a proposal was decided under, read from the proposal itself.
 const policies = () => import('./policies/policies').then((m) => m.PoliciesView);
 
-// KAN-828: Proof of Value — accepted outcomes, who contributed, and their Solana anchor.
+// Proof of Value — accepted outcomes, who contributed, and their Solana anchor.
 const value = () => import('./value/value-list').then((m) => m.ValueList);
 const valueDetail = () => import('./value/value-detail').then((m) => m.ValueDetail);
 
@@ -34,7 +34,7 @@ const treasury = () => import('./value/treasury').then((m) => m.TreasuryPage);
 const ledger = () => import('./value/ledger').then((m) => m.Ledger);
 
 export const routes: Routes = [
-  { path: '', title: 'CryptoBot — trusted execution for financial AI agents', component: Landing, pathMatch: 'full' },
+  { path: '', title: 'Proof of Value on Solana · CryptoBot', component: Landing, pathMatch: 'full' },
   { path: 'console', title: 'Console · CryptoBot', loadComponent: consoleView },
   { path: 'live', title: 'Execution · CryptoBot', loadComponent: live },
   { path: 'live/:proposalId', title: 'Execution · CryptoBot', loadComponent: live },

@@ -1,5 +1,5 @@
 /**
- * PROVE from existing endpoints only (KAN-784, shared with Demo Mode in KAN-785): the EXECUTION
+ * PROVE from existing endpoints only (shared with Demo Mode): the EXECUTION
  * receipt (`/proposals/{id}/receipts`), the batch that anchors it (`GET /anchors/{root}`; while the
  * receipt carries no anchor yet, the open batches of `GET /anchors?limit=` are checked for it), and
  * the Merkle proof folded in the browser.

@@ -79,7 +79,7 @@
           <div class="actions">
             <button type="button" class="ok-btn" (click)="onDecide('approve')" [disabled]="!canApprove() || busy()">Approve</button>
             <button type="button" class="ghost" (click)="onDecide('reject')" [disabled]="!canApprove() || busy()">Reject</button>
-            <button type="button" class="ghost" (click)="onCancel()" [disabled]="!canCancel() || busy()" title="Inside the timelock (KAN-438)">Cancel</button>
+            <button type="button" class="ghost" (click)="onCancel()" [disabled]="!canCancel() || busy()" title="Inside the timelock">Cancel</button>
             <button type="button" class="exec-btn" (click)="onExecute()" [disabled]="!canExecute() || busy()"
               [title]="mainnetFailClosed() ? 'The control plane answers 409 (mainnet fail-closed): that is what the demo shows' : 'Second, explicit click: preconditions → validator → signer → devnet'">
               Execute on devnet
@@ -98,7 +98,7 @@
               </div>
               <p class="small">{{ a.message }}</p>
               @if (a.status === 409) {
-                <p class="muted small">409 = the control plane refused and signed nothing: not approved, inside the timelock, policy not executable or mainnet fail-closed (KAN-493).</p>
+                <p class="muted small">409 = the control plane refused and signed nothing: not approved, inside the timelock, policy not executable or mainnet fail-closed.</p>
               }
             </div>
           }
@@ -200,7 +200,7 @@
       </div>
     </div>
 
-    <!-- ── receipts + lineage (KAN-393 / KAN-394, reused as-is) ────────────────────── -->
+    <!-- ── receipts + lineage (reused as-is) ────────────────────── -->
     <section class="panel">
       <div class="panel__head">
         <h2>Receipts and lineage</h2>
@@ -210,7 +210,7 @@
       @if (lineageAvailable()) {
         <app-lineage [proposalId]="p.id" [version]="panelsVersion()" />
       } @else {
-        <p class="muted small">Lineage (receipt DAG, KAN-393): this service does not expose <code>GET /proposals/{{ '{' }}id{{ '}' }}/lineage</code>; the receipts and their <code>verify</code> are enough for the demo.</p>
+        <p class="muted small">Lineage (receipt DAG): this service does not expose <code>GET /proposals/{{ '{' }}id{{ '}' }}/lineage</code>; the receipts and their <code>verify</code> are enough for the demo.</p>
       }
     </section>
 
@@ -219,7 +219,7 @@
       <section class="panel">
         <div class="panel__head">
           <h2>Durable events</h2>
-          <span class="muted small">outbox transaccional (KAN-403) · <code>GET /proposals/{{ shortId(p.id) }}…/events</code></span>
+          <span class="muted small">outbox transaccional · <code>GET /proposals/{{ shortId(p.id) }}…/events</code></span>
         </div>
         @if (!ev.events.length) { <p class="muted small">No outbox events yet.</p> }
         <ul class="outbox">

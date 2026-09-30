@@ -1,5 +1,5 @@
 /**
- * Client + pure helpers for the provenance DAG (KAN-393, Endgame §7 / §15):
+ * Client + pure helpers for the provenance DAG (Endgame §7 / §15):
  * `/api/cryptobot/proposals/{id}/lineage`, `/receipts/{hash}/lineage|parents|children|reused-by`,
  * `/receipts/{hash}` and `POST /receipts/{hash}/verify`. Shapes mirror the Java records one-to-one.
  *

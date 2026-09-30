@@ -10,7 +10,7 @@ import { ValueNav } from './value-nav';
 import { PayoutsTable } from './payouts-table';
 import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd, lamportsToSol, payoutClass, short, shortWallet, statusClass, statusLabel, txExplorerUrl } from './value-model';
 
-/** `/value/:id` (KAN-828): one ValueEvent, section by section, with what V1 does not cover said plainly. */
+/** `/value/:id`: one ValueEvent, section by section, with what V1 does not cover said plainly. */
 @Component({
   selector: 'app-value-detail',
   standalone: true,

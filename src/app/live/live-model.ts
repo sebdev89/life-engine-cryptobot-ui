@@ -1,5 +1,5 @@
 /**
- * Pure model of the live-operation view (KAN-576, demo path §2 of
+ * Pure model of the live-operation view (demo path §2 of
  * `CryptoBot-Hackathon-Demo-Path-2026-09-20.md`): the 12 steps a proposal walks through, derived
  * only from what the service persisted (`ProposalStatus` + the `audit_event` trail). Nothing is
  * inferred from time or guessed: a step is `done` when its audit event exists, `failed` when the
@@ -366,7 +366,7 @@ export function buildTimeline(proposal: ActionProposal | null, audit: readonly A
   return steps;
 }
 
-// ---- the 8 product stages (KAN-784) --------------------------------------------------------
+// ---- the 8 product stages --------------------------------------------------------
 
 export type StageId = 'INTENT' | 'POLICY' | 'APPROVAL' | 'SIGN' | 'EXECUTE' | 'FINALIZE' | 'RECONCILE' | 'PROVE';
 
@@ -668,7 +668,7 @@ export function predicateRows(decision: PolicyDecision | null | undefined): Pred
   return v.evaluatedPredicates.map((predicate) => ({ predicate, failed: failed.has(predicate) }));
 }
 
-/** KAN-493: the wallet is on mainnet ⇒ `EXECUTION_CLUSTER` is an execution violation and `execute` is a 409 (fail-closed). */
+/** The wallet is on mainnet ⇒ `EXECUTION_CLUSTER` is an execution violation and `execute` is a 409 (fail-closed). */
 export function isMainnetFailClosed(proposal: Pick<ActionProposal, 'cluster' | 'policy'> | null | undefined): boolean {
   if (!proposal) return false;
   const onMainnet = proposal.cluster.toLowerCase().startsWith('mainnet');

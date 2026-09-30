@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { DemoStep, Stage, formatDuration } from '../live-model';
 
 /**
- * Execution Detail (KAN-784): the 8 stages of a proposal as a pipeline (one node per stage, state
+ * Execution Detail: the 8 stages of a proposal as a pipeline (one node per stage, state
  * + duration) and as an expandable list (evidence + the original steps of the 12-step model, and
  * PROVE's anchor/inclusion checks). Presentational only: everything comes from `buildStages`.
  */
@@ -17,7 +17,7 @@ import { DemoStep, Stage, formatDuration } from '../live-model';
 })
 export class ExecutionDetail {
   readonly stages = input<Stage[]>([]);
-  /** KAN-788: PROVE opens the Proof view of its batch (`/proof/:root?receipt=`) once the receipt is anchored. */
+  /** PROVE opens the Proof view of its batch (`/proof/:root?receipt=`) once the receipt is anchored. */
   readonly proofLink = input<{ root: string; receipt: string | null } | null>(null);
 
   duration(s: Stage): string {

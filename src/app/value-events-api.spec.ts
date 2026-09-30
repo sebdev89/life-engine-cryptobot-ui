@@ -11,7 +11,7 @@ function ok(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-describe('value-events-api (KAN-828)', () => {
+describe('value-events-api', () => {
   beforeEach(() => {
     clearCryptobotSession();
     localStorage.setItem(SESSION_KEY, JSON.stringify({ accessToken: 'demo-token-'.padEnd(40, 'x') }));

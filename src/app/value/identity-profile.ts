@@ -9,7 +9,7 @@ import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
 import { explorerAddressUrl, lamportsToSol, statusClass } from './value-model';
 
-/** `/value/identities/:id` (KAN-830): kind, wallet, owner/operator, explicit reputation and the history behind it. */
+/** `/value/identities/:id`: kind, wallet, owner/operator, explicit reputation and the history behind it. */
 @Component({
   selector: 'app-identity-profile',
   standalone: true,

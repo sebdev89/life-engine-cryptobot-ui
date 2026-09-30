@@ -34,7 +34,7 @@ describe('value-model', () => {
   });
 });
 
-describe('value-model KAN-830 helpers', () => {
+describe('value-model helpers', () => {
   it('builds the devnet address link', () => {
     expect(explorerAddressUrl('ABC')).toBe('https://explorer.solana.com/address/ABC?cluster=devnet');
   });

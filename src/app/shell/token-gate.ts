@@ -2,7 +2,7 @@ import { Component, input, output, signal } from '@angular/core';
 import { setCryptobotSession } from '../session';
 
 /**
- * What a screen shows when there is no session (KAN-787, reused by /demo in KAN-789): a field for
+ * What a screen shows when there is no session (reused by /demo): a field for
  * the demo JWT instead of a dead end. The token stays in this browser (session.ts → localStorage);
  * `scripts/demo/ui-url.sh` in cryptobot-service mints one for the local demo stack.
  */

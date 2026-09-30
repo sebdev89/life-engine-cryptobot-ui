@@ -1,5 +1,5 @@
 /**
- * Demo Mode (KAN-785): the orchestration `scripts/demo/e2e-devnet.sh` does with curl, done by the
+ * Demo Mode: the orchestration `scripts/demo/e2e-devnet.sh` does with curl, done by the
  * UI with the routes it already consumes. Nothing here is computed for show: every value on
  * screen is a field of an API answer, and every wait is one the service imposes (cooldown,
  * timelock, confirmation, anchor finality).
@@ -205,7 +205,7 @@ export const SCENARIO_A_STEPS: readonly { id: string; label: string }[] = [
 ];
 
 /**
- * Scenario B (KAN-786), the order of `e2e-devnet.sh --chaos rpc-down`: the fault is armed right
+ * Scenario B, the order of `e2e-devnet.sh --chaos rpc-down`: the fault is armed right
  * before the execute (the simulation and the policy run against a healthy RPC), then the recovery
  * is watched, not scripted: the reconciler dead-letters, a human requeues, the retry lands.
  */

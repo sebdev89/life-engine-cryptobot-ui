@@ -120,7 +120,7 @@ describe('merkle — inclusion proof folded in the client', () => {
   });
 });
 
-describe('merkle — proofPath (Proof view, KAN-788)', () => {
+describe('merkle — proofPath (Proof view)', () => {
   // The member of the demo anchor sha256:a605…6a1f (cryptobot-demo-main, 2026-09-30): 7 receipts, 3 siblings.
   const REAL = {
     root: 'sha256:a60533998c19247079f4178d10588b40b482d9ec0515014f6ad7a6d9f91b6a1f',

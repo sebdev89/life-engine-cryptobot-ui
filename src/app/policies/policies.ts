@@ -26,7 +26,7 @@ import {
 const LIST_LIMIT = 50;
 
 /**
- * `/policies` (KAN-791): the policy a proposal was decided under — verdict, R_v / H_R, the 13 core
+ * `/policies`: the policy a proposal was decided under — verdict, R_v / H_R, the 13 core
  * rules with their state, price integrity, signer caps, predicates, tiers, allowlist and timelock —
  * read from `GET /proposals/{id}`. `?proposal=<id>` picks one; default is the newest with a record.
  */
