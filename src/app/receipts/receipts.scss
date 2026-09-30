@@ -13,6 +13,11 @@
   }
 }
 
+.receipts__scroll {
+  // KAN-792: at 390 px the table scrolls inside its panel instead of widening the page.
+  overflow-x: auto;
+}
+
 .receipts__table {
   width: 100%;
   border-collapse: collapse;

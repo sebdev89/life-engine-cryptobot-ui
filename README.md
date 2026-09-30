@@ -162,6 +162,16 @@ sources; timelock (approval → executableAt); the 11 predicates with the expres
 comes from the approval and whether execute was accepted. `?proposal=<id>` selects one; default is the
 newest proposal with a policy record. Model: `policies/policies-model.ts` (+ spec).
 
+## Responsive, polish and navigation (KAN-792)
+
+One header on every screen (`shell/top-nav.ts`, `NAV_LINKS` in the judge's order: Control Tower →
+Execution → Proof → Recovery → Policies → Demo Mode, then Console). Above 900 px the links sit in one
+row; at or below 900 px the header is one line (brand + **Menu**) and the links open as a panel
+(`aria-expanded`, Esc closes). Every route has its own tab title (`app.routes.ts`, tested). Shared
+screen states live in `styles.scss` (`.banner-err`, `.loading`); `--text-3` was raised to 5.4:1 on the
+page background; `prefers-reduced-motion` turns animations off globally. The `/live` copy is in English
+like the rest of the walk. The favicon is `public/brand/cryptobot-mark.svg`.
+
 ## Glossary
 
 `src/app/glossary/` is a slide-over drawer (button **📖 Glosario** in the

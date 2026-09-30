@@ -1,6 +1,6 @@
 <div class="xd">
   <!-- ── pipeline: one node per stage ─────────────────────────────────────────────── -->
-  <ol class="pipeline" aria-label="Pipeline de ejecución · 8 etapas">
+  <ol class="pipeline" aria-label="Execution pipeline · 8 stages">
     @for (s of stages(); track s.id) {
       <li class="pipe st--{{ s.state }}" [class.pipe--running]="s.running">
         <button type="button" class="pipe__btn" (click)="focus(s.id)" [attr.aria-label]="s.id + ': ' + s.state + ', ' + duration(s)">
@@ -16,7 +16,7 @@
   </ol>
 
   <!-- ── stages: evidence + the original steps ────────────────────────────────────── -->
-  <ol class="stages" aria-label="Detalle por etapa">
+  <ol class="stages" aria-label="Detail per stage">
     @for (s of stages(); track s.id) {
       <li class="stage st--{{ s.state }}" [id]="'stage-' + s.id">
         <details [open]="opensByDefault(s)">

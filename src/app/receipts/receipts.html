@@ -12,6 +12,7 @@
   @if (!loading() && receipts().length === 0 && !error()) { <p class="muted small">No receipts yet.</p> }
 
   @if (receipts().length > 0) {
+    <div class="receipts__scroll">
     <table class="receipts__table">
       <thead>
         <tr>
@@ -64,5 +65,6 @@
         }
       </tbody>
     </table>
+    </div>
   }
 </section>

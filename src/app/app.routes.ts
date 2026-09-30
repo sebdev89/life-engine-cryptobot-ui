@@ -23,15 +23,15 @@ const recovery = () => import('./recovery/recovery').then((m) => m.RecoveryView)
 const policies = () => import('./policies/policies').then((m) => m.PoliciesView);
 
 export const routes: Routes = [
-  { path: '', component: Landing, pathMatch: 'full' },
-  { path: 'console', loadComponent: consoleView },
-  { path: 'live', loadComponent: live },
-  { path: 'live/:proposalId', loadComponent: live },
-  { path: 'demo', loadComponent: demo },
-  { path: 'tower', loadComponent: tower },
-  { path: 'proof', loadComponent: proof },
-  { path: 'proof/:root', loadComponent: proof },
-  { path: 'recovery', loadComponent: recovery },
-  { path: 'policies', loadComponent: policies },
+  { path: '', title: 'CryptoBot — trusted execution for financial AI agents', component: Landing, pathMatch: 'full' },
+  { path: 'console', title: 'Console · CryptoBot', loadComponent: consoleView },
+  { path: 'live', title: 'Execution · CryptoBot', loadComponent: live },
+  { path: 'live/:proposalId', title: 'Execution · CryptoBot', loadComponent: live },
+  { path: 'demo', title: 'Demo Mode · CryptoBot', loadComponent: demo },
+  { path: 'tower', title: 'Control Tower · CryptoBot', loadComponent: tower },
+  { path: 'proof', title: 'Proof · CryptoBot', loadComponent: proof },
+  { path: 'proof/:root', title: 'Proof · CryptoBot', loadComponent: proof },
+  { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: recovery },
+  { path: 'policies', title: 'Policies · CryptoBot', loadComponent: policies },
   { path: '**', redirectTo: '' },
 ];

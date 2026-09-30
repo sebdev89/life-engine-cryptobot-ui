@@ -2,8 +2,8 @@
   <app-top-nav />
   <header class="live__header">
     <div>
-      <h1>Operación en vivo <span class="muted small">· el demo path, sin consola</span></h1>
-      <p class="muted"><span class="mono">INTENT → POLICY → APPROVAL → SIGN → EXECUTE → FINALIZE → RECONCILE → PROVE</span>. Cada etapa, como el servicio la dejó: estado, duración y evidencia.</p>
+      <h1>Live execution <span class="muted small">· one proposal, every stage</span></h1>
+      <p class="muted"><span class="mono">INTENT → POLICY → APPROVAL → SIGN → EXECUTE → FINALIZE → RECONCILE → PROVE</span>. Each stage as the service recorded it: state, duration and evidence.</p>
     </div>
     <div class="live__status" aria-live="polite">
       @if (paused()) {
@@ -11,7 +11,7 @@
       } @else {
         <span class="badge badge--ok pulse">● live</span>
       }
-      <span class="muted small mono">polling 2 s (sin SSE en el service) · {{ fmtTime(lastTick()) }}</span>
+      <span class="muted small mono">polling 2 s (the service has no SSE) · {{ fmtTime(lastTick()) }}</span>
       <button type="button" class="ghost" (click)="togglePause()">{{ paused() ? 'Resume' : 'Pause' }}</button>
     </div>
   </header>
@@ -23,11 +23,11 @@
   <!-- ── proposal picker ─────────────────────────────────────────────────────────────── -->
   <section class="panel">
     <div class="panel__head">
-      <h2>Propuesta</h2>
-      <span class="muted small">{{ proposals().length }} del operador · la más reciente primero</span>
+      <h2>Proposal</h2>
+      <span class="muted small">{{ proposals().length }} of this operator · newest first</span>
     </div>
     @if (!proposals().length) {
-      <p class="muted">Sin propuestas todavía. Creá una desde la <a routerLink="/console">consola</a>, con el <a routerLink="/demo">Demo Mode</a> (Simulate rebalance) o con <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
+      <p class="muted">No proposals yet. Create one from the <a routerLink="/console">console</a>, with <a routerLink="/demo">Demo Mode</a> or with <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
     }
     <div class="chips">
       @for (p of proposals(); track p.id) {
@@ -73,20 +73,20 @@
       <div class="column">
         <section class="panel">
           <div class="panel__head">
-            <h2>Acciones</h2>
-            <span class="muted small">los mismos endpoints del dashboard</span>
+            <h2>Actions</h2>
+            <span class="muted small">the same endpoints as the console</span>
           </div>
           <div class="actions">
             <button type="button" class="ok-btn" (click)="onDecide('approve')" [disabled]="!canApprove() || busy()">Approve</button>
             <button type="button" class="ghost" (click)="onDecide('reject')" [disabled]="!canApprove() || busy()">Reject</button>
-            <button type="button" class="ghost" (click)="onCancel()" [disabled]="!canCancel() || busy()" title="Dentro del timelock (KAN-438)">Cancel</button>
+            <button type="button" class="ghost" (click)="onCancel()" [disabled]="!canCancel() || busy()" title="Inside the timelock (KAN-438)">Cancel</button>
             <button type="button" class="exec-btn" (click)="onExecute()" [disabled]="!canExecute() || busy()"
-              [title]="mainnetFailClosed() ? 'El control plane responde 409 (mainnet fail-closed): eso es lo que muestra el demo' : 'Segundo click explícito: preconditions → validador → signer → devnet'">
+              [title]="mainnetFailClosed() ? 'The control plane answers 409 (mainnet fail-closed): that is what the demo shows' : 'Second, explicit click: preconditions → validator → signer → devnet'">
               Execute on devnet
             </button>
           </div>
           @if (operationId(); as op) {
-            <p class="muted small">Idempotency key (operationId) <code>{{ op }}</code> — un segundo click con la misma clave devuelve la misma transacción, nunca una segunda.</p>
+            <p class="muted small">Idempotency key (operationId) <code>{{ op }}</code> — a second click with the same key returns the same transaction, never a second one.</p>
           }
           @if (lastAnswer(); as a) {
             <div class="answer answer--{{ a.ok ? 'ok' : a.status === 409 ? 'conflict' : 'err' }}" role="status">
@@ -98,7 +98,7 @@
               </div>
               <p class="small">{{ a.message }}</p>
               @if (a.status === 409) {
-                <p class="muted small">409 = el control plane se negó y no firmó nada: no aprobada, dentro del timelock, política no ejecutable o mainnet fail-closed (KAN-493).</p>
+                <p class="muted small">409 = the control plane refused and signed nothing: not approved, inside the timelock, policy not executable or mainnet fail-closed (KAN-493).</p>
               }
             </div>
           }
@@ -116,7 +116,7 @@
           </div>
           @if (mainnetFailClosed()) {
             <div class="banner banner--warn">
-              <strong>Mainnet fail-closed.</strong> La wallet está en <code>{{ p.cluster }}</code>: <code>EXECUTION_CLUSTER</code> es una violación de ejecución y <code>POST /execute</code> responde <strong>409</strong> (<code>MAINNET_DISABLED</code> si llegara al gate). Nada se firma, nada se envía.
+              <strong>Mainnet fail-closed.</strong> The wallet is on <code>{{ p.cluster }}</code>: <code>EXECUTION_CLUSTER</code> is an execution violation and <code>POST /execute</code> answers <strong>409</strong> (<code>MAINNET_DISABLED</code> if it reached the gate). Nothing is signed, nothing is sent.
             </div>
           }
           @if (p.policy?.authorization; as v) {
@@ -153,7 +153,7 @@
 
         <section class="panel">
           <div class="panel__head">
-            <h2>Firma y cadena</h2>
+            <h2>Signature and chain</h2>
             @if (p.execution; as ex) {
               <span class="badge badge--{{ ex.status === 'EXECUTED' ? 'ok' : ex.status === 'FAILED' ? 'err' : 'warn' }}">{{ ex.status }}</span>
             }
@@ -191,7 +191,7 @@
               }
             </dl>
           } @else {
-            <p class="muted small">Nada firmado todavía. La firma se persiste <em>antes</em> del broadcast: si el proceso muere después de firmar, la reconciliación la encuentra.</p>
+            <p class="muted small">Nothing signed yet. The signature is persisted <em>before</em> the broadcast: if the process dies after signing, reconciliation finds it.</p>
           }
           @if (p.transaction; as tx) {
             <p class="muted small">{{ tx.instructionSummary }} · blockhash <code>{{ tx.recentBlockhash | slice: 0 : 8 }}…</code></p>
@@ -203,14 +203,14 @@
     <!-- ── receipts + lineage (KAN-393 / KAN-394, reused as-is) ────────────────────── -->
     <section class="panel">
       <div class="panel__head">
-        <h2>Recibos y linaje</h2>
-        <span class="muted small">firmados, content-addressed · <code>POST /receipts/{{ '{' }}hash{{ '}' }}/verify</code> recomputa hash + firma; L1 re-ejecuta el motor</span>
+        <h2>Receipts and lineage</h2>
+        <span class="muted small">signed, content-addressed · <code>POST /receipts/{{ '{' }}hash{{ '}' }}/verify</code> recomputes hash + signature; L1 re-runs the engine</span>
       </div>
       <app-receipts [walletId]="p.walletId" [proposalId]="p.id" [version]="panelsVersion()" />
       @if (lineageAvailable()) {
         <app-lineage [proposalId]="p.id" [version]="panelsVersion()" />
       } @else {
-        <p class="muted small">Linaje (DAG de recibos, KAN-393): este service no expone <code>GET /proposals/{{ '{' }}id{{ '}' }}/lineage</code>; los recibos y su <code>verify</code> alcanzan para el demo.</p>
+        <p class="muted small">Lineage (receipt DAG, KAN-393): this service does not expose <code>GET /proposals/{{ '{' }}id{{ '}' }}/lineage</code>; the receipts and their <code>verify</code> are enough for the demo.</p>
       }
     </section>
 
@@ -218,10 +218,10 @@
     @if (events(); as ev) {
       <section class="panel">
         <div class="panel__head">
-          <h2>Eventos durables</h2>
+          <h2>Durable events</h2>
           <span class="muted small">outbox transaccional (KAN-403) · <code>GET /proposals/{{ shortId(p.id) }}…/events</code></span>
         </div>
-        @if (!ev.events.length) { <p class="muted small">Sin eventos de outbox todavía.</p> }
+        @if (!ev.events.length) { <p class="muted small">No outbox events yet.</p> }
         <ul class="outbox">
           @for (o of ev.events; track o.id) {
             <li>
@@ -233,7 +233,7 @@
           }
         </ul>
         @if (ev.deadLetters.length) {
-          <p class="small"><strong>{{ ev.deadLetters.length }}</strong> dead letter(s) de esta propuesta — se resuelven en la DLQ de abajo.</p>
+          <p class="small"><strong>{{ ev.deadLetters.length }}</strong> dead letter(s) for this proposal — decided in the DLQ below or in <a routerLink="/recovery">Recovery</a>.</p>
         }
       </section>
     }
@@ -243,10 +243,10 @@
   <section class="panel">
     <div class="panel__head">
       <h2>Dead-letter queue <span class="badge badge--{{ (dlq()?.open ?? 0) > 0 ? 'warn' : 'ok' }}">{{ dlq()?.open ?? 0 }} open</span></h2>
-      <span class="muted small">lo que el sistema se niega a adivinar; un humano decide · <code>GET /dead-letters</code> (RUNTIME_ADMIN)</span>
+      <span class="muted small">what the system refuses to guess; a human decides · <code>GET /dead-letters</code> (RUNTIME_ADMIN)</span>
     </div>
     @if (dlqForbidden()) {
-      <p class="muted small">Tu token no tiene <code>RUNTIME_ADMIN</code>: la DLQ global no es visible desde esta cuenta (la del demo la tiene).</p>
+      <p class="muted small">Your token has no <code>RUNTIME_ADMIN</code>: the global DLQ is not visible from this account (the demo one has it).</p>
     } @else {
       @if (dlqError()) { <p class="err small" role="alert">{{ dlqError() }}</p> }
       @if (dlqLast(); as l) {
@@ -273,10 +273,10 @@
             <p class="small">{{ d.reason }}</p>
             @if (dlqConfirm()?.id === d.id) {
               <div class="confirm">
-                <strong>¿{{ dlqConfirm()!.action === 'requeue' ? 'Requeue' : 'Resolve' }} {{ shortId(d.id) }}?</strong>
+                <strong>{{ dlqConfirm()!.action === 'requeue' ? 'Requeue' : 'Resolve' }} {{ shortId(d.id) }}?</strong>
                 <span class="muted small">
-                  @if (dlqConfirm()!.action === 'requeue') { el sistema lo intenta de nuevo: outbox PENDING o reconciliación ahora (retry idempotente, mismo operationId) }
-                  @else { cierre manual: la propuesta queda como la cadena lo prueba (409 si aún no hay veredicto) }
+                  @if (dlqConfirm()!.action === 'requeue') { the system tries again: outbox PENDING or reconciliation now (idempotent retry, same operationId) }
+                  @else { manual close: the proposal stays as the chain proves it (409 if there is no verdict yet) }
                 </span>
                 <input [value]="dlqNote()" (input)="dlqNote.set($any($event.target).value)" placeholder="nota (opcional)" aria-label="Resolution note" />
                 <div class="actions">
@@ -315,7 +315,7 @@
     <section class="panel panel--chaos">
       <div class="panel__head">
         <h2>Chaos <span class="badge badge--{{ chaos()?.armed ? 'err' : 'ok' }}">{{ chaos()?.armed ? 'armed · ' + chaos()?.broadcast : 'disarmed' }}</span></h2>
-        <span class="muted small">DEMO ONLY · <code>PUT /demo/chaos</code> · existe sólo con <code>cryptobot.chaos.enabled</code>; UAT/PROD no lo exponen</span>
+        <span class="muted small">DEMO ONLY · <code>PUT /demo/chaos</code> · exists only with <code>cryptobot.chaos.enabled</code>; UAT/PROD do not expose it</span>
       </div>
       <div class="chaos__form">
         <select [value]="chaosMode()" (change)="chaosMode.set($any($event.target).value)" aria-label="Chaos mode" [disabled]="chaosBusy()">
