@@ -1,5 +1,7 @@
 <!-- Product name: defined only in the title below; change it there. -->
-# Proof of Value — CryptoBot, the first economic agent · UI
+# CryptoBot — Proof of Value for Autonomous Agents · UI
+
+<p align="center"><img src="public/brand/cryptobot-mark.svg" alt="CryptoBot mark" width="96"></p>
 
 The operator and demo UI (Angular) of Proof of Value and of CryptoBot's Trusted Agent Execution. It only reads and calls the
 service API ([`life-engine-cryptobot-service`](https://github.com/sebdev89/life-engine-cryptobot-service)); nothing is computed

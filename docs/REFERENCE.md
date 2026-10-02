@@ -138,7 +138,7 @@ PROVE in `/live/:id` and the result of `/demo` link here with the EXECUTION rece
 `/tower`. `/?token=` is consumed like on any route (`main.ts` → `session.ts`), so the CTA reaches `/demo` signed in; without a
 token `/demo` (and `/tower`, `/proof`) ask for one in a field (`app-token-gate`). The operator dashboard moved to `/console`
 (lazy); every screen shares `app-top-nav` (Control Tower · Execution · Proof · Demo Mode · Console). The logo is
-`public/brand/cryptobot-mark.svg`, copied from `cryptobot-service/docs/brand/`.
+`public/brand/cryptobot-mark.svg` (mark A, chosen 2026-10-02; mark B discarded), copied from `cryptobot-service/docs/brand/`.
 
 ## Recovery
 
