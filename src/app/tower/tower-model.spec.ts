@@ -184,10 +184,10 @@ describe('currentPhase', () => {
 
 describe('row helpers', () => {
   it('intentLine reads the plan', () => {
-    expect(intentLine(A1)).toBe('SELL 0.7864 SOL → USDC');
+    expect(intentLine(A1)).toBe('SELL 0.7864 SOL → vault (SOL)');
     expect(intentLine(proposal('t', { plan: { ...A1.plan, legs: [] } }))).toBe('Rebalance: SOL → [79]');
     const two = { ...A1.plan, legs: [A1.plan.legs[0], { ...A1.plan.legs[0], action: 'BUY' as const }] };
-    expect(intentLine(proposal('t', { plan: two }))).toBe('SELL 0.7864 SOL → USDC (+1 leg)');
+    expect(intentLine(proposal('t', { plan: two }))).toBe('SELL 0.7864 SOL → vault (SOL) (+1 leg)');
   });
   it('usd formats or dashes', () => {
     expect(usd(94.08)).toBe('$94.08');

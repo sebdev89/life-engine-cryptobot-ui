@@ -259,7 +259,7 @@
               <div class="card">
                 <h4>Plan</h4>
                 @for (leg of p.plan.legs; track $index) {
-                  <p><span class="tag">{{ leg.action }}</span> {{ fmtAmount(leg.amount) }} {{ leg.symbol }} <span class="muted">≈ {{ fmtUsd(leg.estimatedUsd) }} → {{ leg.counterAsset }}</span></p>
+                  <p><span class="tag">{{ leg.action }}</span> {{ fmtAmount(leg.amount) }} {{ leg.symbol }} <span class="muted">≈ {{ fmtUsd(leg.estimatedUsd) }} → vault (SOL)</span></p>
                 }
                 <table class="mini-table">
                   @for (w of weightsAfterEntries(p); track w.symbol) {
