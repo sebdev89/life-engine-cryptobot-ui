@@ -103,13 +103,13 @@ export function currentPhase(stages: readonly Stage[]): Phase | null {
   return { id: stages[0].id, n: 1, state: stages[0].state };
 }
 
-/** `SELL 0.7864 SOL → USDC` (+1 leg); the title when the plan has no legs. */
+/** `SELL 0.7864 SOL → vault (SOL)` (+1 leg); on-chain the leg is a SOL transfer to the agent's own vault, not a swap; the title when the plan has no legs. */
 export function intentLine(p: Pick<ActionProposal, 'plan' | 'title'>): string {
   const legs = p.plan?.legs ?? [];
   if (!legs.length) return p.title;
   const l = legs[0];
   const amount = Number.isFinite(l.amount) ? Number(l.amount.toFixed(4)).toString() : String(l.amount);
-  const first = `${l.action} ${amount} ${l.symbol} → ${l.counterAsset}`;
+  const first = `${l.action} ${amount} ${l.symbol} → vault (SOL)`;
   return legs.length > 1 ? `${first} (+${legs.length - 1} leg${legs.length > 2 ? 's' : ''})` : first;
 }
 
