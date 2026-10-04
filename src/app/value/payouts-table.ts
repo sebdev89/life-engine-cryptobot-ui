@@ -1,13 +1,14 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Payout } from '../value-events-api';
+import { ExtIcon } from '../ui/hash';
 import { explorerAddressUrl, lamportsToSol, payoutClass, short, shortWallet, txExplorerUrl } from './value-model';
 
 /** Payouts table shared by the immediate distribution (V5) and the historical revenue distribution (V7). */
 @Component({
   selector: 'app-payouts-table',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ExtIcon],
   template: `
     <div class="table-wrap">
       <table class="grid" data-testid="payouts">
@@ -18,7 +19,7 @@ import { explorerAddressUrl, lamportsToSol, payoutClass, short, shortWallet, txE
               <td><a [routerLink]="['/value/identities', p.identityId]">{{ p.displayName }}</a></td>
               <td>
                 @if (p.wallet; as w) {
-                  <a class="mono small" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener" [title]="w">{{ shortWallet(w) }} ↗</a>
+                  <a class="mono small" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener noreferrer" [title]="w">{{ shortWallet(w) }}<app-ext-icon /></a>
                 } @else {
                   <span class="t-3">no wallet on file</span>
                 }
@@ -32,7 +33,7 @@ import { explorerAddressUrl, lamportsToSol, payoutClass, short, shortWallet, txE
               </td>
               <td>
                 @if (p.txSignature; as sig) {
-                  <a class="mono small" [href]="p.explorerUrl ?? txExplorerUrl(sig)" target="_blank" rel="noopener">{{ short(sig, 6, 4) }} ↗</a>
+                  <a class="mono small" [href]="p.explorerUrl ?? txExplorerUrl(sig)" target="_blank" rel="noopener noreferrer" [title]="sig">{{ short(sig, 6, 6) }}<app-ext-icon /></a>
                 } @else {
                   <span class="t-3">—</span>
                 }

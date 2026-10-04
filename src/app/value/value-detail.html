@@ -5,6 +5,14 @@
     <a routerLink="/value" class="back">← All value events</a>
     <p class="eyebrow">Proof of Value</p>
     <h1>{{ event()?.title ?? 'Value event' }}</h1>
+    @if (event(); as ev) {
+      <p class="value__status">
+        <span class="st-badge st--{{ statusClass(ev.status) }}">{{ statusLabel(ev.status) }}</span>
+        @if (publicDemo) {
+          <a [routerLink]="['/tour']" [queryParams]="{ step: 7 }" class="value__tour">See this step in the guided replay</a>
+        }
+      </p>
+    }
   </header>
   <app-value-nav />
 
@@ -15,39 +23,64 @@
       <p class="banner-err" role="alert">{{ e }}</p>
     }
     @if (event(); as ev) {
-      @if (distribution(); as d) {
-        <p class="final-line panel pad mono" data-testid="final-line">VALUE EVENT · {{ ev.title }} · POOL {{ sol(d.poolLamports) }} SOL · PAID TO {{ paidCount(d) }} contributors</p>
-      }
+      <section class="kpis-glass panel" aria-label="This outcome in numbers">
+        @if (distribution(); as d) {
+          <p class="final-line mono" data-testid="final-line">VALUE EVENT · {{ ev.title }} · POOL {{ sol(d.poolLamports) }} SOL · PAID TO {{ paidCount(d) }} contributors</p>
+        }
+        <dl class="kg">
+          <div class="kg__item">
+            <dt>Contribution Units <app-truth kind="declared" /></dt>
+            <dd class="kg__n"><app-count [to]="ev.totalUnits" /></dd>
+          </div>
+          <div class="kg__item">
+            <dt>Contributions</dt>
+            <dd class="kg__n"><app-count [to]="ev.contributions.length" /></dd>
+          </div>
+          @if (distribution(); as d) {
+            <div class="kg__item">
+              <dt>Paid on Solana <app-truth kind="onchain" /></dt>
+              <dd class="kg__n"><app-count [to]="confirmedSol(d)" [decimals]="4" /> <span class="kg__u">SOL</span></dd>
+            </div>
+          }
+          @if (ev.anchor; as a) {
+            <div class="kg__item">
+              <dt>Anchored in slot <app-truth kind="onchain" /></dt>
+              <dd class="kg__n mono kg__slot">{{ slotLabel(a.slot) }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
       <div class="sections">
         <section class="panel pad" data-section="task">
-          <h2>Task</h2>
+          <h2>Task <app-truth kind="declared" /></h2>
           <dl class="facts">
             <div><dt>title</dt><dd>{{ ev.title }}</dd></div>
             <div><dt>task</dt><dd class="mono">{{ ev.taskId }}</dd></div>
             <div><dt>project</dt><dd class="mono">{{ ev.projectId }}</dd></div>
-            <div><dt>accepted</dt><dd class="mono">{{ ev.acceptedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</dd></div>
+            <div><dt>accepted</dt><dd><app-when [at]="ev.acceptedAt" /></dd></div>
           </dl>
         </section>
 
         <section class="panel pad" data-section="evidence">
-          <h2>Evidence</h2>
+          <h2>Evidence <app-truth kind="recorded" /></h2>
           <dl class="facts">
-            <div><dt>artifact hash</dt><dd class="mono" [title]="ev.artifactHash">{{ ev.artifactHash }}</dd></div>
-            @if (ev.artifact?.commitSha) {
-              <div><dt>commit</dt><dd class="mono">{{ ev.artifact?.commitSha }}</dd></div>
+            <div><dt>artifact hash</dt><dd><app-hash [value]="ev.artifactHash" label="artifact hash" /></dd></div>
+            @if (ev.artifact?.commitSha; as sha) {
+              <div><dt>commit</dt><dd><app-hash [value]="sha" label="commit" [head]="7" [tail]="4" /> <span class="mono t-3 small">{{ sha.slice(0, 7) }}</span></dd></div>
             }
             @if (ev.artifact?.prUrl; as pr) {
-              <div><dt>pull request</dt><dd><a [href]="pr" target="_blank" rel="noopener">{{ pr }} ↗</a></dd></div>
+              <div><dt>pull request</dt><dd><a [href]="pr" target="_blank" rel="noopener noreferrer">{{ prLabel(pr) }}<app-ext-icon /></a></dd></div>
             }
-            @if (ev.artifact?.imageDigest) {
-              <div><dt>image digest</dt><dd class="mono">{{ ev.artifact?.imageDigest }}</dd></div>
+            @if (ev.artifact?.imageDigest; as dg) {
+              <div><dt>image digest</dt><dd><app-hash [value]="dg" label="image digest" /></dd></div>
             }
-            <div><dt>receipt hash</dt><dd class="mono" [title]="ev.receiptHash">{{ ev.receiptHash }}</dd></div>
+            <div><dt>receipt hash</dt><dd><app-hash [value]="ev.receiptHash" label="receipt hash" /></dd></div>
           </dl>
         </section>
 
         <section class="panel pad" data-section="acceptance">
-          <h2>Acceptance</h2>
+          <h2>Acceptance <app-truth [kind]="ev.acceptance?.source === 'manual' ? 'declared' : 'recorded'" /></h2>
           <ul class="stages">
             @for (s of stages(ev); track s.label) {
               <li class="stage" [class.stage--fail]="s.state === false" [class.stage--unknown]="s.state === null">
@@ -65,30 +98,32 @@
             @if (ev.acceptance?.environment) {
               <div><dt>environment</dt><dd>{{ ev.acceptance?.environment }}</dd></div>
             }
-            <div><dt>acceptance hash</dt><dd class="mono" [title]="ev.acceptanceHash">{{ ev.acceptanceHash }}</dd></div>
+            <div><dt>acceptance hash</dt><dd><app-hash [value]="ev.acceptanceHash" label="acceptance hash" /></dd></div>
           </dl>
         </section>
 
         <section class="panel pad" data-section="contributors">
-          <h2>Contributors</h2>
-          <table class="grid">
-            <thead><tr><th>Who</th><th>Kind</th><th>Role</th><th class="num">Units</th></tr></thead>
-            <tbody>
-              @for (c of ev.contributions; track $index) {
-                <tr>
-                  <td><a [routerLink]="['/value/identities', c.identityId]">{{ c.displayName }}</a> <span class="mono small t-3">{{ c.identityId }}</span></td>
-                  <td><span class="chip chip--{{ c.kind.toLowerCase() }}"><b>{{ c.kind }}</b></span></td>
-                  <td>{{ c.role }}</td>
-                  <td class="mono num">{{ c.units }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          <p class="t-3 small">Policy {{ ev.distributionPolicy }} · {{ ev.totalUnits }} units in total.</p>
+          <h2>Contributors <app-truth kind="declared" /></h2>
+          <div class="table-wrap">
+            <table class="grid">
+              <thead><tr><th>Who</th><th>Kind</th><th>Role</th><th class="num">Units</th></tr></thead>
+              <tbody>
+                @for (c of ev.contributions; track $index) {
+                  <tr>
+                    <td><a [routerLink]="['/value/identities', c.identityId]">{{ c.displayName }}</a> <span class="mono small t-3">{{ c.identityId }}</span></td>
+                    <td><span class="chip chip--{{ c.kind.toLowerCase() }}"><b>{{ c.kind }}</b></span></td>
+                    <td>{{ c.role }}</td>
+                    <td class="mono num">{{ c.units }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="t-3 small">Policy {{ ev.distributionPolicy }} · {{ ev.totalUnits }} units in total. Roles come from the task record.</p>
         </section>
 
         <section class="panel pad" data-section="knowledge">
-          <h2>Knowledge</h2>
+          <h2>Knowledge <app-truth kind="declared" /></h2>
           @if (!ev.knowledgeAssets?.length) {
             <p class="t-2">No knowledge assets attributed.</p>
           } @else {
@@ -112,7 +147,7 @@
         </section>
 
         <section class="panel pad" data-section="compute">
-          <h2>Compute</h2>
+          <h2>Compute <app-truth kind="estimated" /></h2>
           @if (!ev.computeReceipts?.length) {
             <p class="t-2">No compute receipts attached.</p>
           } @else {
@@ -138,23 +173,29 @@
           <p class="t-3 small cost-note">Compute cost is recorded separately from economic value.</p>
         </section>
 
-        <section class="panel pad" data-section="solana">
-          <h2>Solana</h2>
+        <section class="panel pad span-all" data-section="solana" id="verify">
+          <h2>Solana <app-truth kind="onchain" /></h2>
           @if (ev.anchor; as a) {
-            <dl class="facts">
-              <div><dt>Merkle root</dt><dd class="mono">{{ a.root }}</dd></div>
-              <div><dt>transaction</dt><dd class="mono">{{ a.txSignature }}</dd></div>
-              <div><dt>slot</dt><dd class="mono">{{ a.slot ?? '—' }}</dd></div>
+            <dl class="facts facts--row">
+              <div><dt>Merkle root</dt><dd><app-hash [value]="a.root" label="Merkle root" [head]="10" [tail]="10" /></dd></div>
+              <div><dt>transaction</dt><dd><app-hash [value]="a.txSignature" label="anchor transaction signature" /></dd></div>
+              <div><dt>slot</dt><dd class="mono">{{ slotLabel(a.slot) }}</dd></div>
             </dl>
             @if (a.explorerUrl; as href) {
-              <a class="btn" [href]="href" target="_blank" rel="noopener">Open in explorer ↗</a>
+              <a class="btn" [href]="href" target="_blank" rel="noopener noreferrer">Open in explorer<app-ext-icon /></a>
             }
             @if (proof(); as p) {
               <p class="verdict" [class.verdict--ok]="p.verified" [class.verdict--bad]="!p.verified" data-testid="proof">
+                @if (p.verified) {
+                  <svg class="tick" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8.5" /><path d="M6 10.4l2.7 2.7L14.2 7.6" /></svg>
+                }
                 Proof check: {{ p.verified ? 'verified' : 'NOT verified' }}
               </p>
               @if (browserCheck(); as b) {
                 <p class="verdict" [class.verdict--ok]="b.valid === true" [class.verdict--bad]="b.valid === false" data-testid="browser-proof">
+                  @if (b.valid === true) {
+                    <svg class="tick tick--late" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8.5" /><path d="M6 10.4l2.7 2.7L14.2 7.6" /></svg>
+                  }
                   @if (b.valid === null) {
                     Checked in this browser: not possible here ({{ b.reason }}).
                   } @else {
@@ -164,30 +205,41 @@
                   }
                 </p>
               }
+              @if (proofSteps(p); as steps) {
+                <app-merkle-viz [receiptHash]="ev.receiptHash" [proof]="steps" [root]="a.root" />
+              }
             } @else if (proofError(); as pe) {
               <p class="banner-err" role="alert">Proof check failed: {{ pe }}</p>
             } @else {
               <p class="t-3 small" aria-busy="true">Checking proof…</p>
+            }
+            @if (onDevnet(a.explorerUrl)) {
+              <app-chain-verify [signature]="a.txSignature" [expectedRoot]="a.root" [recordedSlot]="a.slot" />
             }
           } @else {
             <p class="t-2">Recorded, not anchored on Solana yet. The batch anchors it and this page will show the transaction.</p>
           }
         </section>
 
-        <section class="panel pad" data-section="distribution">
+        <section class="panel pad span-all" data-section="distribution">
           <h2>Immediate distribution</h2>
           @if (distribution(); as d) {
-            <dl class="facts">
+            <app-money-flow [total]="d.poolLamports" totalLabel="reward pool for this outcome, paid by units" totalTruth="recorded" [payouts]="d.payouts" />
+            <dl class="facts facts--row">
               <div><dt>pool</dt><dd class="mono" data-testid="pool">{{ sol(d.poolLamports) }} SOL</dd></div>
               <div><dt>policy</dt><dd>{{ d.policy }}</dd></div>
               <div><dt>status</dt><dd><span class="st-badge st--{{ d.status === 'COMPLETE' ? 'done' : d.status === 'FAILED' ? 'failed' : 'active' }}" data-testid="dist-status">{{ d.status }}</span></dd></div>
             </dl>
-            <app-payouts-table [payouts]="d.payouts" />
+            <details class="more">
+              <summary>All payouts as a table</summary>
+              <app-payouts-table [payouts]="d.payouts" />
+            </details>
           } @else {
             @if (distributionError(); as de) {
               <p class="banner-err" role="alert">Could not read the distribution: {{ de }}</p>
             } @else if (ev.distribution) {
-              <p class="t-3 small" aria-busy="true">Reading distribution…</p>
+              <span class="skeleton" style="height: 120px" aria-hidden="true"></span>
+              <p class="sr-only" aria-busy="true">Reading distribution…</p>
             } @else {
               <p class="t-2">No immediate reward distributed yet</p>
               @if (!publicDemo) {
@@ -220,7 +272,13 @@
         </section>
       </div>
     } @else if (!error()) {
-      <p class="t-2 loading" aria-busy="true">Reading value event…</p>
+      <div class="skeleton-stack" aria-busy="true">
+        <p class="sr-only">Reading value event…</p>
+        <span class="skeleton skeleton--panel" aria-hidden="true"></span>
+        <span class="skeleton skeleton--panel" aria-hidden="true"></span>
+        <span class="skeleton skeleton--panel" aria-hidden="true"></span>
+        <span class="skeleton skeleton--panel" aria-hidden="true"></span>
+      </div>
     }
   }
 </main>

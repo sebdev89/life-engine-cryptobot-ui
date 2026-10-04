@@ -1,0 +1,124 @@
+<main class="tour">
+  <app-top-nav />
+
+  <header class="tour__head">
+    <h1>Replay the run</h1>
+    <p class="tour__lede">Nine steps of one recorded devnet run: an agent's operation on Solana, then the accepted software behind it, who created it and who got paid.</p>
+  </header>
+
+  <app-chain-rail [active]="current()" />
+
+  <section class="player panel" aria-label="Replay controls">
+    <div class="player__buttons">
+      <button type="button" class="pbtn" (click)="prev()" [disabled]="current() === 1" aria-label="Previous step">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      <button type="button" class="pbtn pbtn--play" (click)="toggle()" [attr.aria-pressed]="playing()" data-testid="tour-play">
+        @if (playing()) {
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3v10M11 3v10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg>
+          Pause
+        } @else {
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3l8 5-8 5z" fill="currentColor" /></svg>
+          {{ current() === total && stepProgress() >= 1 ? 'Replay again' : 'Play' }}
+        }
+      </button>
+      <button type="button" class="pbtn" (click)="next()" [disabled]="current() === total" aria-label="Next step">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+    </div>
+
+    <div class="scrub">
+      <div class="scrub__track" aria-hidden="true">
+        <span class="scrub__fill" [style.transform]="'scaleX(' + overall() + ')'"></span>
+        @for (l of [1, 2, 3, 4, 5, 6, 7]; track l) {
+          <span class="scrub__tick" [style.left.%]="(l / (total - 1)) * 100"></span>
+        }
+      </div>
+      <input
+        class="scrub__input"
+        type="range"
+        min="1"
+        [max]="total"
+        step="1"
+        [value]="current()"
+        (input)="scrub($event)"
+        aria-label="Step of the replay"
+        [attr.aria-valuetext]="announce()"
+        data-testid="tour-scrubber"
+      />
+    </div>
+    <p class="player__time mono" aria-hidden="true">{{ elapsedLabel() }} / {{ totalLabel }}</p>
+  </section>
+  <p class="tour__keys t-3">Use <kbd>←</kbd> and <kbd>→</kbd> to move between steps. Each step links to its full screen.</p>
+
+  <p class="sr-only" aria-live="polite">{{ announce() }}</p>
+
+  @if (error(); as e) {
+    <p class="banner-err" role="alert">{{ e }}</p>
+  } @else if (view(); as s) {
+    @for (v of [s]; track v.n) {
+      <article class="stage panel" [attr.data-step]="v.n" data-testid="tour-step" aria-labelledby="stage-title">
+        <div class="stage__intro">
+          <p class="stage__n">Step {{ v.n }} of {{ total }}</p>
+          <h2 id="stage-title" class="stage__name">{{ v.name }}</h2>
+          <p class="stage__line">{{ v.line }}</p>
+          @if (v.caveat) {
+            <p class="stage__caveat">{{ v.caveat }}</p>
+          }
+          @if (v.open; as o) {
+            <a class="btn stage__open" [routerLink]="o.route" [fragment]="o.fragment">{{ o.label }}</a>
+          }
+        </div>
+
+        <dl class="ev">
+          @for (e of v.evidence; track $index) {
+            <div class="ev__row" [style.--k]="$index">
+              <dt>{{ e.label }} <app-truth [kind]="e.truth" /></dt>
+              <dd>
+                @switch (e.kind) {
+                  @case ('text') {
+                    <span [class.mono]="e.mono">{{ e.value }}</span>
+                  }
+                  @case ('hash') {
+                    <app-hash [value]="e.value" [label]="e.what" [href]="e.href" />
+                  }
+                  @case ('time') {
+                    <app-when [at]="e.at" [slot]="e.slot" />
+                  }
+                  @case ('link') {
+                    <a [href]="e.href" target="_blank" rel="noopener noreferrer">{{ e.value }}<app-ext-icon /></a>
+                  }
+                  @case ('bars') {
+                    <ul class="bars">
+                      @for (r of e.rows; track $index) {
+                        <li class="bars__row" [style.--b]="$index">
+                          <a class="bars__who" [routerLink]="r.route">{{ r.name }}</a>
+                          <span class="bars__role t-2">{{ r.role }}</span>
+                          <span class="bars__bar" aria-hidden="true"><span class="bars__fill" [style.width.%]="unitsPct(r.units, e.total)"></span></span>
+                          <span class="bars__u mono">{{ r.units }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
+              </dd>
+            </div>
+          }
+        </dl>
+
+        @if (v.verify; as vf) {
+          <div class="stage__verify">
+            <app-chain-verify [signature]="vf.signature" [expectedRoot]="vf.root" [recordedSlot]="vf.slot" />
+          </div>
+        }
+      </article>
+    }
+  } @else {
+    <div class="stage panel" aria-busy="true">
+      <p class="sr-only">Reading the recorded run…</p>
+      <span class="skeleton" style="height: 28px; width: 40%" aria-hidden="true"></span>
+      <span class="skeleton" style="height: 16px; width: 80%; margin-top: 12px" aria-hidden="true"></span>
+      <span class="skeleton" style="height: 120px; margin-top: 20px" aria-hidden="true"></span>
+    </div>
+  }
+</main>

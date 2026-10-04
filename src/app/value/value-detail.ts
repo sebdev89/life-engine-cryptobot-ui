@@ -1,6 +1,5 @@
 import { PUBLIC_DEMO } from '../public-demo/flag';
 import { Component, effect, input, signal, untracked } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
 import { Distribution, ValueEvent, ValueProof, distributeValueEvent, getDistribution, getValueEvent, getValueProof } from '../value-events-api';
@@ -10,13 +9,21 @@ import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
 import { PayoutsTable } from './payouts-table';
 import { browserProofCheck, BrowserProofCheck } from './browser-proof';
+import { ChainVerify } from './chain-verify';
+import { MerkleViz } from './merkle-viz';
+import { MoneyFlow } from './money-flow';
+import { CountUp } from '../ui/count-up';
+import { ExtIcon, HashChip } from '../ui/hash';
+import { TruthChip } from '../ui/truth';
+import { When } from '../ui/when';
+import { slotLabel } from '../ui/format';
 import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd, lamportsToSol, payoutClass, short, shortWallet, statusClass, statusLabel, txExplorerUrl } from './value-model';
 
 /** `/value/:id`: one ValueEvent, section by section, with what V1 does not cover said plainly. */
 @Component({
   selector: 'app-value-detail',
   standalone: true,
-  imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav, PayoutsTable],
+  imports: [RouterLink, TopNav, TokenGate, ValueNav, PayoutsTable, ChainVerify, MerkleViz, MoneyFlow, CountUp, ExtIcon, HashChip, TruthChip, When],
   templateUrl: './value-detail.html',
   styleUrl: './value.scss',
 })
@@ -49,6 +56,21 @@ export class ValueDetail {
   readonly statusLabel = statusLabel;
   readonly statusClass = statusClass;
   readonly stages = acceptanceStages;
+  readonly slotLabel = slotLabel;
+  /** SOL actually confirmed on chain, as a number for the counter */
+  readonly confirmedSol = (d: Distribution) => d.payouts.filter((p) => p.status === 'CONFIRMED').reduce((a, p) => a + p.lamports, 0) / 1_000_000_000;
+  /** `github.com/owner/repo/pull/59` → `owner/repo #59` */
+  readonly prLabel = (url: string) => {
+    const m = /github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/.exec(url);
+    return m ? `${m[1]} #${m[2]}` : url;
+  };
+  /** the Merkle path of the proof response, when it carries one */
+  readonly proofSteps = (p: ValueProof): readonly string[] | null => {
+    const path = (p['anchor'] as { proof?: unknown } | undefined)?.proof;
+    return Array.isArray(path) && path.every((x) => typeof x === 'string') ? (path as string[]) : null;
+  };
+  /** the live check only exists for devnet anchors (the only cluster this demo writes to) */
+  readonly onDevnet = (explorerUrl: string | null | undefined) => !!explorerUrl && /[?&]cluster=devnet\b/.test(explorerUrl);
 
   constructor() {
     bootstrapSessionFromQuery();
