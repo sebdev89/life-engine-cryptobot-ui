@@ -1,8 +1,9 @@
 import { Component, HostListener, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { OPERATOR_ONLY_PATHS, PUBLIC_DEMO } from '../public-demo/flag';
 
 /** The judge's route through the product, in order; the console is last and quieter. */
-export const NAV_LINKS: readonly { path: string; label: string; quiet?: boolean }[] = [
+const ALL_NAV_LINKS: readonly { path: string; label: string; quiet?: boolean }[] = [
   { path: '/tower', label: 'Control Tower' },
   { path: '/live', label: 'Execution' },
   { path: '/proof', label: 'Proof' },
@@ -12,6 +13,9 @@ export const NAV_LINKS: readonly { path: string; label: string; quiet?: boolean 
   { path: '/demo', label: 'Demo Mode' },
   { path: '/console', label: 'Console', quiet: true },
 ];
+
+/** In the public replay the operator screens are not links (they are not routes either). */
+export const NAV_LINKS = PUBLIC_DEMO ? ALL_NAV_LINKS.filter((l) => !OPERATOR_ONLY_PATHS.has(l.path.slice(1))) : ALL_NAV_LINKS;
 
 /**
  * The one header every screen shares. Wide: brand + the links in one
@@ -25,7 +29,7 @@ export const NAV_LINKS: readonly { path: string; label: string; quiet?: boolean 
   template: `
     <header class="nav" [class.is-open]="open()">
       <a routerLink="/" class="nav__brand" aria-label="CryptoBot home" (click)="open.set(false)">
-        <img class="nav__mark" src="/brand/cryptobot-mark.svg" alt="" width="22" height="22" />
+        <img class="nav__mark" src="brand/cryptobot-mark.svg" alt="" width="22" height="22" />
         <span>CryptoBot</span>
         <span class="nav__tag">trusted agent execution</span>
       </a>

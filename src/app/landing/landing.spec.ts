@@ -40,7 +40,7 @@ describe('Landing', () => {
     const el = await render((() => Promise.reject(new Error('offline'))) as typeof fetch);
     expect(el.querySelector('h1')?.textContent?.trim()).toBe('Proof of Value — Verifiable Value Creation on Solana');
     expect(el.querySelector('.hero__sub')?.textContent?.trim()).toBe('AI can create value. Proof of Value makes sure we remember who created it.');
-    expect(el.querySelector('.diagram img')?.getAttribute('src')).toBe('/proof-of-value.svg');
+    expect(el.querySelector('.diagram img')?.getAttribute('src')).toBe('proof-of-value.svg');
     expect(el.querySelector('.case__line')?.textContent).toContain('First real case: CryptoBot, an economic agent on Solana devnet');
     expect(el.querySelector('.case__line a')?.getAttribute('href')).toBe('/demo');
     const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '');

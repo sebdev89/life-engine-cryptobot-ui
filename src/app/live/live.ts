@@ -1,3 +1,4 @@
+import { PUBLIC_DEMO } from '../public-demo/flag';
 import { Component, DestroyRef, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -119,6 +120,8 @@ export class LiveOperation implements OnInit {
   readonly lineageAvailable = signal(true);
 
   // ---- liveness ----
+  /** public replay build: recorded data, no actions, no polling */
+  readonly publicDemo = PUBLIC_DEMO;
   readonly paused = signal(false);
   readonly lastTick = signal<Date | null>(null);
   readonly ticking = signal(false);
@@ -212,7 +215,7 @@ export class LiveOperation implements OnInit {
   private startTimer(): void {
     this.stopTimer();
     const ms = this.pollMs() ?? DEFAULT_POLL_MS;
-    if (ms > 0) {
+    if (ms > 0 && !PUBLIC_DEMO) {
       this.timer = setInterval(() => void this.tick(), ms);
     }
   }

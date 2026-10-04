@@ -32,7 +32,10 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "define": {
+              "__PUBLIC_DEMO__": "false"
+            }
           },
           "configurations": {
             "production": {
@@ -54,6 +57,47 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "public-demo": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "12kB",
+                  "maximumError": "20kB"
+                }
+              ],
+              "outputHashing": "all",
+              "outputPath": "dist/cryptobot-ui-public-demo",
+              "index": {
+                "input": "src/index.public-demo.html",
+                "output": "index.html"
+              },
+              "baseHref": "/cryptobot/",
+              "define": {
+                "__PUBLIC_DEMO__": "true"
+              },
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public",
+                  "ignore": [
+                    "config.js"
+                  ]
+                }
+              ],
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -66,6 +110,9 @@
             },
             "development": {
               "buildTarget": "cryptobot-ui:build:development"
+            },
+            "public-demo": {
+              "buildTarget": "cryptobot-ui:build:public-demo"
             }
           },
           "defaultConfiguration": "development"

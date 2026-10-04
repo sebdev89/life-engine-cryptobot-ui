@@ -5,7 +5,16 @@
  * docs/extraction/service-boundaries.md §4 and contracts.md §5.
  */
 
+import { PUBLIC_DEMO } from './public-demo/flag';
+
 const STORAGE_KEY = 'life-engine-cryptobot.session';
+
+/**
+ * Public replay build: there is nothing to sign in to. Screens see this constant "session" so
+ * they render their data instead of the token gate; it is never sent anywhere (apiFetch answers
+ * from the snapshot) and nothing is read from the URL or written to localStorage.
+ */
+const REPLAY_SESSION: CryptobotSession = { accessToken: 'public-replay-no-credential' };
 
 export interface CryptobotSession {
   accessToken: string;
@@ -72,6 +81,7 @@ function persist(session: CryptobotSession | null): void {
 }
 
 export function bootstrapSessionFromQuery(): CryptobotSession | null {
+  if (PUBLIC_DEMO) return REPLAY_SESSION;
   const fromQuery = readQueryToken();
   if (fromQuery) {
     persist(fromQuery);
@@ -85,6 +95,7 @@ export function bootstrapSessionFromQuery(): CryptobotSession | null {
 }
 
 export function getCryptobotSession(): CryptobotSession | null {
+  if (PUBLIC_DEMO) return REPLAY_SESSION;
   if (!cached) {
     cached = readStoredSession();
   }
@@ -96,16 +107,19 @@ export function getAccessToken(): string | null {
 }
 
 export function setCryptobotSession(session: CryptobotSession): void {
+  if (PUBLIC_DEMO) return;
   cached = session;
   persist(session);
 }
 
 export function clearCryptobotSession(): void {
+  if (PUBLIC_DEMO) return;
   cached = null;
   persist(null);
 }
 
 export function authorizationHeaders(): Record<string, string> {
+  if (PUBLIC_DEMO) return {};
   const token = getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }

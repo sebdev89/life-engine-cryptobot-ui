@@ -154,6 +154,7 @@
 
 .seg {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
   margin-bottom: var(--sp-4);
 
@@ -209,4 +210,14 @@
 .kpi b {
   font-size: 1.6rem;
   font-family: var(--font-mono, monospace);
+}
+
+/* Phones: a wide table scrolls inside its own box instead of widening the page (390 px). */
+@media (max-width: 640px) {
+  table.grid {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

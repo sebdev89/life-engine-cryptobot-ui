@@ -1,23 +1,15 @@
 import { Routes } from '@angular/router';
 import { Landing } from './landing/landing';
-
-// The operator dashboard moved to /console; lazy now that `/` is the public landing.
-const consoleView = () => import('./dashboard/dashboard').then((m) => m.Dashboard);
+import { PUBLIC_DEMO } from './public-demo/flag';
 
 // The demo path as one live screen; lazy so the dashboard's initial bundle does not pay for it.
 const live = () => import('./live/live').then((m) => m.LiveOperation);
-
-// Demo Mode, lazy for the same reason.
-const demo = () => import('./demo/demo').then((m) => m.DemoMode);
 
 // Control Tower — KPIs counted from the API and the latest executions with their phase.
 const tower = () => import('./tower/tower').then((m) => m.ControlTower);
 
 // Proof view — anchors, inclusion path folded in the browser, server verification.
 const proof = () => import('./proof/proof').then((m) => m.ProofView);
-
-// Recovery — the dead-letter queue, the human decision on each letter, and demo-only chaos.
-const recovery = () => import('./recovery/recovery').then((m) => m.RecoveryView);
 
 // Policies — the rules a proposal was decided under, read from the proposal itself.
 const policies = () => import('./policies/policies').then((m) => m.PoliciesView);
@@ -33,12 +25,13 @@ const revenueDetail = () => import('./value/revenue-detail').then((m) => m.Reven
 const treasury = () => import('./value/treasury').then((m) => m.TreasuryPage);
 const ledger = () => import('./value/ledger').then((m) => m.Ledger);
 
+// The operator screens (console, Demo Mode, Recovery) are declared inline below, inside the
+// PUBLIC_DEMO condition: that is what lets the public build drop their chunks entirely.
+
 export const routes: Routes = [
   { path: '', title: 'Proof of Value on Solana · CryptoBot', component: Landing, pathMatch: 'full' },
-  { path: 'console', title: 'Console · CryptoBot', loadComponent: consoleView },
   { path: 'live', title: 'Execution · CryptoBot', loadComponent: live },
   { path: 'live/:proposalId', title: 'Execution · CryptoBot', loadComponent: live },
-  { path: 'demo', title: 'Demo Mode · CryptoBot', loadComponent: demo },
   { path: 'tower', title: 'Control Tower · CryptoBot', loadComponent: tower },
   { path: 'proof', title: 'Proof · CryptoBot', loadComponent: proof },
   { path: 'proof/:root', title: 'Proof · CryptoBot', loadComponent: proof },
@@ -50,7 +43,15 @@ export const routes: Routes = [
   { path: 'value/revenue/:id', title: 'Revenue event · CryptoBot', loadComponent: revenueDetail },
   { path: 'value/treasury', title: 'Treasury · CryptoBot', loadComponent: treasury },
   { path: 'value/:id', title: 'Value event · CryptoBot', loadComponent: valueDetail },
-  { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: recovery },
   { path: 'policies', title: 'Policies · CryptoBot', loadComponent: policies },
+  // Operator screens: not registered at all in the public replay build (not even as chunks).
+  ...(PUBLIC_DEMO
+    ? []
+    : [
+      { path: 'console', title: 'Console · CryptoBot', loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard) },
+      { path: 'demo', title: 'Demo Mode · CryptoBot', loadComponent: () => import('./demo/demo').then((m) => m.DemoMode) },
+      { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: () => import('./recovery/recovery').then((m) => m.RecoveryView) },
+      ]),
   { path: '**', redirectTo: '' },
 ];
+

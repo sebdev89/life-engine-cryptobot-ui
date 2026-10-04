@@ -153,6 +153,17 @@
               <p class="verdict" [class.verdict--ok]="p.verified" [class.verdict--bad]="!p.verified" data-testid="proof">
                 Proof check: {{ p.verified ? 'verified' : 'NOT verified' }}
               </p>
+              @if (browserCheck(); as b) {
+                <p class="verdict" [class.verdict--ok]="b.valid === true" [class.verdict--bad]="b.valid === false" data-testid="browser-proof">
+                  @if (b.valid === null) {
+                    Checked in this browser: not possible here ({{ b.reason }}).
+                  } @else {
+                    Checked in this browser: SHA-256 of the receipt folded through {{ b.steps }} Merkle step{{ b.steps === 1 ? '' : 's' }} gives
+                    <span class="mono">{{ short(b.computedRoot ?? '') }}</span> —
+                    {{ b.valid ? 'the same root written on Solana' : 'NOT the root written on Solana' }}.
+                  }
+                </p>
+              }
             } @else if (proofError(); as pe) {
               <p class="banner-err" role="alert">Proof check failed: {{ pe }}</p>
             } @else {
@@ -179,10 +190,12 @@
               <p class="t-3 small" aria-busy="true">Reading distribution…</p>
             } @else {
               <p class="t-2">No immediate reward distributed yet</p>
+              @if (!publicDemo) {
               <button type="button" class="btn" data-testid="distribute" [disabled]="ev.status !== 'ANCHORED' || distributing()"
                 [title]="ev.status !== 'ANCHORED' ? 'The event must be anchored on Solana before rewards can be distributed.' : ''" (click)="distribute()">
                 {{ distributing() ? 'Distributing…' : 'Distribute immediate reward' }}
               </button>
+              }
             }
           }
           @if (distributeError(); as err) {

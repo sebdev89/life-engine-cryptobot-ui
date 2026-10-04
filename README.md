@@ -30,6 +30,31 @@ client-side beyond presentation, and the only Merkle work in the browser is fold
 Copy that is fixed on purpose: "devnet SOL stands in for stablecoin settlement in this demo" and "Contribution Units are an
 attribution primitive, not equity and not a promise of return".
 
+## Public replay (read-only, no backend)
+
+**https://life-engine.app/cryptobot/** is this UI built with `--configuration public-demo`: a replay of a real CryptoBot
+run on Solana devnet that anyone can open without signing in, and that cannot change anything.
+
+- **No backend.** Every API read is answered from [`src/app/public-demo/snapshot.json`](src/app/public-demo/snapshot.json),
+  a versioned recording of the run (the operation executed on 3 Oct 2026 and the ValueEvent anchored on 4 Oct 2026). The
+  page makes no request outside its own `/cryptobot/` files; the CSP (`connect-src 'self'`) enforces it in the browser.
+- **Read-only by construction.** The flag is fixed at build time (`define: __PUBLIC_DEMO__`), not by runtime config. The
+  operator screens (`/console`, `/demo`, `/recovery`) are not routes and their code is not shipped; action buttons
+  (approve, execute, requeue, chaos, distribute) are not rendered; any write the code could still attempt is refused locally
+  with `405 READ_ONLY_REPLAY`. There is no sign-in and nothing is stored in the browser.
+- **Verifiable, not just displayed.** `/value/:id` shows the service's proof verdict *and* folds the Merkle path in the
+  browser (WebCrypto, same scheme as the service), then links the anchor transaction on Solana Explorer (devnet).
+
+```bash
+npx ng build --configuration public-demo && node scripts/public-demo/check-dist.mjs --prune   # bundle hygiene gate
+docker build -f docker/public-demo/Dockerfile -t cryptobot-public-demo .                       # what is deployed
+docker run --rm --read-only --tmpfs /tmp -p 8080:8080 cryptobot-public-demo                    # → :8080/cryptobot/
+node scripts/public-demo/walk.mjs --url http://127.0.0.1:8080/cryptobot/                       # browser walk
+```
+
+Re-recording the snapshot (read-only against a demo stack; it refuses to write a snapshot that carries internal ids,
+loopback or internal hosts, host paths, tokens or keys): `node scripts/public-demo/record-snapshot.mjs --help`.
+
 ## Run it against the demo stack
 
 The demo stack lives in the service repo and builds this UI as its `ui` profile. With both repos side by side
@@ -54,6 +79,7 @@ pointing at the service (default `http://localhost:8091`), then open the URL `ui
 ```bash
 npm test          # Angular unit tests (Vitest)
 npx ng build      # production build
+npx ng build --configuration public-demo && node scripts/public-demo/check-dist.mjs --prune
 ```
 
 ## Screenshots

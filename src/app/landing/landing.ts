@@ -1,3 +1,4 @@
+import { PUBLIC_DEMO } from '../public-demo/flag';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TopNav } from '../shell/top-nav';
@@ -37,6 +38,7 @@ export function pickProofEvent(events: readonly ValueEvent[]): ValueEvent | null
   styleUrl: './landing.scss',
 })
 export class Landing implements OnInit {
+  readonly publicDemo = PUBLIC_DEMO;
   readonly stages = LANDING_STAGES;
   readonly failure = FAILURE_LINE;
   readonly proofLink = signal<string>('/value');

@@ -57,3 +57,66 @@ jobs:
           for i in $(seq 1 20); do curl -fsS localhost:8080/ >/dev/null 2>&1 && break; sleep 1; done
           curl -fsS localhost:8080/ | grep -qi '<app-root' && echo "index.html OK"
           docker stop ui-ci >/dev/null
+
+  # Réplica pública (build PUBLIC_DEMO): la página de https://life-engine.app/cryptobot/. Construye la
+  # imagen con su propio Dockerfile (que ya corre check-dist: higiene + poda de chunks del operador),
+  # la levanta con la raíz de sólo lectura como en k8s y la recorre con un navegador sin perfil
+  # (walk.mjs: cero requests fuera de /cryptobot/, cero escrituras, sin rutas ni botones de operador,
+  # proof verificado por el servicio Y en el navegador). En main publica la imagen en GHCR por
+  # sha-<commit>; el deploy es GitOps (overlays/*/cryptobot-public-demo), nunca desde acá.
+  public-demo:
+    name: public demo (replay build, browser walk)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/sebdev89/life-engine-cryptobot-public-demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build the replay image
+        run: |
+          set -euo pipefail
+          c7="${GITHUB_SHA:0:7}"
+          echo "C7=${c7}" >> "$GITHUB_ENV"
+          docker build --pull -f docker/public-demo/Dockerfile \
+            --build-arg GIT_COMMIT="${c7}" \
+            --label org.opencontainers.image.revision="${GITHUB_SHA}" \
+            --label life-engine.build.source=github-actions \
+            -t "${IMAGE}:sha-${c7}" .
+      - name: Run it like k8s does (read-only root, /tmp only)
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name pd --read-only --tmpfs /tmp -p 8080:8080 "${IMAGE}:sha-${C7}"
+          for i in $(seq 1 20); do curl -fsS localhost:8080/healthz >/dev/null 2>&1 && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/cryptobot/api/anything)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/)" = 404
+          curl -fsS localhost:8080/cryptobot/value/any-deep-link | grep -q '<base href="/cryptobot/">'
+      - name: Walk it in a headless browser
+        run: |
+          npx playwright install --with-deps chromium
+          node scripts/public-demo/walk.mjs --url http://127.0.0.1:8080/cryptobot/
+      - name: Publish (main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "${IMAGE}:sha-${C7}"
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}:sha-${C7}" | sed 's/.*@//')"
+          {
+            echo "## Public replay image"
+            echo ""
+            echo "| field | value |"
+            echo "| --- | --- |"
+            echo "| image | \`${IMAGE}:sha-${C7}\` |"
+            echo "| digest | \`${digest}\` |"
+            echo "| commit | \`${GITHUB_SHA}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "published ${IMAGE}@${digest}"
