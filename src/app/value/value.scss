@@ -333,3 +333,136 @@ td a + .small {
 .kg__u {
   margin-left: 4px;
 }
+
+.pov-toggle {
+  display: inline-flex;
+  margin: 0 0 var(--sp-4);
+  padding: 3px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+
+  button {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  button.on {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--chain) 34%, transparent), color-mix(in srgb, var(--chain-2) 24%, transparent));
+    color: var(--text);
+  }
+}
+
+.bare {
+  max-width: 720px;
+  animation: le-fade-in var(--dur-slow) var(--ease);
+}
+
+.bare__gaps {
+  margin: var(--sp-2) 0 var(--sp-4);
+  padding-left: 1.2em;
+  color: var(--text-2);
+
+  li {
+    margin: 4px 0;
+  }
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.rep {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tl {
+  list-style: none;
+  margin: 0 0 var(--sp-3);
+  padding: 0 0 0 18px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--chain), var(--chain-2));
+    border-radius: 1px;
+  }
+}
+
+.tl__item {
+  position: relative;
+  padding: 0 0 var(--sp-3);
+
+  p {
+    margin: 0;
+  }
+}
+
+.tl__dot {
+  position: absolute;
+  left: -18px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--chain-2);
+  background: var(--bg);
+}
+
+.tl__when {
+  font-size: var(--fs-xs);
+}
+
+.tl__what {
+  font-weight: 600;
+}
+
+.tl__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.share__body {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--sp-4);
+  align-items: center;
+}
+
+.share__card {
+  width: 100%;
+  height: auto;
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+}
+
+.share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+@media (max-width: 760px) {
+  .share__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

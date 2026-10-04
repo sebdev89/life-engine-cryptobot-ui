@@ -1,6 +1,12 @@
 import { Component, effect, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Identicon } from '../ui/identicon';
+import { CountUp } from '../ui/count-up';
+import { ExtIcon } from '../ui/hash';
+import { TruthChip } from '../ui/truth';
+import { When } from '../ui/when';
+import { middle } from '../ui/format';
 import { AuthRequiredError } from '../cryptobot-api';
 import { IdentityProfile as Profile, getIdentity, payoutCount } from '../value-events-api';
 import { bootstrapSessionFromQuery, getAccessToken } from '../session';
@@ -13,7 +19,7 @@ import { explorerAddressUrl, lamportsToSol, statusClass } from './value-model';
 @Component({
   selector: 'app-identity-profile',
   standalone: true,
-  imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
+  imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav, Identicon, CountUp, ExtIcon, TruthChip, When],
   templateUrl: './identity-profile.html',
   styleUrl: './value.scss',
 })
@@ -24,6 +30,7 @@ export class IdentityProfilePage {
   readonly error = signal<string | null>(null);
   readonly profile = signal<Profile | null>(null);
   readonly explorerAddressUrl = explorerAddressUrl;
+  readonly middle = middle;
   readonly sol = lamportsToSol;
   readonly payoutCount = payoutCount;
   readonly anchorClass = (s: string) => statusClass(s === 'ANCHORED' ? 'ANCHORED' : 'RECORDED');

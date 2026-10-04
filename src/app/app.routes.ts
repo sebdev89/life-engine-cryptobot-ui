@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 import { Landing } from './landing/landing';
-import { PUBLIC_DEMO } from './public-demo/flag';
+import { OPERATOR_ONLY_PATHS, PUBLIC_DEMO } from './public-demo/flag';
+
+// Roadmap — business cases, each one marked as not built.
+const useCases = () => import('./use-cases/use-cases').then((m) => m.UseCases);
+// Anything else: a page that says so, with the way back.
+const notFound = () => import('./not-found/not-found').then((m) => m.NotFound);
 
 // The demo path as one live screen; lazy so the dashboard's initial bundle does not pay for it.
 const live = () => import('./live/live').then((m) => m.LiveOperation);
@@ -56,6 +61,9 @@ export const routes: Routes = [
       { path: 'demo', title: 'Demo Mode · CryptoBot', loadComponent: () => import('./demo/demo').then((m) => m.DemoMode) },
       { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: () => import('./recovery/recovery').then((m) => m.RecoveryView) },
       ]),
-  { path: '**', redirectTo: '' },
+  // In the public replay the operator paths are not 404s: they used to exist, so they fold back to the overview.
+  ...(PUBLIC_DEMO ? [...OPERATOR_ONLY_PATHS].map((p) => ({ path: p, redirectTo: '' })) : []),
+  { path: 'use-cases', title: 'Use cases · CryptoBot', loadComponent: useCases },
+  { path: '**', title: 'Not in this replay · CryptoBot', loadComponent: notFound },
 ];
 

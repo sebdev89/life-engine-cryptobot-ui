@@ -1,0 +1,166 @@
+.map {
+  --gap: 10px;
+  position: relative;
+}
+
+.map__lane {
+  margin: 0 0 8px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+
+.map__row--value + .map__lane {
+  margin: 8px 0 0;
+}
+
+.map__row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--gap);
+}
+
+.map__row--value {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.map__cell {
+  position: relative;
+  display: flex;
+}
+
+// connectors to the Solana band
+.map__cell--down::after,
+.map__cell--up::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 2px;
+  height: 22px;
+  margin-left: -1px;
+  background: linear-gradient(180deg, var(--chain), var(--chain-2));
+}
+
+.map__cell--down::after {
+  top: 100%;
+}
+
+.map__cell--up::before {
+  bottom: 100%;
+}
+
+.node {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 12px 14px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text);
+  text-decoration: none;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+
+  &:hover {
+    color: var(--text);
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--chain-2) 55%, transparent);
+    box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--chain-2) 60%, transparent);
+  }
+}
+
+.node__n {
+  color: var(--chain-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.node__name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.node__says {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+}
+
+.band {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  align-items: center;
+  margin: 22px 0;
+  padding: 10px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--chain) 45%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--chain) 16%, transparent), color-mix(in srgb, var(--chain-2) 12%, transparent));
+  font-size: var(--fs-xs);
+}
+
+.band__label {
+  grid-column: 1 / 6;
+  grid-row: 1 / 3;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.band__tx {
+  grid-row: 1;
+  justify-self: center;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--chain-2) 55%, transparent);
+  color: var(--chain-2);
+  white-space: nowrap;
+}
+
+// under node 5 (col 5 of 5), node 7 (col 2 of 4), node 9 (col 4 of 4) — in twentieths
+.band {
+  row-gap: 6px;
+}
+
+.band__tx--op {
+  grid-column: 17 / 21;
+  grid-row: 1;
+}
+
+.band__tx--anchor {
+  grid-column: 6 / 11;
+  grid-row: 1 / 3;
+}
+
+.band__tx--pay {
+  grid-column: 16 / 21;
+  grid-row: 2;
+}
+
+@media (max-width: 760px) {
+  .map__row,
+  .map__row--value {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map__cell--down::after,
+  .map__cell--up::before {
+    display: none;
+  }
+  .band {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-radius: var(--r-lg);
+  }
+  .band__label {
+    width: 100%;
+  }
+  .band__tx {
+    grid-row: auto;
+  }
+}

@@ -15,6 +15,6 @@ describe('routes', () => {
   it('links every header entry to a real route, in the judge walk order', () => {
     const paths = new Set(routes.map((r) => '/' + r.path));
     for (const l of NAV_LINKS) expect(paths.has(l.path), l.path).toBe(true);
-    expect(NAV_LINKS.map((l) => l.path)).toEqual(['/tour', '/tower', '/live', '/proof', '/value', '/recovery', '/policies', '/demo', '/console']);
+    expect(NAV_LINKS.map((l) => l.path)).toEqual(['/tour', '/tower', '/live', '/proof', '/value', '/recovery', '/policies', '/demo', '/console', '/use-cases']);
   });
 });

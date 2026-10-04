@@ -12,8 +12,11 @@
 /** Public Solana devnet RPC. Hard-coded on purpose: the page cannot be pointed at another host. */
 export const DEVNET_RPC = 'https://api.devnet.solana.com';
 
-/** The one JSON-RPC method this page calls. */
+/** The JSON-RPC method of the live check. */
 export const RPC_METHOD = 'getTransaction';
+
+/** Every method this page may call on devnet: reads only. `getSlot` feeds the live network bar. */
+export const RPC_READS: readonly string[] = ['getTransaction', 'getSlot'];
 
 export interface AnchorMemo {
   root: string;
@@ -130,4 +133,28 @@ export function groups(hash: string, size = 8): string[] {
   const out: string[] = [];
   for (let i = 0; i < hex.length; i += size) out.push(hex.slice(i, i + size));
   return out;
+}
+
+/** Current finalized slot of devnet, or null when it cannot be read (the network bar then hides). */
+export async function devnetSlot(fetchImpl: typeof fetch = fetch, timeoutMs = 6000): Promise<number | null> {
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), timeoutMs) : null;
+  try {
+    const res = await fetchImpl(DEVNET_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getSlot', params: [{ commitment: 'finalized' }] }),
+      signal: ctl?.signal,
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { result?: unknown };
+    return typeof body.result === 'number' && Number.isFinite(body.result) ? body.result : null;
+  } catch {
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }

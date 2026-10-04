@@ -1,4 +1,5 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
+import { I18n, TPipe } from './i18n';
 
 /**
  * How much a visitor can trust one piece of data, said next to it. Solid outline = checkable by
@@ -126,7 +127,8 @@ export const TRUTH_ORDER: readonly TruthKind[] = ['onchain', 'recorded', 'declar
 })
 export class TruthChip {
   readonly kind = input.required<TruthKind>();
-  readonly info = computed(() => TRUTH[this.kind()]);
+  private readonly i18n = inject(I18n);
+  readonly info = computed(() => ({ label: this.i18n.t(`truth.${this.kind()}`), means: this.i18n.t(`truth.${this.kind()}.means`) }));
   readonly aria = computed(() => `${this.info().label}: ${this.info().means}`);
 }
 
@@ -134,13 +136,13 @@ export class TruthChip {
 @Component({
   selector: 'app-truth-legend',
   standalone: true,
-  imports: [TruthChip],
+  imports: [TruthChip, TPipe],
   template: `
     <dl class="legend" aria-label="How to read the data labels">
       @for (k of order; track k) {
         <div class="legend__row">
           <dt><app-truth [kind]="k" /></dt>
-          <dd>{{ truth[k].means }}</dd>
+          <dd>{{ 'truth.' + k + '.means' | t }}</dd>
         </div>
       }
     </dl>

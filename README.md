@@ -37,10 +37,11 @@ run on Solana devnet that anyone can open without signing in, and that cannot ch
 
 - **No backend.** Every API read is answered from [`src/app/public-demo/snapshot.json`](src/app/public-demo/snapshot.json),
   a versioned recording of the run (the operation executed on 3 Oct 2026 and the ValueEvent anchored on 4 Oct 2026). The
-  page makes no request outside its own `/cryptobot/` files, with one exception you trigger yourself: **Verify it
-  yourself** asks the public Solana devnet RPC (`https://api.devnet.solana.com`, one `getTransaction`, no key) for the
-  anchor transaction and compares its memo root with the event's root; if devnet does not answer, the page says so and
-  shows the recorded result. The CSP (`connect-src 'self' https://api.devnet.solana.com`) enforces exactly that.
+  page makes no request outside its own `/cryptobot/` files, except reads from the public Solana devnet RPC
+  (`https://api.devnet.solana.com`, no key): **Verify it yourself** (one `getTransaction`, when you press it) fetches the
+  anchor transaction and compares its memo root with the event's root, falling back to the recorded result if devnet does
+  not answer; the network bar reads the current slot (`getSlot` every 10 s while the tab is visible, hidden if it fails).
+  The CSP (`connect-src 'self' https://api.devnet.solana.com`) enforces exactly that.
 - **Read-only by construction.** The flag is fixed at build time (`define: __PUBLIC_DEMO__`), not by runtime config. The
   operator screens (`/console`, `/demo`, `/recovery`) are not routes and their code is not shipped; action buttons
   (approve, execute, requeue, chaos, distribute) are not rendered; any write the code could still attempt is refused locally
@@ -50,6 +51,10 @@ run on Solana devnet that anyone can open without signing in, and that cannot ch
 - **Guided replay.** `/tour?step=N` walks the nine links of the chain (Intent → Strategist → Guardian → Operator → Solana →
   AcceptanceProof → ValueEvent → Contribution Units → Reward & Reputation) with the recorded values, ←/→ and a 90 s autoplay.
   Every value carries a label saying how far it can be trusted: on-chain, recorded, declared, simulated or estimated.
+- **Shareable.** `/value/<id>` has its own link preview (a card drawn from the snapshot by
+  `scripts/public-demo/receipt-cards.mjs`; `og-pages.mjs` writes the per-event page in the image build). English by
+  default, Spanish on request; light or dark following the system. `/use-cases` lists where this could go next, each
+  marked *ROADMAP — not built*.
 
 ```bash
 npx ng build --configuration public-demo && node scripts/public-demo/check-dist.mjs --prune   # bundle hygiene gate

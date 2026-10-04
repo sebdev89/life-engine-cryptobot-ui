@@ -2,27 +2,27 @@
   <app-top-nav />
 
   <header class="tour__head">
-    <h1>Replay the run</h1>
-    <p class="tour__lede">Nine steps of one recorded devnet run: an agent's operation on Solana, then the accepted software behind it, who created it and who got paid.</p>
+    <h1>{{ 'tour.title' | t }}</h1>
+    <p class="tour__lede">{{ 'tour.lede' | t }}</p>
   </header>
 
   <app-chain-rail [active]="current()" />
 
-  <section class="player panel" aria-label="Replay controls">
+  <section class="player panel" [attr.aria-label]="'tour.controls' | t">
     <div class="player__buttons">
-      <button type="button" class="pbtn" (click)="prev()" [disabled]="current() === 1" aria-label="Previous step">
+      <button type="button" class="pbtn" (click)="prev()" [disabled]="current() === 1" [attr.aria-label]="'tour.prev' | t">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
       <button type="button" class="pbtn pbtn--play" (click)="toggle()" [attr.aria-pressed]="playing()" data-testid="tour-play">
         @if (playing()) {
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3v10M11 3v10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg>
-          Pause
+          {{ 'tour.pause' | t }}
         } @else {
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3l8 5-8 5z" fill="currentColor" /></svg>
-          {{ current() === total && stepProgress() >= 1 ? 'Replay again' : 'Play' }}
+          {{ (current() === total && stepProgress() >= 1 ? 'tour.again' : 'tour.play') | t }}
         }
       </button>
-      <button type="button" class="pbtn" (click)="next()" [disabled]="current() === total" aria-label="Next step">
+      <button type="button" class="pbtn" (click)="next()" [disabled]="current() === total" [attr.aria-label]="'tour.next' | t">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
     </div>
@@ -42,14 +42,14 @@
         step="1"
         [value]="current()"
         (input)="scrub($event)"
-        aria-label="Step of the replay"
+        [attr.aria-label]="'tour.scrub' | t"
         [attr.aria-valuetext]="announce()"
         data-testid="tour-scrubber"
       />
     </div>
     <p class="player__time mono" aria-hidden="true">{{ elapsedLabel() }} / {{ totalLabel }}</p>
   </section>
-  <p class="tour__keys t-3">Use <kbd>←</kbd> and <kbd>→</kbd> to move between steps. Each step links to its full screen.</p>
+  <p class="tour__keys t-3">{{ 'tour.keys' | t }}</p>
 
   <p class="sr-only" aria-live="polite">{{ announce() }}</p>
 
@@ -59,7 +59,7 @@
     @for (v of [s]; track v.n) {
       <article class="stage panel" [attr.data-step]="v.n" data-testid="tour-step" aria-labelledby="stage-title">
         <div class="stage__intro">
-          <p class="stage__n">Step {{ v.n }} of {{ total }}</p>
+          <p class="stage__n">{{ 'tour.step' | t: { n: v.n, total: total } }}</p>
           <h2 id="stage-title" class="stage__name">{{ v.name }}</h2>
           <p class="stage__line">{{ v.line }}</p>
           @if (v.caveat) {
@@ -115,7 +115,7 @@
     }
   } @else {
     <div class="stage panel" aria-busy="true">
-      <p class="sr-only">Reading the recorded run…</p>
+      <p class="sr-only">{{ 'tour.loading' | t }}</p>
       <span class="skeleton" style="height: 28px; width: 40%" aria-hidden="true"></span>
       <span class="skeleton" style="height: 16px; width: 80%; margin-top: 12px" aria-hidden="true"></span>
       <span class="skeleton" style="height: 120px; margin-top: 20px" aria-hidden="true"></span>

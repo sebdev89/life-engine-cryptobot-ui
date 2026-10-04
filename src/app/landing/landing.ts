@@ -6,6 +6,8 @@ import { ChainRail } from '../pov/chain-rail';
 import { CountUp } from '../ui/count-up';
 import { ExtIcon, HashChip } from '../ui/hash';
 import { slotLabel } from '../ui/format';
+import { TPipe } from '../ui/i18n';
+import { PovMap } from '../pov/pov-map';
 import { listValueEvents, type ValueEvent } from '../value-events-api';
 
 /** The eight stages as the landing names them; the ids are the ones of `live-model.STAGE_MAP` (a test keeps them aligned). */
@@ -37,7 +39,7 @@ export function pickProofEvent(events: readonly ValueEvent[]): ValueEvent | null
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterLink, TopNav, ChainRail, CountUp, ExtIcon, HashChip],
+  imports: [RouterLink, TopNav, ChainRail, CountUp, ExtIcon, HashChip, TPipe, PovMap],
   templateUrl: './landing.html',
   styleUrl: './landing.scss',
 })
@@ -49,6 +51,8 @@ export class Landing implements OnInit {
   /** the outcome the hero card shows; null without data (the card is then not rendered) */
   readonly proofEvent = signal<ValueEvent | null>(null);
   readonly slot = slotLabel;
+  /** the revenue event shared with that outcome, for the map's last node */
+  readonly revenueId = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     try {
@@ -56,6 +60,7 @@ export class Landing implements OnInit {
       if (ev) {
         this.proofLink.set(`/value/${encodeURIComponent(ev.id)}`);
         if (ev.title && Array.isArray(ev.contributions)) this.proofEvent.set(ev);
+        this.revenueId.set(ev.revenueShares?.[0]?.revenueEventId ?? null);
       }
     } catch {
       // no session or no API: the button stays on /value

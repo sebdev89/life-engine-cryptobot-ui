@@ -11,6 +11,7 @@ import { TruthChip } from '../ui/truth';
 import { When } from '../ui/when';
 import { prefersReducedMotion } from '../ui/format';
 import { STEP_MS, TourData, TourStep, buildTour } from './tour-model';
+import { I18n, TPipe } from '../ui/i18n';
 
 const TICK_MS = 100;
 
@@ -32,7 +33,7 @@ export function clock(ms: number): string {
 @Component({
   selector: 'app-tour',
   standalone: true,
-  imports: [RouterLink, TopNav, ChainRail, ChainVerify, HashChip, ExtIcon, TruthChip, When],
+  imports: [RouterLink, TopNav, ChainRail, ChainVerify, HashChip, ExtIcon, TruthChip, When, TPipe],
   templateUrl: './tour.html',
   styleUrl: './tour.scss',
 })
@@ -46,7 +47,14 @@ export class Tour implements OnDestroy {
   readonly playing = signal(false);
   /** 0…1 inside the current step while playing */
   readonly stepProgress = signal(0);
-  readonly steps = signal<TourStep[] | null>(null);
+  private readonly i18n = inject(I18n);
+  private readonly data = signal<TourData | null>(null);
+  /** rebuilt when the language changes; the values themselves never change */
+  readonly steps = computed<TourStep[] | null>(() => {
+    const d = this.data();
+    this.i18n.lang();
+    return d ? buildTour(d, (k, p) => this.i18n.t(k, p)) : null;
+  });
   readonly error = signal<string | null>(null);
 
   readonly view = computed(() => this.steps()?.[this.current() - 1] ?? null);
@@ -54,7 +62,7 @@ export class Tour implements OnDestroy {
   readonly overall = computed(() => Math.min(1, (this.current() - 1 + this.stepProgress()) / (this.total - 1)));
   readonly elapsedLabel = computed(() => clock(((this.current() - 1) + this.stepProgress()) * STEP_MS));
   readonly totalLabel = clock(POV_CHAIN.length * STEP_MS);
-  readonly announce = computed(() => `Step ${this.current()} of ${this.total}: ${POV_CHAIN[this.current() - 1].name}`);
+  readonly announce = computed(() => this.i18n.t('tour.announce', { n: this.current(), total: this.total, name: POV_CHAIN[this.current() - 1].name }));
 
   private readonly router = inject(Router);
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -97,12 +105,12 @@ export class Tour implements OnDestroy {
       ]);
       const data: TourData = { proposal: full?.proposal ?? prop, audit: full?.audit ?? [], event: ev, distribution, revenue, identity };
       if (!data.proposal && !data.event) {
-        this.error.set('The replay could not read the recorded run.');
+        this.error.set(this.i18n.t('tour.error'));
         return;
       }
-      this.steps.set(buildTour(data));
+      this.data.set(data);
     } catch (e) {
-      this.error.set(`The replay could not read the recorded run: ${(e as Error)?.message ?? e}`);
+      this.error.set(`${this.i18n.t('tour.error')} ${(e as Error)?.message ?? e}`);
     }
   }
 

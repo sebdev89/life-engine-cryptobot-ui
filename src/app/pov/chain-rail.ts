@@ -1,6 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { POV_CHAIN } from './pov-chain';
+import { TPipe } from '../ui/i18n';
 
 /**
  * The Proof of Value chain as one rail: Intent → … → Reward & Reputation. On the landing it plays once
@@ -10,12 +11,12 @@ import { POV_CHAIN } from './pov-chain';
 @Component({
   selector: 'app-chain-rail',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TPipe],
   template: `
-    <nav class="rail" [class.rail--intro]="intro()" [class.rail--tour]="active() !== null" aria-label="Proof of Value chain" [style.--progress]="progress()">
+    <nav class="rail" [class.rail--intro]="intro()" [class.rail--tour]="active() !== null" [attr.aria-label]="'rail.label' | t" [style.--progress]="progress()">
       <div class="rail__groups" aria-hidden="true">
-        <span class="rail__group rail__group--op">One operation on Solana</span>
-        <span class="rail__group rail__group--value">Who created the value, and who got paid</span>
+        <span class="rail__group rail__group--op">{{ 'rail.group.op' | t }}</span>
+        <span class="rail__group rail__group--value">{{ 'rail.group.value' | t }}</span>
       </div>
       <div class="rail__track">
       <span class="rail__line" aria-hidden="true"><span class="rail__fill"></span></span>
@@ -35,7 +36,7 @@ import { POV_CHAIN } from './pov-chain';
               <span class="rail__dot" aria-hidden="true">{{ l.n }}</span>
               <span class="rail__name">{{ l.name }}</span>
             </a>
-            <span class="rail__tip" role="tooltip" [id]="'rail-tip-' + l.n">{{ l.says }}</span>
+            <span class="rail__tip" role="tooltip" [id]="'rail-tip-' + l.n">{{ 'chain.' + l.n | t }}</span>
           </li>
         }
       </ol>
