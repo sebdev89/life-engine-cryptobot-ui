@@ -93,7 +93,19 @@
   // ---- motion ------------------------------------------------------------------------------
   --dur-fast: 120ms;
   --dur: 200ms;
+  --dur-slow: 420ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  // ---- glass: translucent layers over one static light field (body::before) -------------------
+  --glass: rgba(15, 21, 31, 0.6);
+  --glass-strong: rgba(19, 27, 39, 0.86);
+  --glass-hover: rgba(148, 178, 220, 0.06);
+  --glass-border: rgba(148, 178, 220, 0.13);
+  --glass-hi: rgba(255, 255, 255, 0.06);
+  --surface-tip: #141c28;
+  --surface-inset-glass: rgba(5, 8, 13, 0.55);
+  --blur: 14px;
+  --declared: #b6aef0; // "stated, not proven" — lilac, dashed (truth chips)
 
   // ---- legacy aliases (earlier names; do not use in new code) --------------------------
   --panel: var(--surface-1);
@@ -124,11 +136,65 @@ body {
 }
 
 body {
-  // One quiet light source at the top; no pattern, no decoration.
+  background: var(--bg);
+}
+
+// The light field the glass panels sit on: one fixed, static layer (no repaint on scroll, no
+// animation). Violet and mint only because that is the chain's own pair; it stays faint on purpose.
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
-    radial-gradient(1200px 420px at 50% -180px, rgba(92, 200, 255, 0.06), transparent 70%),
-    var(--bg);
-  background-attachment: fixed;
+    radial-gradient(900px 520px at 12% -8%, rgba(157, 140, 255, 0.13), transparent 62%),
+    radial-gradient(800px 480px at 92% 4%, rgba(92, 200, 255, 0.09), transparent 60%),
+    radial-gradient(1000px 600px at 70% 110%, rgba(62, 230, 176, 0.06), transparent 60%);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Skeleton: the shape of what is loading, shimmering once per 1.4 s (static under reduced motion).
+.skeleton {
+  display: block;
+  border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--glass-hover) 0%, rgba(148, 178, 220, 0.12) 50%, var(--glass-hover) 100%) 0 0 / 200% 100%;
+  animation: le-shimmer 1.4s linear infinite;
+}
+
+.skeleton-stack {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+}
+
+.skeleton--panel {
+  height: 180px;
+  border-radius: var(--r-lg);
+}
+
+@keyframes le-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+// Route change: a short cross-fade (View Transitions API, Chromium/Safari; others just swap).
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: var(--ease);
 }
 
 h1,
@@ -322,10 +388,18 @@ pre {
 // Shared atoms (global so every view gets the same panel/badge/button; components may refine)
 // =============================================================================================
 .panel {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 120px), var(--glass);
+  border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-1);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel {
+    background: var(--surface-1);
+  }
 }
 
 .badge {
@@ -388,6 +462,17 @@ pre {
   }
 }
 
+.btn--chain {
+  border-color: color-mix(in srgb, var(--chain) 60%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--chain) 26%, transparent), color-mix(in srgb, var(--chain-2) 18%, transparent));
+  color: var(--text);
+
+  &:hover:not(:disabled) {
+    border-color: var(--chain-2);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--chain) 36%, transparent), color-mix(in srgb, var(--chain-2) 26%, transparent));
+  }
+}
+
 .btn--primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -444,6 +529,11 @@ pre {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
   *,
   *::before,
   *::after {
@@ -451,5 +541,43 @@ pre {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+// The check that draws itself when a proof verifies: ring first, then the mark. Sober on purpose.
+.tick {
+  flex-shrink: 0;
+  vertical-align: -4px;
+  margin-right: 6px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  circle {
+    stroke-dasharray: 54;
+    stroke-dashoffset: 54;
+    animation: tick-draw 520ms var(--ease) 120ms forwards;
+  }
+
+  path {
+    stroke-dasharray: 14;
+    stroke-dashoffset: 14;
+    animation: tick-draw 300ms var(--ease) 560ms forwards;
+  }
+}
+
+.tick--late circle {
+  animation-delay: 420ms;
+}
+
+.tick--late path {
+  animation-delay: 860ms;
+}
+
+@keyframes tick-draw {
+  to {
+    stroke-dashoffset: 0;
   }
 }

@@ -5,6 +5,9 @@ import { PUBLIC_DEMO } from './public-demo/flag';
 // The demo path as one live screen; lazy so the dashboard's initial bundle does not pay for it.
 const live = () => import('./live/live').then((m) => m.LiveOperation);
 
+// Guided replay — the nine links of the Proof of Value chain, step by step (?step=N).
+const tour = () => import('./tour/tour').then((m) => m.Tour);
+
 // Control Tower — KPIs counted from the API and the latest executions with their phase.
 const tower = () => import('./tower/tower').then((m) => m.ControlTower);
 
@@ -30,6 +33,7 @@ const ledger = () => import('./value/ledger').then((m) => m.Ledger);
 
 export const routes: Routes = [
   { path: '', title: 'Proof of Value on Solana · CryptoBot', component: Landing, pathMatch: 'full' },
+  { path: 'tour', title: 'Replay the run · CryptoBot', loadComponent: tour },
   { path: 'live', title: 'Execution · CryptoBot', loadComponent: live },
   { path: 'live/:proposalId', title: 'Execution · CryptoBot', loadComponent: live },
   { path: 'tower', title: 'Control Tower · CryptoBot', loadComponent: tower },

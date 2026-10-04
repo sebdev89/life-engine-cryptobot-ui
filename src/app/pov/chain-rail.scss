@@ -1,0 +1,287 @@
+// Nine links. Wide: one row, a line through the dots that fills left → right. Narrow: 3 × 3.
+.rail {
+  --dot: 34px;
+  --lit: var(--chain-2);
+  position: relative;
+}
+
+.rail__groups {
+  display: grid;
+  grid-template-columns: 5fr 4fr;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.rail__group {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-strong);
+  text-align: center;
+}
+
+.rail__group--value {
+  border-bottom-color: color-mix(in srgb, var(--chain) 55%, transparent);
+  color: var(--text-2);
+}
+
+.rail__track {
+  position: relative;
+}
+
+.rail__list {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.rail__line {
+  position: absolute;
+  left: calc(100% / 18);
+  right: calc(100% / 18);
+  top: calc(var(--dot) / 2 - 1px);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border-strong);
+  overflow: hidden;
+}
+
+.rail__fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--chain), var(--chain-2));
+  transform-origin: left;
+  transform: scaleX(var(--progress, 1));
+  transition: transform var(--dur-slow) var(--ease);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--chain-2) 70%, transparent);
+}
+
+.rail__item {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.rail__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 2px 4px;
+  color: var(--text-2);
+  text-decoration: none;
+  text-align: center;
+  border-radius: var(--r-md);
+}
+
+.rail__dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--lit) 70%, transparent);
+  background: color-mix(in srgb, var(--lit) 12%, var(--bg));
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.rail__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.rail__node:hover {
+  color: var(--text);
+}
+
+.rail__node:hover .rail__dot,
+.rail__node:focus-visible .rail__dot {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lit) 18%, transparent), 0 0 18px color-mix(in srgb, var(--lit) 45%, transparent);
+}
+
+// ---- tooltip --------------------------------------------------------------------------------
+.rail__tip {
+  position: absolute;
+  z-index: 25;
+  top: calc(100% + 6px);
+  left: 50%;
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  background: var(--surface-tip);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  text-align: left;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), visibility 0s linear var(--dur-fast);
+  pointer-events: none;
+}
+
+.rail__item:first-child .rail__tip {
+  left: 0;
+  transform: translate(0, -4px);
+}
+
+.rail__item:last-child .rail__tip {
+  left: auto;
+  right: 0;
+  transform: translate(0, -4px);
+}
+
+.rail__node:hover + .rail__tip,
+.rail__node:focus-visible + .rail__tip {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0s;
+}
+
+.rail__item:first-child .rail__node:hover + .rail__tip,
+.rail__item:first-child .rail__node:focus-visible + .rail__tip,
+.rail__item:last-child .rail__node:hover + .rail__tip,
+.rail__item:last-child .rail__node:focus-visible + .rail__tip {
+  transform: translate(0, 0);
+}
+
+// ---- landing: the one orchestrated moment ----------------------------------------------------
+.rail--intro .rail__fill {
+  animation: rail-flow 3.4s cubic-bezier(0.45, 0, 0.25, 1) 0.3s both;
+}
+
+.rail--intro .rail__dot {
+  animation: rail-light 0.6s var(--ease) both;
+  animation-delay: calc(0.3s + var(--i) * 0.4s);
+}
+
+@keyframes rail-flow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes rail-light {
+  0% {
+    border-color: var(--border-strong);
+    background: var(--bg);
+    color: var(--text-3);
+  }
+  60% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--lit) 22%, transparent), 0 0 26px color-mix(in srgb, var(--lit) 60%, transparent);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+// ---- guided replay: where you are -----------------------------------------------------------
+.rail--tour .rail__item .rail__dot {
+  border-color: var(--border-strong);
+  background: var(--bg);
+  color: var(--text-3);
+}
+
+.rail--tour .rail__item.is-done .rail__dot {
+  border-color: color-mix(in srgb, var(--lit) 70%, transparent);
+  background: color-mix(in srgb, var(--lit) 16%, var(--bg));
+  color: var(--text);
+}
+
+.rail--tour .rail__item.is-active .rail__dot {
+  border-color: var(--lit);
+  background: var(--lit);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--lit) 22%, transparent), 0 0 22px color-mix(in srgb, var(--lit) 55%, transparent);
+}
+
+.rail--tour .rail__item.is-active .rail__name {
+  color: var(--text);
+}
+
+// ---- narrow: 3 × 3, no line, no tooltip (no hover on touch; the replay says it in full) -------
+@media (max-width: 760px) {
+  .rail {
+    --dot: 30px;
+  }
+  .rail__groups,
+  .rail__line,
+  .rail__tip {
+    display: none;
+  }
+  .rail__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px 6px;
+  }
+  .rail__name {
+    font-size: var(--fs-xs);
+  }
+}
+
+// ---- value in transit: three faint particles riding the line after the intro (landing, wide) --
+.rail__particles {
+  position: absolute;
+  left: calc(100% / 18);
+  right: calc(100% / 18);
+  top: calc(var(--dot) / 2 - 3px);
+  height: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rail__p {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  animation: rail-travel 7.5s linear infinite;
+  animation-delay: calc(4s + var(--p) * 2.5s);
+}
+
+.rail__p::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--chain-2);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--chain-2) 70%, transparent);
+}
+
+@keyframes rail-travel {
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 760px), (prefers-reduced-motion: reduce) {
+  .rail__particles {
+    display: none;
+  }
+}
+
+// In the replay on a phone the scrubber and the step title already say where you are.
+@media (max-width: 760px) {
+  .rail--tour {
+    display: none;
+  }
+}

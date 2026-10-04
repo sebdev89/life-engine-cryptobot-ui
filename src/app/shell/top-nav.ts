@@ -4,6 +4,7 @@ import { OPERATOR_ONLY_PATHS, PUBLIC_DEMO } from '../public-demo/flag';
 
 /** The judge's route through the product, in order; the console is last and quieter. */
 const ALL_NAV_LINKS: readonly { path: string; label: string; quiet?: boolean }[] = [
+  { path: '/tour', label: 'Replay' },
   { path: '/tower', label: 'Control Tower' },
   { path: '/live', label: 'Execution' },
   { path: '/proof', label: 'Proof' },
@@ -59,7 +60,12 @@ export const NAV_LINKS = PUBLIC_DEMO ? ALL_NAV_LINKS.filter((l) => !OPERATOR_ONL
   `,
   styles: `
     .nav {
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: linear-gradient(180deg, rgba(6, 9, 14, 0.86), rgba(6, 9, 14, 0.62));
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -111,7 +117,8 @@ export const NAV_LINKS = PUBLIC_DEMO ? ALL_NAV_LINKS.filter((l) => !OPERATOR_ONL
     }
     .nav__links a.is-active {
       color: var(--text);
-      background: var(--surface-3);
+      background: var(--glass-hover);
+      box-shadow: inset 0 0 0 1px var(--glass-border);
     }
     .nav__links a.nav__quiet {
       color: var(--text-3);

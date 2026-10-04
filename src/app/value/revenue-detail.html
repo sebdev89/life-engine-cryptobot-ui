@@ -19,6 +19,18 @@
         <p class="banner-err simulated-banner" data-testid="simulated-note">{{ simulatedNote }}</p>
       }
       <div class="sections">
+        <section class="panel pad span-all" data-section="flow">
+          <h2>Where the money went</h2>
+          <app-money-flow
+            [total]="ev.amountLamports"
+            [totalLabel]="ev.simulated ? 'revenue, simulated to exercise the split' : 'revenue'"
+            [totalTruth]="ev.simulated ? 'simulated' : 'recorded'"
+            [parts]="flowParts()"
+            [payouts]="ev.payouts"
+          />
+          <p class="t-3 small">The policy splits the amount; only the contributor pool is transferred, one Solana transaction per wallet, by Contribution Units. Fee and retained parts are accounting entries.</p>
+        </section>
+
         <section class="panel pad" data-section="what">
           <h2>What value was generated</h2>
           <dl class="facts">
@@ -38,7 +50,7 @@
               </dd>
             </div>
             <div><dt>project</dt><dd class="mono">{{ ev.projectId }}</dd></div>
-            <div><dt>created</dt><dd class="mono">{{ ev.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</dd></div>
+            <div><dt>created</dt><dd><app-when [at]="ev.createdAt" /></dd></div>
             <div><dt>status</dt><dd><span class="st-badge st--{{ statusClass(ev.status) }}" data-testid="status">{{ ev.status }}</span></dd></div>
           </dl>
         </section>
@@ -78,7 +90,10 @@
           @if (!ev.payouts.length) {
             <p class="t-2">No payouts recorded for this revenue event.</p>
           } @else {
-            <app-payouts-table [payouts]="ev.payouts" />
+            <details class="more" open>
+              <summary>Payouts as a table</summary>
+              <app-payouts-table [payouts]="ev.payouts" />
+            </details>
           }
           <p class="t-3 small cost-note">{{ note }}</p>
         </section>
@@ -87,13 +102,13 @@
           <h2>Solana</h2>
           @if (ev.anchor; as a) {
             <dl class="facts">
-              <div><dt>Merkle root</dt><dd class="mono">{{ a.root }}</dd></div>
-              <div><dt>transaction</dt><dd class="mono">{{ a.txSignature }}</dd></div>
-              <div><dt>slot</dt><dd class="mono">{{ a.slot ?? '—' }}</dd></div>
-              <div><dt>receipt hash</dt><dd class="mono" [title]="ev.receiptHash">{{ ev.receiptHash }}</dd></div>
+              <div><dt>Merkle root</dt><dd><app-hash [value]="a.root" label="Merkle root" /></dd></div>
+              <div><dt>transaction</dt><dd><app-hash [value]="a.txSignature" label="anchor transaction signature" [href]="a.explorerUrl" /> <app-truth kind="onchain" /></dd></div>
+              <div><dt>slot</dt><dd class="mono">{{ slotLabel(a.slot) }}</dd></div>
+              <div><dt>receipt hash</dt><dd><app-hash [value]="ev.receiptHash" label="receipt hash" /></dd></div>
             </dl>
             @if (a.explorerUrl; as href) {
-              <a class="btn" [href]="href" target="_blank" rel="noopener">Open in explorer ↗</a>
+              <a class="btn" [href]="href" target="_blank" rel="noopener noreferrer">Open in explorer<app-ext-icon /></a>
             }
           } @else {
             <p class="t-2">Not anchored on Solana yet.</p>
@@ -101,7 +116,11 @@
         </section>
       </div>
     } @else if (!error()) {
-      <p class="t-2 loading" aria-busy="true">Reading revenue event…</p>
+      <div class="skeleton-stack" aria-busy="true">
+        <p class="sr-only">Reading revenue event…</p>
+        <span class="skeleton skeleton--panel" aria-hidden="true"></span>
+        <span class="skeleton skeleton--panel" aria-hidden="true"></span>
+      </div>
     }
   }
 </main>

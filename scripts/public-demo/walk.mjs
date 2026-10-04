@@ -2,8 +2,10 @@
 // walk.mjs — walks the public replay as a visitor would, in a fresh headless browser (no profile,
 // no cookies = incognito), and fails (exit 1) unless:
 //   · every request the pages make stays on the page's own origin under /cryptobot/ — no API, no
-//     backend, no third party (the replay answers from its bundled snapshot);
-//   · no request is a write (only GET/HEAD);
+//     backend, no third party (the replay answers from its bundled snapshot). The ONE exception is the
+//     public Solana devnet RPC, and only as a read: "Verify it yourself" (clicked here on the ValueEvent
+//     page) sends one JSON-RPC `getTransaction`; any other method or host fails the walk;
+//   · no request to the page's own origin is a write (only GET/HEAD);
 //   · the operator routes (/console, /demo, /recovery) are not served (they fall back to the overview);
 //   · no action button is rendered (Approve, Reject, Execute, Requeue, Resolve, Arm, Distribute, Use token);
 //   · the ValueEvent page says "Proof check: verified" AND "Checked in this browser: … the same root
@@ -31,8 +33,11 @@ const withGithub = args.includes('--github');
 if (shots) mkdirSync(shots, { recursive: true });
 
 const origin = new URL(base).origin;
+const DEVNET_RPC = 'https://api.devnet.solana.com/';
+const RPC_READS = new Set(['getTransaction']);
 const failures = [];
 const requests = [];
+const devnetReads = [];
 const fail = (m) => failures.push(m);
 
 const browser = await chromium.launch({
@@ -50,6 +55,14 @@ async function visit(ctx, path, { width }) {
   page.on('request', (r) => {
     const u = r.url();
     requests.push(`${r.method()} ${u}`);
+    if (u === DEVNET_RPC || u === DEVNET_RPC.slice(0, -1)) {
+      let m = null;
+      try { m = JSON.parse(r.postData() ?? '{}').method; } catch { /* not JSON */ }
+      if (r.method() === 'POST' && RPC_READS.has(m)) { devnetReads.push(m); return; }
+      if (r.method() === 'OPTIONS') return;
+      fail(`${path}: devnet RPC call that is not a read: ${r.method()} ${m}`);
+      return;
+    }
     if (!u.startsWith(`${origin}/cryptobot/`) && !u.startsWith('data:')) fail(`${path}: request outside the page: ${r.method()} ${u}`);
     if (!['GET', 'HEAD'].includes(r.method())) fail(`${path}: write request ${r.method()} ${u}`);
     if (/\/api\//.test(new URL(u).pathname)) fail(`${path}: API request ${u}`);
@@ -86,11 +99,27 @@ for (const width of [1280, 390]) {
   if (!/the same root written on Solana/.test(browserText)) fail(`${evPath}: in-browser fold did not match (${browserText})`);
   const explorer = await ev.locator('a[href*="explorer.solana.com/tx/"]').first().getAttribute('href').catch(() => null);
   if (!explorer || !/cluster=devnet/.test(explorer)) fail(`${evPath}: no devnet explorer link`);
+  // "Verify it yourself": the one live read against devnet. MATCH, or the explicit recorded fallback.
+  await ev.locator('[data-testid=verify-devnet]').click().catch(() => fail(`${evPath}: no "Verify on Solana devnet" button`));
+  const verdict = await ev.locator('[data-testid=devnet-verdict]').innerText({ timeout: 15000 }).catch(() => '');
+  if (!/^Match\b/.test(verdict) && !/RPC unavailable — showing recorded result/.test(verdict)) fail(`${evPath}: devnet check gave neither a match nor the recorded fallback (${verdict})`);
+  if (/No match|No anchor memo/.test(verdict)) fail(`${evPath}: devnet says the root does not match (${verdict})`);
+  results.devnetVerdict = verdict.replace(/\s+/g, ' ').slice(0, 160);
   results.valueEvent = evPath; results.explorer = explorer; results.proofText = proofText; results.browserProof = browserText.replace(/\s+/g, ' ');
   if (shots) {
     await ev.locator('[data-section=solana]').scrollIntoViewIfNeeded().catch(() => {});
     await ev.screenshot({ path: join(shots, `${prefix}value-event-${width}.png`), fullPage: false });
   }
+  // guided replay: nine steps, deep link, keyboard
+  const tour = await visit(ctx, 'tour?step=3', { width });
+  const t3 = await tour.locator('[data-testid=tour-step]').getAttribute('data-step').catch(() => null);
+  if (t3 !== '3') fail(`tour?step=3: shows step ${t3}`);
+  await tour.keyboard.press('ArrowRight');
+  await tour.waitForTimeout(300);
+  const t4 = await tour.locator('[data-testid=tour-step]').getAttribute('data-step').catch(() => null);
+  if (t4 !== '4' || !/[?&]step=4\b/.test(tour.url())) fail(`tour: → did not move to step 4 (${t4}, ${tour.url()})`);
+  if (shots) await tour.screenshot({ path: join(shots, `${prefix}tour-${width}.png`), fullPage: false });
+  await tour.close();
   for (const p of ['live', 'tower', 'proof', 'policies', 'value/identities', 'value/identities/dev-agent-17', 'value/ledger', 'value/revenue', 'value/treasury']) {
     const pg = await visit(ctx, p, { width });
     if (shots && ['live', 'tower', 'proof', 'value/identities/dev-agent-17'].includes(p)) {
@@ -129,8 +158,8 @@ if (withGithub) {
 }
 await browser.close();
 
-const offPage = requests.filter((r) => !r.split(' ')[1].startsWith(`${origin}/cryptobot/`));
-const report = { base, requests: requests.length, offPageRequests: offPage.length, apiRequests: requests.filter((r) => /\/api\//.test(r)).length, writes: requests.filter((r) => !/^(GET|HEAD) /.test(r)).length, ...results, failures };
+const offPage = requests.filter((r) => !r.split(' ')[1].startsWith(`${origin}/cryptobot/`) && !r.split(' ')[1].startsWith(DEVNET_RPC.slice(0, -1)));
+const report = { base, requests: requests.length, offPageRequests: offPage.length, devnetReads: devnetReads.length, apiRequests: requests.filter((r) => /\/api\//.test(r)).length, writes: requests.filter((r) => !/^(GET|HEAD) /.test(r) && !r.includes(DEVNET_RPC.slice(0, -1))).length, ...results, failures };
 if (shots) writeFileSync(join(shots, `${prefix}walk.json`), JSON.stringify({ ...report, requestList: [...new Set(requests)] }, null, 2));
 console.log(JSON.stringify(report, null, 2));
 process.exit(failures.length ? 1 : 0);

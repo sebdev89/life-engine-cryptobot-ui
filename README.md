@@ -37,13 +37,19 @@ run on Solana devnet that anyone can open without signing in, and that cannot ch
 
 - **No backend.** Every API read is answered from [`src/app/public-demo/snapshot.json`](src/app/public-demo/snapshot.json),
   a versioned recording of the run (the operation executed on 3 Oct 2026 and the ValueEvent anchored on 4 Oct 2026). The
-  page makes no request outside its own `/cryptobot/` files; the CSP (`connect-src 'self'`) enforces it in the browser.
+  page makes no request outside its own `/cryptobot/` files, with one exception you trigger yourself: **Verify it
+  yourself** asks the public Solana devnet RPC (`https://api.devnet.solana.com`, one `getTransaction`, no key) for the
+  anchor transaction and compares its memo root with the event's root; if devnet does not answer, the page says so and
+  shows the recorded result. The CSP (`connect-src 'self' https://api.devnet.solana.com`) enforces exactly that.
 - **Read-only by construction.** The flag is fixed at build time (`define: __PUBLIC_DEMO__`), not by runtime config. The
   operator screens (`/console`, `/demo`, `/recovery`) are not routes and their code is not shipped; action buttons
   (approve, execute, requeue, chaos, distribute) are not rendered; any write the code could still attempt is refused locally
   with `405 READ_ONLY_REPLAY`. There is no sign-in and nothing is stored in the browser.
 - **Verifiable, not just displayed.** `/value/:id` shows the service's proof verdict *and* folds the Merkle path in the
   browser (WebCrypto, same scheme as the service), then links the anchor transaction on Solana Explorer (devnet).
+- **Guided replay.** `/tour?step=N` walks the nine links of the chain (Intent → Strategist → Guardian → Operator → Solana →
+  AcceptanceProof → ValueEvent → Contribution Units → Reward & Reputation) with the recorded values, ←/→ and a 90 s autoplay.
+  Every value carries a label saying how far it can be trusted: on-chain, recorded, declared, simulated or estimated.
 
 ```bash
 npx ng build --configuration public-demo && node scripts/public-demo/check-dist.mjs --prune   # bundle hygiene gate

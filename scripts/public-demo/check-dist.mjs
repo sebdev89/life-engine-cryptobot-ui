@@ -9,7 +9,8 @@
 //   3. hygiene: no served text file matches src/app/public-demo/hygiene-patterns.json
 //      (internal tracker ids, loopback/internal hosts, other tenants, host paths, tokens, keys);
 //   4. no backend URL: no `http(s)://` origin in the JS other than the allowlisted public ones
-//      (Solana Explorer, GitHub, the W3C/Angular namespaces the framework carries).
+//      (Solana Explorer, GitHub, the W3C/Angular namespaces the framework carries, and the public
+//      Solana devnet RPC — the one read the "Verify it yourself" check makes, see devnet-verify.ts).
 //
 //   node scripts/public-demo/check-dist.mjs [--prune] [dist/cryptobot-ui-public-demo/browser]
 import { readFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
@@ -30,6 +31,7 @@ const ORIGIN_ALLOW = [
   /^https:\/\/g\.co\/ng\//,
   /^https:\/\/solana\.com/,
   /^https:\/\/faucet\.solana\.com/,
+  /^https:\/\/api\.devnet\.solana\.com$/,
 ];
 const OPERATOR_TITLES = ['Console · CryptoBot', 'Demo Mode · CryptoBot', 'Recovery · CryptoBot'];
 
