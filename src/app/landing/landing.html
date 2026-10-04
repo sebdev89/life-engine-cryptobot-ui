@@ -8,40 +8,49 @@
       <p class="hero__sub">AI can create value. Proof of Value makes sure we remember who created it.</p>
       <div class="hero__cta">
         @if (publicDemo) {
-          <a routerLink="/tour" [queryParams]="{ autoplay: 1 }" class="btn btn--primary btn--lg" id="replay-run">Replay the run <span class="btn__aside">90 s</span></a>
-          <a id="see-proof" [routerLink]="proofLink()" class="btn btn--lg">See a real proof</a>
+          <a routerLink="/tour" [queryParams]="{ autoplay: 1 }" class="btn btn--primary btn--lg" id="replay-run">{{ 'land.cta.replay' | t }} <span class="btn__aside">90 s</span></a>
+          <a id="see-proof" [routerLink]="proofLink()" class="btn btn--lg">{{ 'land.cta.proof' | t }}</a>
         } @else {
-          <a id="see-proof" [routerLink]="proofLink()" class="btn btn--primary btn--lg">See a real proof</a>
+          <a id="see-proof" [routerLink]="proofLink()" class="btn btn--primary btn--lg">{{ 'land.cta.proof' | t }}</a>
         }
-        <a href="https://github.com/sebdev89/life-engine-cryptobot-ui#run-it-against-the-demo-stack" class="btn btn--lg btn--quiet" target="_blank" rel="noopener noreferrer">Run the demo<app-ext-icon /></a>
+        <a href="https://github.com/sebdev89/life-engine-cryptobot-ui#run-it-against-the-demo-stack" class="btn btn--lg btn--quiet" target="_blank" rel="noopener noreferrer">{{ 'land.cta.demo' | t }}<app-ext-icon /></a>
       </div>
     </div>
 
     @if (proofEvent(); as ev) {
       <aside class="receipt panel" aria-labelledby="receipt-title">
-        <p class="receipt__kicker">Latest anchored outcome</p>
+        <p class="receipt__kicker">{{ 'land.receipt.kicker' | t }}</p>
         <h2 id="receipt-title" class="receipt__title">{{ ev.title }}</h2>
         <dl class="receipt__facts">
-          <div><dt>contributions</dt><dd class="mono"><app-count [to]="ev.contributions.length" /></dd></div>
-          <div><dt>Contribution Units</dt><dd class="mono"><app-count [to]="ev.totalUnits" /></dd></div>
+          <div><dt>{{ 'land.receipt.contributions' | t }}</dt><dd class="mono"><app-count [to]="ev.contributions.length" /></dd></div>
+          <div><dt>{{ 'land.receipt.units' | t }}</dt><dd class="mono"><app-count [to]="ev.totalUnits" /></dd></div>
           @if (ev.anchor; as a) {
-            <div class="receipt__wide"><dt>Merkle root</dt><dd><app-hash [value]="a.root" label="Merkle root" [head]="8" [tail]="8" /></dd></div>
+            <div class="receipt__wide"><dt>{{ 'land.receipt.root' | t }}</dt><dd><app-hash [value]="a.root" label="Merkle root" [head]="8" [tail]="8" /></dd></div>
           }
         </dl>
         @if (ev.anchor; as a) {
           <p class="receipt__seal">
             <svg class="seal" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle class="seal__ring" cx="12" cy="12" r="10" /><path class="seal__check" d="M7 12.5l3.2 3.2L17 9" /></svg>
-            <span>Anchored on Solana devnet<span class="receipt__slot"> · slot <span class="mono">{{ slot(a.slot) }}</span></span></span>
+            <span>{{ 'land.receipt.anchored' | t }}<span class="receipt__slot"> · slot <span class="mono">{{ slot(a.slot) }}</span></span></span>
           </p>
         }
-        <a class="receipt__go" [routerLink]="['/value', ev.id]" fragment="verify">Verify it yourself</a>
+        <a class="receipt__go" [routerLink]="['/value', ev.id]" fragment="verify">{{ 'land.receipt.verify' | t }}</a>
       </aside>
     }
   </section>
 
   <section class="chain" aria-labelledby="chain-title">
-    <h2 id="chain-title" class="chain__title">From an agent's intent to who got paid, in nine checkable steps</h2>
+    <h2 id="chain-title" class="chain__title">{{ 'land.chain.title' | t }}</h2>
     <app-chain-rail [intro]="true" />
+  </section>
+
+  <section class="mapsec" aria-labelledby="map-title">
+    <h2 id="map-title" class="chain__title">{{ 'land.map.title' | t }}</h2>
+    <p class="t-2 mapsec__lede">{{ 'land.map.lede' | t }}</p>
+    <app-pov-map [valueEventId]="proofEvent()?.id ?? null" [revenueId]="revenueId()" />
+    @if (publicDemo) {
+      <p class="mapsec__uc"><a routerLink="/use-cases">{{ 'land.uc' | t }}</a></p>
+    }
   </section>
 
   <section class="diagram" aria-label="Architecture">

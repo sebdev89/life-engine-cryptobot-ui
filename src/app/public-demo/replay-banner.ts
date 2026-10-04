@@ -1,5 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import type { ReplayRun } from './replay';
+import { DevnetPulse } from './devnet-pulse';
+import { TPipe } from '../ui/i18n';
 
 /**
  * The honest strip on top of every screen of the public build: this is a recording of a real
@@ -9,15 +11,18 @@ import type { ReplayRun } from './replay';
 @Component({
   selector: 'app-replay-banner',
   standalone: true,
+  imports: [DevnetPulse, TPipe],
   template: `
     <aside class="replay" role="note" aria-label="About this page">
-      <strong>Replay of a real Solana devnet run</strong>
+      <strong>{{ 'banner.replay' | t }}</strong>
       <span class="replay__sep" aria-hidden="true">·</span>
-      <span>read-only{{ dates() ? ' · recorded ' + dates() : '' }}</span>
+      <span>{{ 'banner.readonly' | t }}{{ dates() ? ' · ' + ('banner.recorded' | t: { d: dates() }) : '' }}</span>
+      <span class="replay__sep replay__wide" aria-hidden="true">·</span>
+      <span class="replay__wide">{{ 'banner.explorer' | t }}</span>
       <span class="replay__sep" aria-hidden="true">·</span>
-      <span>every transaction links to Solana Explorer</span>
+      <a href="https://github.com/sebdev89/life-engine-cryptobot-service" target="_blank" rel="noopener noreferrer">{{ 'banner.source' | t }}</a>
       <span class="replay__sep" aria-hidden="true">·</span>
-      <a href="https://github.com/sebdev89/life-engine-cryptobot-service" rel="noopener">source on GitHub</a>
+      <app-devnet-pulse />
     </aside>
   `,
   styles: `
@@ -45,6 +50,11 @@ import type { ReplayRun } from './replay';
     }
     .replay__sep {
       color: var(--text-3, #6b7480);
+    }
+    @media (max-width: 560px) {
+      .replay__wide {
+        display: none;
+      }
     }
   `,
 })

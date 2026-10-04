@@ -48,3 +48,16 @@ export function prefersReducedMotion(): boolean {
     return false;
   }
 }
+
+/**
+ * What a screen reader says for a hash or a signature: its kind and both ends, not 64 characters.
+ * `sha256:0960…` → "SHA-256 hash, starts 0960 c920, ends 341d fd50".
+ */
+export function spokenHash(value: string | null | undefined): string {
+  if (!value) return 'none';
+  const sha = value.startsWith('sha256:');
+  const body = sha ? value.slice(7) : value;
+  const pair = (s: string) => `${s.slice(0, 4)} ${s.slice(4)}`;
+  if (body.length <= 16) return value;
+  return `${sha ? 'SHA-256 hash' : 'key'}, starts ${pair(body.slice(0, 8))}, ends ${pair(body.slice(-8))}`;
+}

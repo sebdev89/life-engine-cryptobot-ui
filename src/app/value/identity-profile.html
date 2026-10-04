@@ -4,7 +4,12 @@
   <header class="value__head">
     <a routerLink="/value/identities" class="back">← All identities</a>
     <p class="eyebrow">Proof of Value · identity</p>
-    <h1>{{ profile()?.displayName ?? 'Identity' }}</h1>
+    <div class="who">
+      @if (profile(); as p) {
+        <app-identicon [seed]="p.wallet ?? p.id" [size]="52" />
+      }
+      <h1>{{ profile()?.displayName ?? 'Identity' }}</h1>
+    </div>
   </header>
   <app-value-nav />
 
@@ -25,7 +30,7 @@
               <dt>wallet</dt>
               <dd>
                 @if (p.wallet; as w) {
-                  <a class="mono" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener" data-testid="wallet">{{ w }} ↗</a>
+                  <a class="mono" [href]="explorerAddressUrl(w)" target="_blank" rel="noopener noreferrer" data-testid="wallet" [title]="w">{{ middle(w, 6, 6) }}<app-ext-icon /></a>
                 } @else {
                   <span class="t-3">none</span>
                 }
@@ -44,11 +49,11 @@
         </section>
 
         <section class="panel pad" data-section="reputation">
-          <h2>Reputation</h2>
+          <h2>Reputation <app-truth kind="recorded" /></h2>
           @if (p.reputation; as r) {
-            <dl class="facts">
-              <div><dt>accepted outcomes</dt><dd class="mono">{{ r.acceptedOutcomes }}</dd></div>
-              <div><dt>total units</dt><dd class="mono">{{ r.totalUnits }}</dd></div>
+            <dl class="facts rep">
+              <div class="rep__big"><dt>accepted outcomes</dt><dd class="kg__n"><app-count [to]="r.acceptedOutcomes" /></dd></div>
+              <div class="rep__big"><dt>total units</dt><dd class="kg__n"><app-count [to]="r.totalUnits" /></dd></div>
               <div><dt>first accepted</dt><dd class="mono">{{ r.firstAcceptedAt ? (r.firstAcceptedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</dd></div>
               <div><dt>last accepted</dt><dd class="mono">{{ r.lastAcceptedAt ? (r.lastAcceptedAt | date: 'yyyy-MM-dd HH:mm') : '—' }}</dd></div>
             </dl>
@@ -78,6 +83,21 @@
           @if (!p.history.length) {
             <p class="t-2">No accepted outcomes in this identity's history yet.</p>
           } @else {
+            <ol class="tl" data-testid="timeline">
+              @for (h of p.history; track h.valueEventId) {
+                <li class="tl__item">
+                  <span class="tl__dot" aria-hidden="true"></span>
+                  <p class="tl__when t-2"><app-when [at]="h.acceptedAt" /></p>
+                  <p class="tl__what"><a [routerLink]="['/value', h.valueEventId]">{{ h.title }}</a></p>
+                  <p class="tl__meta">
+                    <span>{{ h.role.toLowerCase().replace('_', ' ') }}</span> · <span class="mono">{{ h.units }} units</span>
+                    <span class="st-badge st--{{ anchorClass(h.anchorStatus) }}">{{ h.anchorStatus }}</span>
+                  </p>
+                </li>
+              }
+            </ol>
+            <details class="more">
+            <summary>History as a table</summary>
             <div class="table-wrap">
               <table class="grid" data-testid="history">
                 <thead><tr><th>Outcome</th><th>Role</th><th class="num">Units</th><th>Accepted</th><th>Anchor</th></tr></thead>
@@ -94,6 +114,7 @@
                 </tbody>
               </table>
             </div>
+            </details>
           }
         </section>
       </div>

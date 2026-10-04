@@ -1,6 +1,6 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Toasts } from './toast';
-import { middle } from './format';
+import { middle, spokenHash } from './format';
 
 /** Copies text; falls back to a hidden textarea where the async clipboard is not allowed. */
 export async function copyText(text: string): Promise<boolean> {
@@ -57,10 +57,10 @@ export class ExtIcon {}
     <span class="hash">
       @if (href(); as h) {
         <a class="hash__v mono" [href]="h" target="_blank" rel="noopener noreferrer" [title]="value()"
-          ><span aria-hidden="true">{{ shown() }}</span><span class="sr-only">{{ label() }} {{ value() }} on Solana Explorer</span><app-ext-icon
+          ><span aria-hidden="true">{{ shown() }}</span><span class="sr-only">{{ label() }}, {{ spoken() }}, on Solana Explorer</span><app-ext-icon
         /></a>
       } @else {
-        <span class="hash__v mono" [title]="value()"><span aria-hidden="true">{{ shown() }}</span><span class="sr-only">{{ value() }}</span></span>
+        <span class="hash__v mono" [title]="value()"><span aria-hidden="true">{{ shown() }}</span><span class="sr-only">{{ label() }}, {{ spoken() }}</span></span>
       }
       <button type="button" class="hash__copy" (click)="copy()" [attr.aria-label]="'Copy ' + label()" [title]="'Copy ' + label()">
         <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4" /><path d="M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.4" /></svg>
@@ -119,6 +119,7 @@ export class HashChip {
   readonly tail = input<number>(8);
 
   readonly shown = computed(() => middle(this.value(), this.head(), this.tail()));
+  readonly spoken = computed(() => spokenHash(this.value()));
   private readonly toasts = inject(Toasts);
 
   async copy(): Promise<void> {

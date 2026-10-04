@@ -10,6 +10,7 @@ import { ActionProposal, AuditEvent } from '../control-plane-api';
 import { Distribution, IdentityProfile, RevenueEvent, ValueEvent } from '../value-events-api';
 import { POV_CHAIN } from '../pov/pov-chain';
 import type { TruthKind } from '../ui/truth';
+import { translate } from '../ui/i18n';
 import { ACCEPTANCE_STAGES, lamportsToSol, revenuePolicyView, bpsPercent, explorerAddressUrl, txExplorerUrl } from '../value/value-model';
 
 export interface TourData {
@@ -69,12 +70,15 @@ function seconds(from: string | null | undefined, to: string | null | undefined)
 
 type P = ActionProposal & Record<string, unknown>;
 
+export type Tr = (key: string, params?: Record<string, string | number>) => string;
+const EN: Tr = (k, p) => translate('en', k, p);
+
 /** Pure: the nine steps from what the recording holds. Evidence rows with no value are dropped. */
-export function buildTour(d: TourData): TourStep[] {
+export function buildTour(d: TourData, tr: Tr = EN): TourStep[] {
   const p = d.proposal as P | null;
   const ev = d.event;
   const pid = p?.id ?? null;
-  const live = pid ? { label: 'Open the execution screen', route: ['/live', pid] } : null;
+  const live = pid ? { label: tr('tour.open.live'), route: ['/live', pid] } : null;
   const valueRoute = ev ? ['/value', ev.id] : null;
 
   const plan = (p?.['plan'] ?? null) as { summary?: string } | null;
@@ -104,26 +108,26 @@ export function buildTour(d: TourData): TourStep[] {
   const steps: Omit<TourStep, 'n' | 'id' | 'name'>[] = [
     // 1 — Intent
     {
-      line: `The agent asks for a rebalance${weights(p?.intent?.targetWeights) ? ` toward ${weights(p?.intent?.targetWeights)}` : ''}, and nothing moves until the rest of the chain agrees.`,
+      line: weights(p?.intent?.targetWeights) ? tr('tour.1.line', { w: weights(p?.intent?.targetWeights)! }) : tr('tour.1.line.plain'),
       caveat: null,
       evidence: compact([
-        p?.title ? { kind: 'text', label: 'proposal', value: p.title, truth: 'recorded' } : null,
-        p?.reasoningSummary ? { kind: 'text', label: 'reason given by the agent', value: p.reasoningSummary, truth: 'declared' } : null,
-        created ? { kind: 'time', label: 'created', at: created, truth: 'recorded' } : null,
+        p?.title ? { kind: 'text', label: tr('tour.ev.proposal'), value: p.title, truth: 'recorded' } : null,
+        p?.reasoningSummary ? { kind: 'text', label: tr('tour.ev.reason'), value: p.reasoningSummary, truth: 'declared' } : null,
+        created ? { kind: 'time', label: tr('tour.ev.created'), at: created, truth: 'recorded' } : null,
       ]),
       open: live,
       verify: null,
     },
     // 2 — Strategist
     {
-      line: 'A deterministic planner turns the intent into an exact amount, and the exact transaction bytes are simulated on devnet first.',
-      caveat: 'Strategist is a role name: in this run it is a deterministic planner and a risk engine, not a language model.',
+      line: tr('tour.2.line'),
+      caveat: tr('tour.2.caveat'),
       evidence: compact([
-        finding?.title ? { kind: 'text', label: `risk finding (${(finding.severity ?? '').toLowerCase()})`, value: finding.title, truth: 'recorded' } : null,
-        moved ? { kind: 'text', label: 'planned transfer', value: `${moved} to the agent's own vault`, truth: 'recorded', mono: false } : null,
-        tx?.destination ? { kind: 'hash', label: 'vault address', value: tx.destination, truth: 'recorded', href: explorerAddressUrl(tx.destination), what: 'vault address' } : null,
+        finding?.title ? { kind: 'text', label: tr('tour.ev.risk', { s: (finding.severity ?? '').toLowerCase() }), value: finding.title, truth: 'recorded' } : null,
+        moved ? { kind: 'text', label: tr('tour.ev.planned'), value: tr('tour.ev.planned.v', { sol: moved }), truth: 'recorded', mono: false } : null,
+        tx?.destination ? { kind: 'hash', label: tr('tour.ev.vault'), value: tx.destination, truth: 'recorded', href: explorerAddressUrl(tx.destination), what: tr('tour.ev.vault') } : null,
         sim?.onchain
-          ? { kind: 'text', label: 'simulation on devnet', value: `${sim.onchain.ok ? 'passed' : 'failed'}${typeof sim.onchain.unitsConsumed === 'number' ? ` · ${sim.onchain.unitsConsumed} compute units` : ''}`, truth: 'recorded' }
+          ? { kind: 'text', label: tr('tour.ev.sim'), value: `${tr(sim.onchain.ok ? 'tour.ev.sim.ok' : 'tour.ev.sim.fail')}${typeof sim.onchain.unitsConsumed === 'number' ? ` · ${tr('tour.ev.sim.cu', { n: sim.onchain.unitsConsumed })}` : ''}`, truth: 'recorded' }
           : null,
       ]),
       open: live,
@@ -131,42 +135,42 @@ export function buildTour(d: TourData): TourStep[] {
     },
     // 3 — Guardian
     {
-      line: 'Policy rules under a versioned policy hash decide whether the transfer may go ahead, and with which safeguards.',
+      line: tr('tour.3.line'),
       caveat:
         policy?.authorization?.decision === 'ESCALATE'
-          ? 'Here the verdict escalates: the effect is a timelock plus operator approval. No second agent takes part in this run.'
+          ? tr('tour.3.caveat')
           : null,
       evidence: compact([
         policy?.rulesApplied
-          ? { kind: 'text', label: 'policy checks applied', value: `${policy.rulesApplied.length} checks · ${policy.violations?.length ?? 0} violations`, truth: 'recorded' }
+          ? { kind: 'text', label: tr('tour.ev.checks'), value: tr('tour.ev.checks.v', { n: policy.rulesApplied.length, v: policy.violations?.length ?? 0 }), truth: 'recorded' }
           : null,
         policy?.authorization?.decision
-          ? { kind: 'text', label: 'verdict', value: `${policy.authorization.decision}${policy.authorization.tier ? ` · tier ${policy.authorization.tier}` : ''}`, truth: 'recorded', mono: true }
+          ? { kind: 'text', label: tr('tour.ev.verdict'), value: `${policy.authorization.decision}${policy.authorization.tier ? ` · tier ${policy.authorization.tier}` : ''}`, truth: 'recorded', mono: true }
           : null,
-        timelock !== null ? { kind: 'text', label: 'timelock before execution', value: `${timelock} s`, truth: 'recorded' } : null,
-        policy?.authorization?.policyHash ? { kind: 'hash', label: `policy hash${policy.authorization.policyVersion ? ` (${policy.authorization.policyVersion})` : ''}`, value: policy.authorization.policyHash, truth: 'recorded', what: 'policy hash' } : null,
+        timelock !== null ? { kind: 'text', label: tr('tour.ev.timelock'), value: `${timelock} s`, truth: 'recorded' } : null,
+        policy?.authorization?.policyHash ? { kind: 'hash', label: `${tr('tour.ev.policyhash')}${policy.authorization.policyVersion ? ` (${policy.authorization.policyVersion})` : ''}`, value: policy.authorization.policyHash, truth: 'recorded', what: tr('tour.ev.policyhash') } : null,
       ]),
-      open: { label: 'Open the policy screen', route: ['/policies'] },
+      open: { label: tr('tour.open.policies'), route: ['/policies'] },
       verify: null,
     },
     // 4 — Operator
     {
-      line: 'The operator approves; an independent validator re-derives the verdict, and an isolated signer signs only those bytes.',
-      caveat: 'In this recorded run the approval came from the demo operator account.',
+      line: tr('tour.4.line'),
+      caveat: tr('tour.4.caveat'),
       evidence: compact([
-        approval?.at ? { kind: 'time', label: 'approved', at: approval.at, truth: 'recorded' } : null,
-        str(validated['verdictHash']) ? { kind: 'hash', label: 'validator verdict hash', value: String(validated['verdictHash']), truth: 'recorded', what: 'verdict hash' } : null,
-        exec?.signerPublicKey ? { kind: 'hash', label: 'signer public key', value: exec.signerPublicKey, truth: 'recorded', href: explorerAddressUrl(exec.signerPublicKey), what: 'signer public key' } : null,
+        approval?.at ? { kind: 'time', label: tr('tour.ev.approved'), at: approval.at, truth: 'recorded' } : null,
+        str(validated['verdictHash']) ? { kind: 'hash', label: tr('tour.ev.verdicthash'), value: String(validated['verdictHash']), truth: 'recorded', what: tr('tour.ev.verdicthash') } : null,
+        exec?.signerPublicKey ? { kind: 'hash', label: tr('tour.ev.signer'), value: exec.signerPublicKey, truth: 'recorded', href: explorerAddressUrl(exec.signerPublicKey), what: tr('tour.ev.signer') } : null,
       ]),
       open: live,
       verify: null,
     },
     // 5 — Solana
     {
-      line: `The transfer${moved ? ` of ${moved}` : ''} is broadcast and finalized on Solana devnet.`,
-      caveat: "It is a SOL transfer from the agent's wallet to its own vault, not a swap.",
+      line: moved ? tr('tour.5.line', { sol: moved }) : tr('tour.5.line.plain'),
+      caveat: tr('tour.5.caveat'),
       evidence: compact([
-        exec?.signature ? { kind: 'hash', label: 'transaction', value: exec.signature, truth: 'onchain', href: exec.explorerUrl ?? txExplorerUrl(exec.signature), what: 'transaction signature' } : null,
+        exec?.signature ? { kind: 'hash', label: tr('tour.ev.tx'), value: exec.signature, truth: 'onchain', href: exec.explorerUrl ?? txExplorerUrl(exec.signature), what: tr('tour.ev.tx') } : null,
         exec?.confirmedAt ? { kind: 'time', label: exec.confirmationStatus ?? 'confirmed', at: exec.confirmedAt, truth: 'onchain' } : null,
       ]),
       open: live,
@@ -174,45 +178,45 @@ export function buildTour(d: TourData): TourStep[] {
     },
     // 6 — AcceptanceProof
     {
-      line: 'The software the agent runs on counts only once it is merged, built, deployed, running and accepted.',
+      line: tr('tour.6.line'),
       caveat:
         ev?.acceptance?.source === 'manual'
-          ? 'In this recorded run the five stages were asserted by the operator (source: manual), not measured by the pipeline.'
+          ? tr('tour.6.caveat')
           : null,
       evidence: compact([
         ev
           ? {
               kind: 'text',
-              label: 'acceptance stages',
+              label: tr('tour.ev.stages'),
               value: ACCEPTANCE_STAGES.map((s) => `${s} ${ev.acceptance?.stages?.[s] === true ? '✓' : ev.acceptance?.stages?.[s] === false ? '✗' : '?'}`).join('  '),
               truth: ev.acceptance?.source === 'manual' ? 'declared' : 'recorded',
               mono: true,
             }
           : null,
-        ev?.artifact?.prUrl ? { kind: 'link', label: 'pull request', value: prLabel(ev.artifact.prUrl), href: ev.artifact.prUrl, truth: 'recorded' } : null,
-        ev?.acceptanceHash ? { kind: 'hash', label: 'acceptance hash', value: ev.acceptanceHash, truth: 'recorded', what: 'acceptance hash' } : null,
+        ev?.artifact?.prUrl ? { kind: 'link', label: tr('tour.ev.pr'), value: prLabel(ev.artifact.prUrl), href: ev.artifact.prUrl, truth: 'recorded' } : null,
+        ev?.acceptanceHash ? { kind: 'hash', label: tr('tour.ev.acchash'), value: ev.acceptanceHash, truth: 'recorded', what: tr('tour.ev.acchash') } : null,
       ]),
-      open: valueRoute ? { label: 'Open the ValueEvent', route: valueRoute } : null,
+      open: valueRoute ? { label: tr('tour.open.value'), route: valueRoute } : null,
       verify: null,
     },
     // 7 — ValueEvent
     {
-      line: 'The accepted outcome becomes a signed receipt whose Merkle root is written to Solana. Anyone can check it.',
+      line: tr('tour.7.line'),
       caveat: null,
       evidence: compact([
-        ev?.receiptHash ? { kind: 'hash', label: 'signed receipt', value: ev.receiptHash, truth: 'recorded', what: 'receipt hash' } : null,
-        ev?.anchor?.root ? { kind: 'hash', label: 'Merkle root', value: ev.anchor.root, truth: 'onchain', what: 'Merkle root' } : null,
+        ev?.receiptHash ? { kind: 'hash', label: tr('tour.ev.receipt'), value: ev.receiptHash, truth: 'recorded', what: tr('tour.ev.receipt') } : null,
+        ev?.anchor?.root ? { kind: 'hash', label: tr('tour.ev.root'), value: ev.anchor.root, truth: 'onchain', what: tr('tour.ev.root') } : null,
         ev?.anchor?.txSignature
-          ? { kind: 'hash', label: 'anchor transaction', value: ev.anchor.txSignature, truth: 'onchain', href: ev.anchor.explorerUrl ?? txExplorerUrl(ev.anchor.txSignature), what: 'anchor transaction signature' }
+          ? { kind: 'hash', label: tr('tour.ev.anchor'), value: ev.anchor.txSignature, truth: 'onchain', href: ev.anchor.explorerUrl ?? txExplorerUrl(ev.anchor.txSignature), what: tr('tour.ev.anchor') }
           : null,
       ]),
-      open: valueRoute ? { label: 'Open the proof', route: valueRoute, fragment: 'verify' } : null,
+      open: valueRoute ? { label: tr('tour.open.proof'), route: valueRoute, fragment: 'verify' } : null,
       verify: ev?.anchor?.txSignature && ev.anchor.root ? { signature: ev.anchor.txSignature, root: ev.anchor.root, slot: ev.anchor.slot ?? null } : null,
     },
     // 8 — Contribution Units
     {
-      line: ev ? `${ev.totalUnits} Contribution Units are split across the ${ev.contributions.length} contributions the task record names.` : 'Contribution Units record who contributed.',
-      caveat: 'Units are attribution: not equity, not a token, not a promise of return.',
+      line: ev ? tr('tour.8.line', { u: ev.totalUnits, c: ev.contributions.length }) : tr('tour.8.line.plain'),
+      caveat: tr('tour.8.caveat'),
       evidence: compact([
         ev
           ? {
@@ -224,45 +228,45 @@ export function buildTour(d: TourData): TourStep[] {
             }
           : null,
       ]),
-      open: { label: 'Open the units ledger', route: ['/value/ledger'] },
+      open: { label: tr('tour.open.ledger'), route: ['/value/ledger'] },
       verify: null,
     },
     // 9 — Reward & Reputation
-    rewardStep(d),
+    rewardStep(d, tr),
   ];
 
   return POV_CHAIN.map((l, i) => ({ n: l.n, id: l.id, name: l.name, ...steps[i] }));
 }
 
-function rewardStep(d: TourData): Omit<TourStep, 'n' | 'id' | 'name'> {
+function rewardStep(d: TourData, tr: Tr): Omit<TourStep, 'n' | 'id' | 'name'> {
   const dist = d.distribution;
   const confirmed = dist ? dist.payouts.filter((x) => x.status === 'CONFIRMED') : [];
   const rev = d.revenue;
   const pol = rev ? revenuePolicyView(rev) : null;
   const rep = d.identity?.reputation ?? null;
   return {
-    line: 'Each contributor is paid on Solana by units, one transfer per wallet, and each identity keeps plain counts of accepted outcomes.',
-    caveat: rev?.simulated ? 'The revenue in this run is simulated to exercise the split; the payouts are real devnet transfers.' : null,
+    line: tr('tour.9.line'),
+    caveat: rev?.simulated ? tr('tour.9.caveat') : null,
     evidence: compact([
       dist
-        ? { kind: 'text', label: 'reward paid', value: `${lamportsToSol(confirmed.reduce((a, x) => a + x.lamports, 0))} SOL to ${confirmed.length} wallets`, truth: 'onchain' }
+        ? { kind: 'text', label: tr('tour.ev.paid'), value: tr('tour.ev.paid.v', { sol: lamportsToSol(confirmed.reduce((a, x) => a + x.lamports, 0)), n: confirmed.length }), truth: 'onchain' }
         : null,
       confirmed[0]?.txSignature
-        ? { kind: 'hash', label: `payout to ${confirmed[0].displayName}`, value: confirmed[0].txSignature, truth: 'onchain', href: confirmed[0].explorerUrl ?? txExplorerUrl(confirmed[0].txSignature), what: 'payout transaction signature' }
+        ? { kind: 'hash', label: tr('tour.ev.payout', { who: confirmed[0].displayName }), value: confirmed[0].txSignature, truth: 'onchain', href: confirmed[0].explorerUrl ?? txExplorerUrl(confirmed[0].txSignature), what: tr('tour.ev.tx') }
         : null,
       rev && pol
         ? {
             kind: 'text',
-            label: 'revenue split',
-            value: `${lamportsToSol(rev.amountLamports)} SOL → ${bpsPercent(pol.shareBps)} contributors · ${bpsPercent(pol.feeBps)} protocol · ${bpsPercent(pol.retainedBps)} retained`,
+            label: tr('tour.ev.split'),
+            value: tr('tour.ev.split.v', { sol: lamportsToSol(rev.amountLamports), a: bpsPercent(pol.shareBps), b: bpsPercent(pol.feeBps), c: bpsPercent(pol.retainedBps) }),
             truth: rev.simulated ? 'simulated' : 'recorded',
           }
         : null,
       d.identity && rep
-        ? { kind: 'text', label: `reputation of ${d.identity.displayName}`, value: `${rep.acceptedOutcomes} accepted outcome${rep.acceptedOutcomes === 1 ? '' : 's'} · ${rep.totalUnits} units`, truth: 'recorded' }
+        ? { kind: 'text', label: tr('tour.ev.rep', { who: d.identity.displayName }), value: tr(rep.acceptedOutcomes === 1 ? 'tour.ev.rep.v1' : 'tour.ev.rep.vn', { n: rep.acceptedOutcomes, u: rep.totalUnits }), truth: 'recorded' }
         : null,
     ]),
-    open: rev ? { label: 'Open the money flow', route: ['/value/revenue', rev.id] } : d.identity ? { label: 'Open the identity', route: ['/value/identities', d.identity.id] } : null,
+    open: rev ? { label: tr('tour.open.money'), route: ['/value/revenue', rev.id] } : d.identity ? { label: tr('tour.open.identity'), route: ['/value/identities', d.identity.id] } : null,
     verify: null,
   };
 }

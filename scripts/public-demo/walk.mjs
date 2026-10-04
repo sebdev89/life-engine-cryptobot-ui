@@ -4,7 +4,8 @@
 //   · every request the pages make stays on the page's own origin under /cryptobot/ — no API, no
 //     backend, no third party (the replay answers from its bundled snapshot). The ONE exception is the
 //     public Solana devnet RPC, and only as a read: "Verify it yourself" (clicked here on the ValueEvent
-//     page) sends one JSON-RPC `getTransaction`; any other method or host fails the walk;
+//     page) sends one JSON-RPC `getTransaction`, and the live network bar `getSlot`; any other method
+//     or host fails the walk;
 //   · no request to the page's own origin is a write (only GET/HEAD);
 //   · the operator routes (/console, /demo, /recovery) are not served (they fall back to the overview);
 //   · no action button is rendered (Approve, Reject, Execute, Requeue, Resolve, Arm, Distribute, Use token);
@@ -34,7 +35,7 @@ if (shots) mkdirSync(shots, { recursive: true });
 
 const origin = new URL(base).origin;
 const DEVNET_RPC = 'https://api.devnet.solana.com/';
-const RPC_READS = new Set(['getTransaction']);
+const RPC_READS = new Set(['getTransaction', 'getSlot']);
 const failures = [];
 const requests = [];
 const devnetReads = [];
@@ -70,6 +71,9 @@ async function visit(ctx, path, { width }) {
   const res = await page.goto(base + path, { waitUntil: 'networkidle' });
   if (!res || res.status() !== 200) fail(`${path}: HTTP ${res?.status()}`);
   await page.waitForTimeout(600);
+  // first visit: the "What you're looking at" card; dismissed once per context, as a visitor would
+  const ob = page.locator('[data-testid=onboarding-dismiss]');
+  if (await ob.isVisible().catch(() => false)) await ob.click();
   const buttons = await page.$$eval('button', (bs) => bs.filter((b) => b.offsetParent !== null).map((b) => b.textContent.trim()));
   for (const b of buttons) if (ACTIONS.test(b)) fail(`${path}: action button rendered: "${b}"`);
   if (await page.locator('input[type=password]').count()) fail(`${path}: a credential field is rendered`);
@@ -120,6 +124,14 @@ for (const width of [1280, 390]) {
   if (t4 !== '4' || !/[?&]step=4\b/.test(tour.url())) fail(`tour: → did not move to step 4 (${t4}, ${tour.url()})`);
   if (shots) await tour.screenshot({ path: join(shots, `${prefix}tour-${width}.png`), fullPage: false });
   await tour.close();
+  const uc = await visit(ctx, 'use-cases', { width });
+  const ucCards = await uc.locator('[data-testid=use-cases] li').count();
+  const ucBadges = await uc.locator('[data-testid=roadmap-badge]').count();
+  if (ucCards !== 10 || ucBadges !== 10) fail(`use-cases: ${ucCards} cases, ${ucBadges} roadmap badges (want 10/10)`);
+  await uc.close();
+  const nf = await visit(ctx, 'no-such-page', { width });
+  if (!(await nf.locator('[data-testid=not-found]').count())) fail('no-such-page: no branded not-found page');
+  await nf.close();
   for (const p of ['live', 'tower', 'proof', 'policies', 'value/identities', 'value/identities/dev-agent-17', 'value/ledger', 'value/revenue', 'value/treasury']) {
     const pg = await visit(ctx, p, { width });
     if (shots && ['live', 'tower', 'proof', 'value/identities/dev-agent-17'].includes(p)) {

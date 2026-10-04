@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO } from '../public-demo/flag';
-import { Component, effect, input, signal, untracked } from '@angular/core';
+import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
 import { Distribution, ValueEvent, ValueProof, distributeValueEvent, getDistribution, getValueEvent, getValueProof } from '../value-events-api';
@@ -13,17 +13,20 @@ import { ChainVerify } from './chain-verify';
 import { MerkleViz } from './merkle-viz';
 import { MoneyFlow } from './money-flow';
 import { CountUp } from '../ui/count-up';
-import { ExtIcon, HashChip } from '../ui/hash';
+import { ExtIcon, HashChip, copyText } from '../ui/hash';
+import { Toasts } from '../ui/toast';
+import { I18n } from '../ui/i18n';
 import { TruthChip } from '../ui/truth';
 import { When } from '../ui/when';
 import { slotLabel } from '../ui/format';
+import { TPipe } from '../ui/i18n';
 import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd, lamportsToSol, payoutClass, short, shortWallet, statusClass, statusLabel, txExplorerUrl } from './value-model';
 
 /** `/value/:id`: one ValueEvent, section by section, with what V1 does not cover said plainly. */
 @Component({
   selector: 'app-value-detail',
   standalone: true,
-  imports: [RouterLink, TopNav, TokenGate, ValueNav, PayoutsTable, ChainVerify, MerkleViz, MoneyFlow, CountUp, ExtIcon, HashChip, TruthChip, When],
+  imports: [RouterLink, TopNav, TokenGate, ValueNav, PayoutsTable, ChainVerify, MerkleViz, MoneyFlow, CountUp, ExtIcon, HashChip, TruthChip, When, TPipe],
   templateUrl: './value-detail.html',
   styleUrl: './value.scss',
 })
@@ -57,6 +60,8 @@ export class ValueDetail {
   readonly statusClass = statusClass;
   readonly stages = acceptanceStages;
   readonly slotLabel = slotLabel;
+  /** With / without Proof of Value: the same event, as a plain commit or as the full record */
+  readonly pov = signal(true);
   /** SOL actually confirmed on chain, as a number for the counter */
   readonly confirmedSol = (d: Distribution) => d.payouts.filter((p) => p.status === 'CONFIRMED').reduce((a, p) => a + p.lamports, 0) / 1_000_000_000;
   /** `github.com/owner/repo/pull/59` → `owner/repo #59` */
@@ -71,6 +76,16 @@ export class ValueDetail {
   };
   /** the live check only exists for devnet anchors (the only cluster this demo writes to) */
   readonly onDevnet = (explorerUrl: string | null | undefined) => !!explorerUrl && /[?&]cluster=devnet\b/.test(explorerUrl);
+
+  private readonly toasts = inject(Toasts);
+  private readonly i18n = inject(I18n);
+
+  /** the shareable address of this outcome (it has its own link preview in the public build) */
+  async copyLink(id: string): Promise<void> {
+    const url = new URL(`value/${encodeURIComponent(id)}`, document.baseURI).toString();
+    const ok = await copyText(url);
+    this.toasts.show(this.i18n.t(ok ? 'share.copied' : 'share.nocopy'));
+  }
 
   constructor() {
     bootstrapSessionFromQuery();

@@ -13,6 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npx ng build --configuration public-demo \
+ && node scripts/public-demo/og-pages.mjs dist/cryptobot-ui-public-demo/browser \
  && node scripts/public-demo/check-dist.mjs --prune dist/cryptobot-ui-public-demo/browser \
  && node scripts/public-demo/check-dist.mjs dist/cryptobot-ui-public-demo/browser
 

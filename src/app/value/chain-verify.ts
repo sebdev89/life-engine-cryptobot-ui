@@ -4,6 +4,8 @@ import { TruthChip } from '../ui/truth';
 import { When } from '../ui/when';
 import { slotLabel } from '../ui/format';
 import { DEVNET_RPC, DevnetVerdict, groups, verifyOnDevnet } from './devnet-verify';
+import { TPipe } from '../ui/i18n';
+import { middle } from '../ui/format';
 
 /** One answer per signature and page load: a second click does not hit devnet again. */
 const cache = new Map<string, Promise<DevnetVerdict>>();
@@ -15,19 +17,19 @@ const cache = new Map<string, Promise<DevnetVerdict>>();
 @Component({
   selector: 'app-chain-verify',
   standalone: true,
-  imports: [HashChip, TruthChip, When],
+  imports: [HashChip, TruthChip, When, TPipe],
   template: `
     <div class="cv" [class.cv--done]="verdict()" data-testid="chain-verify">
       <div class="cv__head">
         <div>
-          <h3 class="cv__title">Verify it yourself</h3>
-          <p class="cv__lede">Your browser asks Solana devnet directly, not our server, for the anchor transaction, reads its memo and compares the root.</p>
+          <h3 class="cv__title">{{ 'cv.title' | t }}</h3>
+          <p class="cv__lede">{{ 'cv.lede' | t }}</p>
         </div>
         <button type="button" class="btn btn--chain" (click)="run()" [disabled]="busy()" data-testid="verify-devnet">
           @if (busy()) {
-            <span class="cv__spin" aria-hidden="true"></span> Asking devnet…
+            <span class="cv__spin" aria-hidden="true"></span> {{ 'cv.busy' | t }}
           } @else {
-            {{ verdict() ? 'Ask devnet again' : 'Verify on Solana devnet' }}
+            {{ (verdict() ? 'cv.again' : 'cv.go') | t }}
           }
         </button>
       </div>
@@ -37,11 +39,11 @@ const cache = new Map<string, Promise<DevnetVerdict>>();
           <li class="cv__step" [class.is-bad]="v.state === 'unavailable'" style="--i: 0">
             <span class="cv__n" aria-hidden="true">1</span>
             <div>
-              <p class="cv__what">getTransaction from <span class="mono">{{ host }}</span></p>
+              <p class="cv__what">{{ 'cv.s1' | t: { host: host } }}</p>
               @if (v.state === 'unavailable') {
                 <p class="cv__detail">{{ v.reason }}</p>
               } @else {
-                <p class="cv__detail">Finalized · <app-when [at]="blockTimeMs(v)" [slot]="v.slot" /></p>
+                <p class="cv__detail">{{ 'cv.finalized' | t }} · <app-when [at]="blockTimeMs(v)" [slot]="v.slot" /></p>
               }
             </div>
           </li>
@@ -49,23 +51,23 @@ const cache = new Map<string, Promise<DevnetVerdict>>();
             <li class="cv__step" style="--i: 1">
               <span class="cv__n" aria-hidden="true">2</span>
               <div>
-                <p class="cv__what">Memo written by the anchor</p>
+                <p class="cv__what">{{ 'cv.s2' | t }}</p>
                 <p class="cv__detail mono cv__memo">ir/1 root=<app-hash [value]="v.memo.root" label="root from the memo" [head]="10" [tail]="10" />@if (v.memo.n !== null) {<span> n={{ v.memo.n }}</span>}</p>
               </div>
             </li>
             <li class="cv__step" [class.is-bad]="v.state === 'mismatch'" style="--i: 2">
               <span class="cv__n" aria-hidden="true">3</span>
               <div class="cv__cmp-wrap">
-                <p class="cv__what">Compared with this event's root, 8 hex digits at a time</p>
+                <p class="cv__what">{{ 'cv.s3' | t }}</p>
                 <div class="cv__cmp" role="table" aria-label="Root on Solana compared with the root of this event">
                   <div class="cv__row" role="row">
-                    <span class="cv__lab" role="rowheader">Solana</span>
+                    <span class="cv__lab" role="rowheader">{{ 'cv.row.solana' | t }}</span>
                     @for (g of memoGroups(); track $index) {
                       <span role="cell" class="cv__g mono" [class.eq]="g === eventGroups()[$index]" [style.--g]="$index">{{ g }}</span>
                     }
                   </div>
                   <div class="cv__row" role="row">
-                    <span class="cv__lab" role="rowheader">This page</span>
+                    <span class="cv__lab" role="rowheader">{{ 'cv.row.page' | t }}</span>
                     @for (g of eventGroups(); track $index) {
                       <span role="cell" class="cv__g mono" [class.eq]="g === memoGroups()[$index]" [style.--g]="$index">{{ g }}</span>
                     }
@@ -80,21 +82,21 @@ const cache = new Map<string, Promise<DevnetVerdict>>();
           @switch (v.state) {
             @case ('match') {
               <svg class="tick" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" /><path d="M6 10.4l2.7 2.7L14.2 7.6" /></svg>
-              <strong>Match</strong>
-              <span>The root on Solana devnet is the root of this event. Checked live, in slot {{ slot(v.slot) }}.</span>
+              <strong>{{ 'cv.match' | t }}</strong>
+              <span>{{ 'cv.match.body' | t: { slot: slot(v.slot) } }}</span>
               <app-truth kind="onchain" />
             }
             @case ('mismatch') {
-              <strong>No match</strong>
-              <span>The memo on Solana carries a different root than this event.</span>
+              <strong>{{ 'cv.mismatch' | t }}</strong>
+              <span>{{ 'cv.mismatch.body' | t }}</span>
             }
             @case ('no-memo') {
-              <strong>No anchor memo</strong>
-              <span>The transaction exists but carries no anchor memo.</span>
+              <strong>{{ 'cv.nomemo' | t }}</strong>
+              <span>{{ 'cv.nomemo.body' | t }}</span>
             }
             @default {
-              <strong>RPC unavailable — showing recorded result</strong>
-              <span>Recorded: root <app-hash [value]="expectedRoot()" label="recorded root" /> in slot {{ slot(recordedSlot()) }}, verified by the service when the run was recorded.</span>
+              <strong>{{ 'cv.down' | t }}</strong>
+              <span>{{ 'cv.down.body' | t: { root: mid(expectedRoot()), slot: slot(recordedSlot()) } }}</span>
               <app-truth kind="recorded" />
             }
           }
@@ -113,6 +115,7 @@ export class ChainVerify {
   readonly verdict = signal<DevnetVerdict | null>(null);
   readonly host = new URL(DEVNET_RPC).host;
   readonly slot = slotLabel;
+  readonly mid = (h: string) => middle(h, 8, 8);
 
   readonly eventGroups = computed(() => groups(this.expectedRoot()));
   readonly memoGroups = computed(() => {

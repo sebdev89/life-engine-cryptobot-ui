@@ -23,6 +23,30 @@
       <p class="banner-err" role="alert">{{ e }}</p>
     }
     @if (event(); as ev) {
+      <div class="pov-toggle" role="group" [attr.aria-label]="'pov.toggle' | t" data-testid="pov-toggle">
+        <button type="button" [class.on]="!pov()" [attr.aria-pressed]="!pov()" (click)="pov.set(false)">{{ 'pov.without' | t }}</button>
+        <button type="button" [class.on]="pov()" [attr.aria-pressed]="pov()" (click)="pov.set(true)">{{ 'pov.with' | t }}</button>
+      </div>
+      @if (!pov()) {
+        <section class="panel pad bare" data-testid="without-pov">
+          <h2>{{ 'pov.bare.title' | t }}</h2>
+          <dl class="facts facts--row">
+            @if (ev.artifact?.commitSha; as sha) {
+              <div><dt>commit</dt><dd class="mono">{{ sha }}</dd></div>
+            }
+            @if (ev.artifact?.prUrl; as pr) {
+              <div><dt>pull request</dt><dd><a [href]="pr" target="_blank" rel="noopener noreferrer">{{ prLabel(pr) }}<app-ext-icon /></a></dd></div>
+            }
+          </dl>
+          <ul class="bare__gaps">
+            <li>{{ 'pov.bare.q1' | t }}</li>
+            <li>{{ 'pov.bare.q2' | t }}</li>
+            <li>{{ 'pov.bare.q3' | t }}</li>
+            <li>{{ 'pov.bare.q4' | t }}</li>
+          </ul>
+          <button type="button" class="btn btn--chain" (click)="pov.set(true)">{{ 'pov.bare.cta' | t }}</button>
+        </section>
+      } @else {
       <section class="kpis-glass panel" aria-label="This outcome in numbers">
         @if (distribution(); as d) {
           <p class="final-line mono" data-testid="final-line">VALUE EVENT · {{ ev.title }} · POOL {{ sol(d.poolLamports) }} SOL · PAID TO {{ paidCount(d) }} contributors</p>
@@ -221,6 +245,22 @@
           }
         </section>
 
+        @if (publicDemo && ev.status === 'ANCHORED') {
+          <section class="panel pad span-all share" data-section="share">
+            <h2>{{ 'share.title' | t }}</h2>
+            <div class="share__body">
+              <img class="share__card" [src]="'cards/' + ev.id + '.png'" width="1200" height="630" loading="lazy" decoding="async" [alt]="'share.alt' | t: { title: ev.title }" />
+              <div class="share__side">
+                <p class="t-2">{{ 'share.lede' | t }}</p>
+                <div class="share__actions">
+                  <button type="button" class="btn btn--chain" (click)="copyLink(ev.id)" data-testid="share-copy">{{ 'share.copy' | t }}</button>
+                  <a class="btn" [href]="'cards/' + ev.id + '.png'" [attr.download]="'proof-of-value-' + ev.id.slice(0, 8) + '.png'">{{ 'share.download' | t }}</a>
+                </div>
+              </div>
+            </div>
+          </section>
+        }
+
         <section class="panel pad span-all" data-section="distribution">
           <h2>Immediate distribution</h2>
           @if (distribution(); as d) {
@@ -271,6 +311,7 @@
           }
         </section>
       </div>
+      }
     } @else if (!error()) {
       <div class="skeleton-stack" aria-busy="true">
         <p class="sr-only">Reading value event…</p>

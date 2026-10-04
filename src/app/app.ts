@@ -4,6 +4,9 @@ import { PUBLIC_DEMO } from './public-demo/flag';
 import { ReplayBanner } from './public-demo/replay-banner';
 import { ToastHost } from './ui/toast';
 import { TruthLegend } from './ui/truth';
+import { Onboarding } from './ui/onboarding';
+import { ShortcutsDialog } from './ui/shortcuts';
+import { TPipe } from './ui/i18n';
 
 /**
  * Root shell: one `<router-outlet>`. `/` is the public landing, `/live[/:proposalId]` the
@@ -14,9 +17,9 @@ import { TruthLegend } from './ui/truth';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ReplayBanner, ToastHost, TruthLegend],
+  imports: [RouterOutlet, ReplayBanner, ToastHost, TruthLegend, Onboarding, ShortcutsDialog, TPipe],
   template: `
-    <a class="skip" href="#content">Skip to content</a>
+    <a class="skip" href="#content">{{ 'skip' | t }}</a>
     @if (publicDemo) {
       <app-replay-banner />
     }
@@ -24,10 +27,14 @@ import { TruthLegend } from './ui/truth';
       <router-outlet />
     </div>
     <footer class="site-foot" aria-labelledby="legend-title">
-      <h2 id="legend-title" class="site-foot__title">How to read the labels</h2>
+      <h2 id="legend-title" class="site-foot__title">{{ 'foot.legend' | t }}</h2>
       <app-truth-legend />
     </footer>
     <app-toast-host />
+    <app-shortcuts />
+    @if (publicDemo) {
+      <app-onboarding />
+    }
   `,
   styles: `
     .skip {

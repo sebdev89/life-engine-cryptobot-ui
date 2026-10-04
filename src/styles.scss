@@ -106,6 +106,8 @@
   --surface-inset-glass: rgba(5, 8, 13, 0.55);
   --blur: 14px;
   --declared: #b6aef0; // "stated, not proven" — lilac, dashed (truth chips)
+  --nav-bg: linear-gradient(180deg, rgba(6, 9, 14, 0.86), rgba(6, 9, 14, 0.62));
+  --panel-shadow: 0 12px 32px -18px rgba(0, 0, 0, 0.7);
 
   // ---- legacy aliases (earlier names; do not use in new code) --------------------------
   --panel: var(--surface-1);
@@ -113,6 +115,70 @@
   --text-muted: var(--text-2);
 
   font-family: var(--font-sans);
+}
+
+
+// =============================================================================================
+// Light theme: the same tokens, re-pointed. Explicit pick ([data-theme]) or the system (no pick).
+// Contrast checked against --surface-1/#fff: text 16:1, text-2 7.3:1, text-3 5.1:1, accent 5.2:1,
+// chain-2 4.6:1 (AA for the small labels it carries).
+// =============================================================================================
+@mixin light-tokens {
+  color-scheme: light;
+  --bg: #f3f6fa;
+  --surface-1: #ffffff;
+  --surface-2: #eef2f7;
+  --surface-3: #e3e9f1;
+  --surface-inset: #e9eef5;
+  --border: #d5dde8;
+  --border-strong: #c3cedc;
+  --border-subtle: #e3e9f1;
+  --text: #0d1420;
+  --text-2: #42506a;
+  --text-3: #5a677d;
+  --on-accent: #ffffff;
+  --accent: #0a6aa8;
+  --accent-strong: #075582;
+  --accent-bg: rgba(10, 106, 168, 0.1);
+  --chain: #6346d8;
+  --chain-2: #087a57;
+  --chain-bg: rgba(99, 70, 216, 0.1);
+  --ok: #0b7a4b;
+  --ok-bg: rgba(11, 122, 75, 0.1);
+  --warn: #855f00;
+  --warn-bg: rgba(133, 95, 0, 0.1);
+  --err: #c0283a;
+  --err-bg: rgba(192, 40, 58, 0.08);
+  --uncertain: #a34a06;
+  --uncertain-bg: rgba(163, 74, 6, 0.1);
+  --neutral-bg: rgba(90, 103, 125, 0.12);
+  --declared: #5a49b8;
+  --glass: rgba(255, 255, 255, 0.68);
+  --glass-strong: rgba(255, 255, 255, 0.92);
+  --glass-hover: rgba(20, 45, 90, 0.05);
+  --glass-border: rgba(20, 45, 90, 0.13);
+  --glass-hi: rgba(255, 255, 255, 0.9);
+  --surface-tip: #ffffff;
+  --surface-inset-glass: rgba(238, 242, 248, 0.75);
+  --nav-bg: linear-gradient(180deg, rgba(243, 246, 250, 0.9), rgba(243, 246, 250, 0.7));
+  --panel-shadow: 0 1px 2px rgba(20, 40, 80, 0.06), 0 8px 24px -16px rgba(20, 40, 80, 0.22);
+  --shadow-1: 0 1px 2px rgba(20, 40, 80, 0.08);
+  --shadow-2: 0 10px 28px rgba(20, 40, 80, 0.14);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+:root[data-theme='light'] {
+  @include light-tokens;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    @include light-tokens;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 // =============================================================================================
@@ -391,7 +457,7 @@ pre {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 120px), var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--panel-shadow);
   backdrop-filter: blur(var(--blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
 }
@@ -538,7 +604,9 @@ pre {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
+    transition-delay: 0s !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
