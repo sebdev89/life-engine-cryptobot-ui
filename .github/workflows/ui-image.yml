@@ -102,7 +102,7 @@ jobs:
           done
           [ "$up" = 1 ] || { docker logs pd; echo "::error::the image never answered /healthz"; exit 1; }
           code() { curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080$1"; }
-          for check in "/cryptobot/api/anything 404" "/ 404" "/cryptobot 301" "/cryptobot/ 200" "/cryptobot/value/any-deep-link 200"; do
+          for check in "/cryptobot/api/anything 404" "/ 404" "/cryptobot 301" "/cryptobot/ 200" "/cryptobot/value 200" "/cryptobot/value/any-deep-link 200"; do
             set -- $check
             got="$(code "$1")"
             echo "$1 → $got (want $2)"
@@ -111,6 +111,11 @@ jobs:
           # sin `curl | grep -q`: bajo pipefail, grep -q corta el pipe y curl sale con SIGPIPE (falso rojo)
           html="$(curl -fsS http://127.0.0.1:8080/cryptobot/value/any-deep-link)"
           grep -q '<base href="/cryptobot/"' <<<"$html"
+          # each anchored ValueEvent has its own link preview (og-pages.mjs + the nginx value/<uuid> location)
+          ev="$(node -e 'const s=require("./src/app/public-demo/snapshot.json");console.log(s.responses["GET /value-events"].body[0].id)')"
+          page="$(curl -fsS "http://127.0.0.1:8080/cryptobot/value/${ev}")"
+          grep -q "cards/${ev}.png" <<<"$page" || { echo "::error::/cryptobot/value/${ev} has no own og:image"; exit 1; }
+          grep -q '<base href="/cryptobot/"' <<<"$page"
       - name: Walk it in a headless browser
         run: |
           npx playwright install --with-deps chromium

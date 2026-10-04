@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // og-pages.mjs — gives each anchored ValueEvent of the snapshot its own link preview. For every event it
-// writes <dist>/value/<id>.html: the same index.html, with the Open Graph / Twitter tags pointing at the
-// event (title, one line, cards/<id>.png). nginx serves it for /cryptobot/value/<id> (try_files $uri.html)
-// and the SPA boots exactly as from index.html. Fails if an event has no card (receipt-cards.mjs).
+// writes <dist>/og/value-<id>.html: the same index.html, with the Open Graph / Twitter tags pointing at the
+// event (title, one line, cards/<id>.png). nginx serves it for /cryptobot/value/<id> (a regex location in
+// docker/public-demo/nginx.conf) and the SPA boots exactly as from index.html. Not under value/: a real
+// directory there would turn /cryptobot/value into a directory listing request (403).
+// Fails if an event has no card (receipt-cards.mjs).
 //
 //   node scripts/public-demo/og-pages.mjs dist/cryptobot-ui-public-demo/browser
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -40,8 +42,8 @@ for (const ev of snap.responses['GET /value-events'].body) {
   html = setMeta(html, 'property', 'og:image', `${ORIGIN}${card}`);
   html = setMeta(html, 'property', 'og:image:alt', `Receipt card: ${ev.title}`);
   html = setMeta(html, 'name', 'description', line);
-  mkdirSync(join(dist, 'value'), { recursive: true });
-  writeFileSync(join(dist, 'value', `${ev.id}.html`), html);
+  mkdirSync(join(dist, 'og'), { recursive: true });
+  writeFileSync(join(dist, 'og', `value-${ev.id}.html`), html);
   n++;
 }
 if (failures.length) {
