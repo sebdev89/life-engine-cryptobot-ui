@@ -108,7 +108,9 @@ jobs:
             echo "$1 → $got (want $2)"
             [ "$got" = "$2" ] || { docker logs pd; echo "::error::$1 answered $got, want $2"; exit 1; }
           done
-          curl -fsS http://127.0.0.1:8080/cryptobot/value/any-deep-link | grep -q '<base href="/cryptobot/">'
+          # sin `curl | grep -q`: bajo pipefail, grep -q corta el pipe y curl sale con SIGPIPE (falso rojo)
+          html="$(curl -fsS http://127.0.0.1:8080/cryptobot/value/any-deep-link)"
+          grep -q '<base href="/cryptobot/">' <<<"$html"
       - name: Walk it in a headless browser
         run: |
           npx playwright install --with-deps chromium
