@@ -94,11 +94,21 @@ jobs:
       - name: Run it like k8s does (read-only root, /tmp only)
         run: |
           set -euo pipefail
-          docker run -d --rm --name pd --read-only --tmpfs /tmp -p 8080:8080 "${IMAGE}:sha-${C7}"
-          for i in $(seq 1 20); do curl -fsS localhost:8080/healthz >/dev/null 2>&1 && break; sleep 1; done
-          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/cryptobot/api/anything)" = 404
-          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/)" = 404
-          curl -fsS localhost:8080/cryptobot/value/any-deep-link | grep -q '<base href="/cryptobot/">'
+          docker run -d --rm --name pd --read-only --tmpfs /tmp -p 127.0.0.1:8080:8080 "${IMAGE}:sha-${C7}"
+          up=0
+          for i in $(seq 1 30); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/healthz || true)" = 200 ]; then up=1; break; fi
+            sleep 1
+          done
+          [ "$up" = 1 ] || { docker logs pd; echo "::error::the image never answered /healthz"; exit 1; }
+          code() { curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080$1"; }
+          for check in "/cryptobot/api/anything 404" "/ 404" "/cryptobot 301" "/cryptobot/ 200" "/cryptobot/value/any-deep-link 200"; do
+            set -- $check
+            got="$(code "$1")"
+            echo "$1 → $got (want $2)"
+            [ "$got" = "$2" ] || { docker logs pd; echo "::error::$1 answered $got, want $2"; exit 1; }
+          done
+          curl -fsS http://127.0.0.1:8080/cryptobot/value/any-deep-link | grep -q '<base href="/cryptobot/">'
       - name: Walk it in a headless browser
         run: |
           npx playwright install --with-deps chromium
