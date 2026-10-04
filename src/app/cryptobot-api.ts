@@ -11,6 +11,7 @@
 import { authorizationHeaders, clearCryptobotSession, getAccessToken } from './session';
 
 import { uiConfig } from './config';
+import { PUBLIC_DEMO } from './public-demo/flag';
 
 export const CRYPTOBOT_API_BASE = uiConfig().cryptobotBase;
 
@@ -117,6 +118,8 @@ export function parseApiError(status: number, raw: string): ApiErrorBody & { sta
  * into AuthRequiredError + a cleared session.
  */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  // Public replay build: answered from the recorded snapshot, nothing leaves the browser.
+  if (PUBLIC_DEMO) return (await import('./public-demo/replay')).replayApiFetch(path, init);
   const headers: Record<string, string> = {
     ...((init.headers as Record<string, string>) ?? {}),
     ...authorizationHeaders(),
@@ -210,6 +213,7 @@ export async function triggerMonitoringRunOnce(): Promise<MonitoringRunOnceRespo
 
 export async function getCryptobotHealth(): Promise<unknown> {
   // Health is intentionally unauthenticated, so don't go through apiFetch.
+  if (PUBLIC_DEMO) throw new Error('read-only replay: no live service behind this page');
   const res = await fetch(`${apiRoot()}/health`);
   if (!res.ok) {
     throw new Error(`cryptobot-service health failed: HTTP ${res.status}`);
@@ -228,6 +232,7 @@ export function formatApiError(err: ApiErrorBody & { status?: number }): string 
  * accepts the query param ONLY for the SSE GET endpoints.
  */
 export function runtimeSseUrl(related: Pick<RelatedRuntimeRunDto, 'runtimeBaseUrl' | 'ssePath'>): string {
+  if (PUBLIC_DEMO) throw new Error('read-only replay: no live stream behind this page');
   const base = `${related.runtimeBaseUrl.replace(/\/$/, '')}${related.ssePath}`;
   const token = getAccessToken();
   return token ? `${base}?access_token=${encodeURIComponent(token)}` : base;

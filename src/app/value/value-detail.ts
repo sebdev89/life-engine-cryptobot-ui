@@ -1,3 +1,4 @@
+import { PUBLIC_DEMO } from '../public-demo/flag';
 import { Component, effect, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -8,6 +9,7 @@ import { TokenGate } from '../shell/token-gate';
 import { TopNav } from '../shell/top-nav';
 import { ValueNav } from './value-nav';
 import { PayoutsTable } from './payouts-table';
+import { browserProofCheck, BrowserProofCheck } from './browser-proof';
 import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd, lamportsToSol, payoutClass, short, shortWallet, statusClass, statusLabel, txExplorerUrl } from './value-model';
 
 /** `/value/:id`: one ValueEvent, section by section, with what V1 does not cover said plainly. */
@@ -21,11 +23,14 @@ import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd
 export class ValueDetail {
   readonly id = input<string | undefined>();
 
+  readonly publicDemo = PUBLIC_DEMO;
   readonly signedIn = signal(false);
   readonly error = signal<string | null>(null);
   readonly event = signal<ValueEvent | null>(null);
   readonly proof = signal<ValueProof | null>(null);
   readonly proofError = signal<string | null>(null);
+  /** the same Merkle fold as the service, done here with WebCrypto: the page does not just repeat a boolean */
+  readonly browserCheck = signal<BrowserProofCheck | null>(null);
 
   readonly distribution = signal<Distribution | null>(null);
   readonly distributing = signal(false);
@@ -65,6 +70,7 @@ export class ValueDetail {
     this.event.set(null);
     this.proof.set(null);
     this.proofError.set(null);
+    this.browserCheck.set(null);
     this.distribution.set(null);
     this.distributeError.set(null);
     this.distributionError.set(null);
@@ -80,7 +86,10 @@ export class ValueDetail {
       // Only an anchored event has a proof worth asking for; a recorded one says so instead of erroring.
       if (ev.status === 'ANCHORED') {
         getValueProof(id)
-          .then((p) => this.proof.set(p))
+          .then(async (p) => {
+            this.proof.set(p);
+            this.browserCheck.set(await browserProofCheck(p, ev.anchor?.root ?? null));
+          })
           .catch((e) => this.proofError.set((e as Error)?.message ?? String(e)));
       }
     } catch (e) {

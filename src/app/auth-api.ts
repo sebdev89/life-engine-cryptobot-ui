@@ -6,6 +6,7 @@
  */
 import type { CryptobotSession } from './session';
 import { uiConfig } from './config';
+import { PUBLIC_DEMO } from './public-demo/flag';
 
 /** Kept for callers that display it; the live value always comes from uiConfig(). */
 export const AUTH_API_BASE = uiConfig().authBase;
@@ -33,6 +34,7 @@ export async function loginWithPassword(
   email: string,
   password: string,
 ): Promise<CryptobotSession> {
+  if (PUBLIC_DEMO) throw new Error('read-only replay: there is nothing to sign in to');
   const res = await fetch(`${uiConfig().authBase}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

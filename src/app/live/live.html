@@ -6,6 +6,10 @@
       <p class="muted"><span class="mono">INTENT → POLICY → APPROVAL → SIGN → EXECUTE → FINALIZE → RECONCILE → PROVE</span>. Each stage as the service recorded it: state, duration and evidence.</p>
     </div>
     <div class="live__status" aria-live="polite">
+      @if (publicDemo) {
+        <span class="badge badge--ok">replay · read-only</span>
+        <span class="muted small mono">recorded on Solana devnet · nothing here can be changed</span>
+      } @else {
       @if (paused()) {
         <span class="badge badge--warn">paused</span>
       } @else {
@@ -13,6 +17,7 @@
       }
       <span class="muted small mono">polling 2 s (the service has no SSE) · {{ fmtTime(lastTick()) }}</span>
       <button type="button" class="ghost" (click)="togglePause()">{{ paused() ? 'Resume' : 'Pause' }}</button>
+      }
     </div>
   </header>
 
@@ -26,7 +31,9 @@
       <h2>Proposal</h2>
       <span class="muted small">{{ proposals().length }} of this operator · newest first</span>
     </div>
-    @if (!proposals().length) {
+    @if (!proposals().length && publicDemo) {
+      <p class="muted">The recorded run is loading.</p>
+    } @else if (!proposals().length) {
       <p class="muted">No proposals yet. Create one from the <a routerLink="/console">console</a>, with <a routerLink="/demo">Demo Mode</a> or with <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
     }
     <div class="chips">
@@ -71,6 +78,7 @@
 
       <!-- ── right column: actions · policy · chain ───────────────────────────────── -->
       <div class="column">
+        @if (!publicDemo) {
         <section class="panel">
           <div class="panel__head">
             <h2>Actions</h2>
@@ -103,6 +111,7 @@
             </div>
           }
         </section>
+        }
 
         <section class="panel">
           <div class="panel__head">
@@ -271,7 +280,8 @@
               }
             </div>
             <p class="small">{{ d.reason }}</p>
-            @if (dlqConfirm()?.id === d.id) {
+            @if (publicDemo) {
+            } @else if (dlqConfirm()?.id === d.id) {
               <div class="confirm">
                 <strong>{{ dlqConfirm()!.action === 'requeue' ? 'Requeue' : 'Resolve' }} {{ shortId(d.id) }}?</strong>
                 <span class="muted small">
@@ -311,7 +321,7 @@
   </section>
 
   <!-- ── chaos: only when the backend exposes /demo/chaos (demo stack) ─────────────── -->
-  @if (chaosAvailable()) {
+  @if (chaosAvailable() && !publicDemo) {
     <section class="panel panel--chaos">
       <div class="panel__head">
         <h2>Chaos <span class="badge badge--{{ chaos()?.armed ? 'err' : 'ok' }}">{{ chaos()?.armed ? 'armed · ' + chaos()?.broadcast : 'disarmed' }}</span></h2>

@@ -12,12 +12,12 @@
   </section>
 
   <section class="diagram" aria-label="Architecture">
-    <img src="/proof-of-value.svg" alt="Proof of Value architecture: an accepted outcome becomes a signed ValueEvent, anchored on Solana, with contributors paid" width="1600" height="960" />
+    <img src="proof-of-value.svg" alt="Proof of Value architecture: an accepted outcome becomes a signed ValueEvent, anchored on Solana, with contributors paid" width="1600" height="960" />
   </section>
 
   <section class="case" aria-labelledby="case-title">
     <h2 id="case-title" class="eyebrow">First real case</h2>
-    <p class="case__line">First real case: CryptoBot, an economic agent on Solana devnet. <a routerLink="/demo">Watch it run</a>.</p>
+    <p class="case__line">First real case: CryptoBot, an economic agent on Solana devnet. <a [routerLink]="publicDemo ? '/live' : '/demo'">Watch it run</a>.</p>
     <p class="t-2">The same layer that lets it act with money safely — policy-bound, idempotent, recoverable, provable — records who created value.</p>
   </section>
 
