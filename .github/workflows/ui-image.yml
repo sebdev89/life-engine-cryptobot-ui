@@ -111,6 +111,10 @@ jobs:
           # sin `curl | grep -q`: bajo pipefail, grep -q corta el pipe y curl sale con SIGPIPE (falso rojo)
           html="$(curl -fsS http://127.0.0.1:8080/cryptobot/value/any-deep-link)"
           grep -q '<base href="/cryptobot/"' <<<"$html"
+          # no-transform: the edge (Cloudflare) must not inject scripts into the HTML or touch the assets
+          h="$(curl -fsSI http://127.0.0.1:8080/cryptobot/)"; grep -qi '^cache-control: no-cache, no-transform' <<<"$h"
+          js="$(grep -o 'main-[A-Za-z0-9]*\.js' <<<"$html" | head -1)"
+          h="$(curl -fsSI "http://127.0.0.1:8080/cryptobot/${js}")"; grep -qi '^cache-control: public, max-age=31536000, immutable, no-transform' <<<"$h"
           # each anchored ValueEvent has its own link preview (og-pages.mjs + the nginx value/<uuid> location)
           ev="$(node -e 'const s=require("./src/app/public-demo/snapshot.json");console.log(s.responses["GET /value-events"].body[0].id)')"
           page="$(curl -fsS "http://127.0.0.1:8080/cryptobot/value/${ev}")"
