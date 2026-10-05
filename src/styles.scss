@@ -119,7 +119,7 @@
 
 
 // =============================================================================================
-// Light theme: the same tokens, re-pointed. Explicit pick ([data-theme]) or the system (no pick).
+// Light theme: the same tokens, re-pointed. Only on an explicit pick ([data-theme='light']): dark is the default.
 // Contrast checked against --surface-1/#fff: text 16:1, text-2 7.3:1, text-3 5.1:1, accent 5.2:1,
 // chain-2 4.6:1 (AA for the small labels it carries).
 // =============================================================================================
@@ -171,11 +171,6 @@
   @include light-tokens;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) {
-    @include light-tokens;
-  }
-}
 
 :root[data-theme='dark'] {
   color-scheme: dark;

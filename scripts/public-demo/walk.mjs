@@ -4,8 +4,13 @@
 //   · every request the pages make stays on the page's own origin under /cryptobot/ — no API, no
 //     backend, no third party (the replay answers from its bundled snapshot). The ONE exception is the
 //     public Solana devnet RPC, and only as a read: "Verify it yourself" (clicked here on the ValueEvent
-//     page) sends one JSON-RPC `getTransaction`, and the live network bar `getSlot`; any other method
-//     or host fails the walk;
+//     page) sends one JSON-RPC `getTransaction`, and the live network bar reads the current slot with
+//     `getSlot` (every 10 s while the tab is visible). Both are reads (RPC_READS); any other method or
+//     host fails the walk;
+//   · in PRODUCTION only (https://life-engine.app), the Cloudflare Web Analytics beacon that the edge
+//     auto-injects (static.cloudflareinsights.com) and the CSP blocks is reported as a WARNING, not a
+//     failure. The CSP stays closed to that host on purpose: the fix is to disable Web Analytics
+//     auto-setup in Cloudflare, not to let a third-party script in. Anywhere else it is a failure;
 //   · no request to the page's own origin is a write (only GET/HEAD);
 //   · the operator routes (/console, /demo, /recovery) are not served (they fall back to the overview);
 //   · no action button is rendered (Approve, Reject, Execute, Requeue, Resolve, Arm, Distribute, Use token);
@@ -35,7 +40,14 @@ if (shots) mkdirSync(shots, { recursive: true });
 
 const origin = new URL(base).origin;
 const DEVNET_RPC = 'https://api.devnet.solana.com/';
+// JSON-RPC methods the page may call on devnet: reads only (Verify it yourself, live network bar).
 const RPC_READS = new Set(['getTransaction', 'getSlot']);
+// Production edge: Cloudflare may inject its Web Analytics beacon into the HTML; the CSP blocks it.
+const PROD_ORIGIN = 'https://life-engine.app';
+const CF_BEACON = /static\.cloudflareinsights\.com/;
+const CF_WARNING = 'warning: Cloudflare auto-injected beacon blocked by CSP (disable Web Analytics auto-setup)';
+const isProd = () => origin === PROD_ORIGIN;
+const warnings = new Set();
 const failures = [];
 const requests = [];
 const devnetReads = [];
@@ -52,9 +64,14 @@ async function visit(ctx, path, { width }) {
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    if (isProd() && CF_BEACON.test(m.text())) { warnings.add(CF_WARNING); return; }
+    errors.push(m.text());
+  });
   page.on('request', (r) => {
     const u = r.url();
+    if (isProd() && CF_BEACON.test(u)) { warnings.add(CF_WARNING); return; }
     requests.push(`${r.method()} ${u}`);
     if (u === DEVNET_RPC || u === DEVNET_RPC.slice(0, -1)) {
       let m = null;
@@ -171,7 +188,8 @@ if (withGithub) {
 await browser.close();
 
 const offPage = requests.filter((r) => !r.split(' ')[1].startsWith(`${origin}/cryptobot/`) && !r.split(' ')[1].startsWith(DEVNET_RPC.slice(0, -1)));
-const report = { base, requests: requests.length, offPageRequests: offPage.length, devnetReads: devnetReads.length, apiRequests: requests.filter((r) => /\/api\//.test(r)).length, writes: requests.filter((r) => !/^(GET|HEAD) /.test(r) && !r.includes(DEVNET_RPC.slice(0, -1))).length, ...results, failures };
+const report = { base, requests: requests.length, offPageRequests: offPage.length, devnetReads: devnetReads.length, apiRequests: requests.filter((r) => /\/api\//.test(r)).length, writes: requests.filter((r) => !/^(GET|HEAD) /.test(r) && !r.includes(DEVNET_RPC.slice(0, -1))).length, ...results, warnings: [...warnings], failures };
 if (shots) writeFileSync(join(shots, `${prefix}walk.json`), JSON.stringify({ ...report, requestList: [...new Set(requests)] }, null, 2));
 console.log(JSON.stringify(report, null, 2));
+for (const w of warnings) console.warn(w);
 process.exit(failures.length ? 1 : 0);
