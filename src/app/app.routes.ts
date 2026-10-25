@@ -60,6 +60,7 @@ export const routes: Routes = [
       { path: 'console', title: 'Console · CryptoBot', loadComponent: () => import('./dashboard/dashboard').then((m) => m.Dashboard) },
       { path: 'demo', title: 'Demo Mode · CryptoBot', loadComponent: () => import('./demo/demo').then((m) => m.DemoMode) },
       { path: 'recovery', title: 'Recovery · CryptoBot', loadComponent: () => import('./recovery/recovery').then((m) => m.RecoveryView) },
+      { path: 'swaps', title: 'Swaps · CryptoBot', loadComponent: () => import('./swaps/swaps').then((m) => m.SwapsView) },
       ]),
   // In the public replay the operator paths are not 404s: they used to exist, so they fold back to the overview.
   ...(PUBLIC_DEMO ? [...OPERATOR_ONLY_PATHS].map((p) => ({ path: p, redirectTo: '' })) : []),

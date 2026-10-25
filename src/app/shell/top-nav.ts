@@ -16,6 +16,7 @@ const ALL_NAV_LINKS: readonly { path: string; label: string; quiet?: boolean }[]
   { path: '/policies', label: 'Policies' },
   { path: '/demo', label: 'Demo Mode' },
   { path: '/console', label: 'Console', quiet: true },
+  { path: '/swaps', label: 'Swaps', quiet: true },
   { path: '/use-cases', label: 'Use cases', quiet: true },
 ];
 
