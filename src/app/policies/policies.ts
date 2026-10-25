@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ActionProposal, getProposal, listAllProposals } from '../control-plane-api';
@@ -32,6 +32,7 @@ const LIST_LIMIT = 50;
  */
 @Component({
   selector: 'app-policies',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate],
   templateUrl: './policies.html',

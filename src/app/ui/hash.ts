@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Toasts } from './toast';
 import { middle, spokenHash } from './format';
 
@@ -31,6 +31,7 @@ export async function copyText(text: string): Promise<boolean> {
 /** The arrow-out-of-box icon every link that leaves the page carries (opens in a new tab). */
 @Component({
   selector: 'app-ext-icon',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M9 3h4v4M13 3L7.5 8.5M11 9.5V13H3V5h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="sr-only"> (opens in a new tab)</span>`,
   styles: `
@@ -51,6 +52,7 @@ export class ExtIcon {}
  */
 @Component({
   selector: 'app-hash',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [ExtIcon],
   template: `

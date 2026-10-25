@@ -1,4 +1,4 @@
-import { Component, effect, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Identicon } from '../ui/identicon';
@@ -18,6 +18,7 @@ import { explorerAddressUrl, lamportsToSol, statusClass } from './value-model';
 /** `/value/identities/:id`: kind, wallet, owner/operator, explicit reputation and the history behind it. */
 @Component({
   selector: 'app-identity-profile',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav, Identicon, CountUp, ExtIcon, TruthChip, When],
   templateUrl: './identity-profile.html',

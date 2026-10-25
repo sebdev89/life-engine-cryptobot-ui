@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { I18n, TPipe } from './i18n';
 
 /**
@@ -19,6 +19,7 @@ export const TRUTH_ORDER: readonly TruthKind[] = ['onchain', 'recorded', 'declar
 
 @Component({
   selector: 'app-truth',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `<span class="truth truth--{{ kind() }}" [attr.aria-label]="aria()" role="img" [attr.data-truth]="kind()"
     ><span class="truth__dot" aria-hidden="true"></span>{{ info().label }}<span class="truth__tip" aria-hidden="true">{{ info().means }}</span></span
@@ -135,6 +136,7 @@ export class TruthChip {
 /** The key to the chips, once per page (in the footer). */
 @Component({
   selector: 'app-truth-legend',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [TruthChip, TPipe],
   template: `

@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Injectable, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Injectable, effect, inject, signal, viewChild } from '@angular/core';
 import { TPipe } from './i18n';
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +26,7 @@ export class Shortcuts {
 /** `?` anywhere (outside a text field) lists the keyboard shortcuts; Esc or the button closes it. */
 @Component({
   selector: 'app-shortcuts',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [TPipe],
   template: `

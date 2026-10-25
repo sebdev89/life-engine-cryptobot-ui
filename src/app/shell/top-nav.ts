@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { I18n, TPipe } from '../ui/i18n';
 import { ThemeService } from '../ui/theme';
 import { Shortcuts } from '../ui/shortcuts';
@@ -29,6 +29,7 @@ export const NAV_LINKS = PUBLIC_DEMO ? ALL_NAV_LINKS.filter((l) => !OPERATOR_ONL
  */
 @Component({
   selector: 'app-top-nav',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, RouterLinkActive, TPipe],
   template: `

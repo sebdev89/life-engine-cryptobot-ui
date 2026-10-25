@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -59,6 +59,7 @@ const QUICK_PROMPTS = [
 
 @Component({
   selector: 'app-dashboard',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [FormsModule, SlicePipe, RouterLink, Glossary, Lineage, Receipts, TopNav],
   templateUrl: './dashboard.html',

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
@@ -20,6 +20,7 @@ const LIST_LIMIT = 50;
  */
 @Component({
   selector: 'app-proof',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate],
   templateUrl: './proof.html',

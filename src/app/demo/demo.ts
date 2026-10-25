@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ExecutionDetail } from '../live/execution-detail/execution-detail';
 import { buildStages, buildTimeline, formatDuration } from '../live/live-model';
@@ -29,6 +29,7 @@ export const FAILURE_STORY: readonly { step: string; label: string }[] = [
  */
 @Component({
   selector: 'app-demo',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, ExecutionDetail, TopNav, TokenGate],
   templateUrl: './demo.html',

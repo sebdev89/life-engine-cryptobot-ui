@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Payout } from '../value-events-api';
 import { HashChip } from '../ui/hash';
@@ -46,6 +46,7 @@ export function flowGeometry(total: number, parts: readonly FlowPart[], payouts:
  */
 @Component({
   selector: 'app-money-flow',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, HashChip, TruthChip],
   template: `

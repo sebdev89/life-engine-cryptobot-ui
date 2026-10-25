@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { HashChip } from '../ui/hash';
 import { TruthChip } from '../ui/truth';
 import { When } from '../ui/when';
@@ -16,6 +16,7 @@ const cache = new Map<string, Promise<DevnetVerdict>>();
  */
 @Component({
   selector: 'app-chain-verify',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [HashChip, TruthChip, When, TPipe],
   template: `

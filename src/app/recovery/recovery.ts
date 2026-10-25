@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActionProposal, DeadLetter, listAllProposals } from '../control-plane-api';
@@ -20,6 +20,7 @@ export const RECOVERY_POLL_MS = 5000;
  */
 @Component({
   selector: 'app-recovery',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate],
   templateUrl: './recovery.html',

@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO } from '../public-demo/flag';
-import { Component, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
 import { Distribution, ValueEvent, ValueProof, distributeValueEvent, getDistribution, getValueEvent, getValueProof } from '../value-events-api';
@@ -25,6 +25,7 @@ import { DISTRIBUTION_NOTE, acceptanceStages, explorerAddressUrl, formatMicroUsd
 /** `/value/:id`: one ValueEvent, section by section, with what V1 does not cover said plainly. */
 @Component({
   selector: 'app-value-detail',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, TokenGate, ValueNav, PayoutsTable, ChainVerify, MerkleViz, MoneyFlow, CountUp, ExtIcon, HashChip, TruthChip, When, TPipe],
   templateUrl: './value-detail.html',

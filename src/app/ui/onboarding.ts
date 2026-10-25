@@ -1,4 +1,4 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TPipe } from './i18n';
 import { readPref, writePref } from './storage';
@@ -12,6 +12,7 @@ export const ONBOARDING_KEY = 'cb.onboarding.v1';
  */
 @Component({
   selector: 'app-onboarding',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TPipe, TruthChip],
   template: `

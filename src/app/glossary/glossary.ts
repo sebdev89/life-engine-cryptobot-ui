@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { GLOSSARY, GLOSSARY_CATEGORIES, GlossaryCategory, GlossaryEntry } from './glossary-data';
 
 /** Lowercase + strip diacritics so "criptografia" matches "Criptografía" and "PDA" matches "pda". */
@@ -42,6 +42,7 @@ export function filterGlossary(
 
 @Component({
   selector: 'app-glossary',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   templateUrl: './glossary.html',
   styleUrl: './glossary.scss',

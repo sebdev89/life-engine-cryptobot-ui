@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TopNav } from '../shell/top-nav';
 import { TPipe } from '../ui/i18n';
@@ -23,6 +23,7 @@ export const USE_CASES: readonly string[] = [
  */
 @Component({
   selector: 'app-use-cases',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, TPipe],
   template: `

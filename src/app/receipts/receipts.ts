@@ -1,4 +1,4 @@
-import { Component, effect, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import {
   IntelligenceReceipt,
@@ -21,6 +21,7 @@ import {
  */
 @Component({
   selector: 'app-receipts',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [SlicePipe],
   templateUrl: './receipts.html',

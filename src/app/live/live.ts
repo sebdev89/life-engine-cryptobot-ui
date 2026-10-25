@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO } from '../public-demo/flag';
-import { Component, DestroyRef, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -84,6 +84,7 @@ export interface LastAnswer {
  */
 @Component({
   selector: 'app-live-operation',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, SlicePipe, Lineage, Receipts, ExecutionDetail, TopNav],
   templateUrl: './live.html',

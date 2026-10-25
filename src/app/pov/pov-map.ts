@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TPipe } from '../ui/i18n';
 import { POV_CHAIN } from './pov-chain';
@@ -18,6 +18,7 @@ interface MapNode {
  */
 @Component({
   selector: 'app-pov-map',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TPipe],
   template: `

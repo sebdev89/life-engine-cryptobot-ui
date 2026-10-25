@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
 import { LedgerGroupBy, UnitsLedger, getUnitsLedger } from '../value-events-api';
@@ -11,6 +11,7 @@ import { LEDGER_GROUPS, UNITS_DISCLAIMER } from './value-model';
 /** `/value/ledger`: Contribution Units accumulated, grouped by identity, asset or project. */
 @Component({
   selector: 'app-ledger',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, TokenGate, ValueNav],
   templateUrl: './ledger.html',

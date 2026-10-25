@@ -86,7 +86,7 @@
           <div class="total">
             <span class="total__value">{{ fmtUsd(pf.snapshot.totalUsd) }}</span>
             <span class="muted small">{{ pf.snapshot.priceSource }} · {{ pf.snapshot.capturedAt | slice: 11 : 19 }} UTC</span>
-            @if (pf.changes?.totalUsdDeltaPct !== null && pf.changes?.totalUsdDeltaPct !== undefined) {
+            @if ($safeNavigationMigration(pf.changes?.totalUsdDeltaPct) !== null && $safeNavigationMigration(pf.changes?.totalUsdDeltaPct) !== undefined) {
               <span class="delta" [class.ok]="pf.changes!.totalUsdDeltaPct! >= 0" [class.err]="pf.changes!.totalUsdDeltaPct! < 0">
                 {{ pf.changes!.totalUsdDeltaPct! >= 0 ? '+' : '' }}{{ fmtPct(pf.changes!.totalUsdDeltaPct, 2) }} since last snapshot
               </span>
@@ -233,7 +233,7 @@
           <div class="chips">
             @for (p of proposals(); track p.id) {
               <button type="button" class="chip" [class.chip--active]="selected()?.id === p.id" (click)="selectProposal(p)">
-                {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol }} {{ fmtPct(p.plan.legs[0]?.weightPctBefore, 0) }}→{{ fmtPct(p.plan.legs[0]?.weightPctAfter, 0) }}
+                {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol }} {{ fmtPct($safeNavigationMigration(p.plan.legs[0]?.weightPctBefore), 0) }}→{{ fmtPct($safeNavigationMigration(p.plan.legs[0]?.weightPctAfter), 0) }}
                 <span class="badge badge--{{ statusClass(p.status) }}">{{ p.status }}</span>
               </button>
             }

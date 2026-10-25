@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { getProposal, listAllProposals } from '../control-plane-api';
 import { getDistribution, getIdentity, getValueEvent, listRevenueEvents, listValueEvents, getRevenueEvent, ValueEvent } from '../value-events-api';
@@ -32,6 +32,7 @@ export function clock(ms: number): string {
  */
 @Component({
   selector: 'app-tour',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, ChainRail, ChainVerify, HashChip, ExtIcon, TruthChip, When, TPipe],
   templateUrl: './tour.html',

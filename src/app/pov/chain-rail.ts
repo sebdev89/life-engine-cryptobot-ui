@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { POV_CHAIN } from './pov-chain';
 import { TPipe } from '../ui/i18n';
@@ -10,6 +10,7 @@ import { TPipe } from '../ui/i18n';
  */
 @Component({
   selector: 'app-chain-rail',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TPipe],
   template: `

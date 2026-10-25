@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { devnetSlot } from '../value/devnet-verify';
 import { slotLabel } from '../ui/format';
 import { TPipe } from '../ui/i18n';
@@ -11,6 +11,7 @@ const EVERY_MS = 10_000;
  */
 @Component({
   selector: 'app-devnet-pulse',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [TPipe],
   template: `

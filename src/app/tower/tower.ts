@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActionProposal, AuditEvent, getProposal, listAllProposals } from '../control-plane-api';
@@ -52,6 +52,7 @@ function reasonOf(e: unknown): string {
  */
 @Component({
   selector: 'app-tower',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate],
   templateUrl: './tower.html',

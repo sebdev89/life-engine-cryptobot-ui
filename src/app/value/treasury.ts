@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
@@ -14,6 +14,7 @@ export const DEFAULT_TREASURY_IDENTITY = 'cryptobot-001';
 /** `/value/treasury`: an accounting view of one AGENT identity; default `cryptobot-001`. */
 @Component({
   selector: 'app-treasury',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
   templateUrl: './treasury.html',

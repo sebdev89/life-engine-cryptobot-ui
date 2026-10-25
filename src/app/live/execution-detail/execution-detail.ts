@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DemoStep, Stage, formatDuration } from '../live-model';
@@ -10,6 +10,7 @@ import { DemoStep, Stage, formatDuration } from '../live-model';
  */
 @Component({
   selector: 'app-execution-detail',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [SlicePipe, RouterLink],
   templateUrl: './execution-detail.html',

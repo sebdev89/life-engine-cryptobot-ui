@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
@@ -12,6 +12,7 @@ import { DISTRIBUTION_NOTE, REVENUE_SIMULATED_NOTE, lamportsToSol, revenueStatus
 /** `/value/revenue`: revenue events, newest first, with the split the server computed. */
 @Component({
   selector: 'app-revenue-list',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
   templateUrl: './revenue-list.html',
