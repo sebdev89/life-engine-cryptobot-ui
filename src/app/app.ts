@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { PUBLIC_DEMO } from './public-demo/flag';
 import { ReplayBanner } from './public-demo/replay-banner';
@@ -17,6 +17,7 @@ import { BuildVersions } from './ui/build-versions';
  */
 @Component({
   selector: 'app-root',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterOutlet, ReplayBanner, ToastHost, TruthLegend, Onboarding, ShortcutsDialog, TPipe, BuildVersions],
   template: `

@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
 import { RevenueEvent, getRevenueEvent } from '../value-events-api';
@@ -17,6 +17,7 @@ import { DISTRIBUTION_NOTE, REVENUE_SIMULATED_NOTE, bpsPercent, lamportsToSol, r
 /** `/value/revenue/:id`: what value came in, why it was split this way, who was paid, and the Solana anchor. */
 @Component({
   selector: 'app-revenue-detail',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, TokenGate, ValueNav, PayoutsTable, MoneyFlow, HashChip, ExtIcon, TruthChip, When],
   templateUrl: './revenue-detail.html',

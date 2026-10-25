@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { setCryptobotSession } from '../session';
 
 /**
@@ -8,6 +8,7 @@ import { setCryptobotSession } from '../session';
  */
 @Component({
   selector: 'app-token-gate',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `
     <form class="gate panel" (submit)="save($event)">

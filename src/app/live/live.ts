@@ -1,7 +1,10 @@
 import { PUBLIC_DEMO } from '../public-demo/flag';
-import { Component, DestroyRef, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input, linkedSignal, signal, untracked } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { Tabs, TabItem } from '../ui/tabs';
+import { Pager, pageSlice } from '../ui/pager';
+import { PageBar, PageStat } from '../ui/page-bar';
 import {
   ActionProposal,
   AuditEvent,
@@ -73,6 +76,9 @@ export interface LastAnswer {
   message: string;
 }
 
+const LIVE_TABS = ['execution', 'receipts', 'events', 'dlq', 'chaos'] as const;
+type LiveTab = (typeof LIVE_TABS)[number];
+
 /**
  * The hackathon demo path (HK-8) as one live screen, without a console: the state
  * timeline of a proposal (polling every 2 s — the service exposes no SSE for proposals), the
@@ -84,8 +90,9 @@ export interface LastAnswer {
  */
 @Component({
   selector: 'app-live-operation',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
-  imports: [RouterLink, SlicePipe, Lineage, Receipts, ExecutionDetail, TopNav],
+  imports: [RouterLink, SlicePipe, Lineage, Receipts, ExecutionDetail, TopNav, Tabs, Pager, PageBar],
   templateUrl: './live.html',
   styleUrl: './live.scss',
 })
@@ -98,6 +105,8 @@ export class LiveOperation implements OnInit {
    * the route does not carry arrives as `undefined` (it does not keep the declared default).
    */
   readonly pollMs = input<number | undefined>(DEFAULT_POLL_MS);
+  /** KAN-1362: active section (`?tab=`), bound by `withComponentInputBinding`; unknown values fall back to execution. */
+  readonly tab = input<string | undefined>(undefined);
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -175,6 +184,42 @@ export class LiveOperation implements OnInit {
     return !!p && isTerminal(p.status);
   });
   readonly openLetters = computed(() => (this.dlq()?.deadLetters ?? []).filter((d) => !d.resolvedAt));
+  /** KAN-1362: open dead letters, 10 per page; back to page 1 when the list changes. */
+  readonly dlqPageSize = 10;
+  readonly dlqPage = linkedSignal({ source: this.openLetters, computation: () => 0 });
+  readonly openLettersPage = computed(() => pageSlice(this.openLetters(), this.dlqPage(), this.dlqPageSize));
+  readonly failedRules = computed(() => this.policyRows().filter((r) => r.state !== 'pass').length);
+
+  // ---- sections (KAN-1362): one tab per stacked panel, counts and warn tone on what needs a look ----
+  readonly activeTab = linkedSignal(() => {
+    const t = this.tab();
+    return t && LIVE_TABS.includes(t as LiveTab) ? t : 'execution';
+  });
+  readonly tabs = computed<TabItem[]>(() => {
+    const ev = this.events();
+    const open = this.dlq()?.open ?? 0;
+    const tabs: TabItem[] = [
+      { id: 'execution', label: 'Execution' },
+      { id: 'receipts', label: 'Receipts and lineage' },
+      { id: 'events', label: 'Durable events', badge: ev ? ev.events.length : null, tone: ev?.deadLetters.length ? 'warn' : 'neutral' },
+      { id: 'dlq', label: 'Dead letters', badge: this.dlqForbidden() ? null : open, tone: open > 0 ? 'warn' : 'neutral' },
+    ];
+    if (this.chaosAvailable() && !this.publicDemo) tabs.push({ id: 'chaos', label: 'Chaos', badge: this.chaos()?.armed ? 1 : null, tone: 'warn' });
+    return tabs;
+  });
+  readonly barStats = computed<PageStat[]>(() => {
+    const stats: PageStat[] = [{ label: 'proposals', value: this.proposals().length }];
+    if (this.proposal()) {
+      stats.push({ label: 'stages', value: `${this.doneStages()}/${this.stages().length}`, tone: this.doneStages() === this.stages().length ? 'ok' : 'neutral' });
+      stats.push({ label: 'total', value: this.totalTime() });
+    }
+    if (!this.dlqForbidden()) {
+      const open = this.dlq()?.open ?? 0;
+      stats.push({ label: 'open DLQ', value: open, tone: open > 0 ? 'warn' : 'ok' });
+    }
+    return stats;
+  });
+
   readonly resolvedLetters = computed(() => (this.dlq()?.deadLetters ?? []).filter((d) => !!d.resolvedAt).slice(0, 5));
 
   readonly shortId = shortId;
@@ -266,8 +311,20 @@ export class LiveOperation implements OnInit {
   }
 
   onPick(p: ActionProposal): void {
-    void this.router.navigate(['/live', p.id]);
+    void this.router.navigate(['/live', p.id], { queryParamsHandling: 'preserve' });
     void this.select(p.id);
+  }
+
+  /** The `<select>` of proposals: same path as a chip click. */
+  onPickId(id: string): void {
+    const p = this.proposals().find((x) => x.id === id);
+    if (p) this.onPick(p);
+  }
+
+  /** KAN-1362: the tab goes to `?tab=` so a reload or a shared link opens the same section. */
+  onTab(id: string): void {
+    this.activeTab.set(id);
+    void this.router.navigate([], { queryParams: { tab: id === 'execution' ? null : id }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   private async refreshProposal(id: string | null = this.proposal()?.id ?? null, force = false): Promise<void> {

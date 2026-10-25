@@ -32,6 +32,9 @@ const ORIGIN_ALLOW = [
   /^https:\/\/solana\.com/,
   /^https:\/\/faucet\.solana\.com/,
   /^https:\/\/api\.devnet\.solana\.com$/,
+  // Angular 22 router: `DUMMY_BASE_URL = 'http://fake'`, base de `new URL()` para detectar URLs relativas al
+  // protocolo. Nunca se pide por red. Exacto (sin path) para que no abra la puerta a otro http://.
+  /^http:\/\/fake$/,
 ];
 const OPERATOR_TITLES = ['Console · CryptoBot', 'Demo Mode · CryptoBot', 'Recovery · CryptoBot'];
 

@@ -1,4 +1,4 @@
-import { Component, Injectable, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injectable, inject, signal } from '@angular/core';
 
 /** One short confirmation at a time ("Copied transaction signature"); it leaves by itself. */
 @Injectable({ providedIn: 'root' })
@@ -17,6 +17,7 @@ export class Toasts {
 /** Mounted once in the shell. The live region exists from the first paint so screen readers hear the change. */
 @Component({
   selector: 'app-toast-host',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `
     <div class="toast-region" role="status" aria-live="polite">

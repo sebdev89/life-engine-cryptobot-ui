@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /** FNV-1a over the seed's UTF-16 units, then xorshift: a stable stream of 32-bit numbers per seed. */
 export function seedStream(seed: string, count: number): number[] {
@@ -40,6 +40,7 @@ export function identiconCells(seed: string): { on: boolean[]; hue: number } {
  */
 @Component({
   selector: 'app-identicon',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `
     <svg [attr.width]="size()" [attr.height]="size()" viewBox="0 0 5 5" aria-hidden="true" focusable="false" class="ident" shape-rendering="crispEdges">

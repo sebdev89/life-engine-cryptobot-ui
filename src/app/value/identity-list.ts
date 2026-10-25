@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
 import { Identity, listIdentities } from '../value-events-api';
@@ -11,6 +11,7 @@ import { short } from './value-model';
 /** `/value/identities`: every identity with its explicit reputation. */
 @Component({
   selector: 'app-identity-list',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, TokenGate, ValueNav],
   templateUrl: './identity-list.html',

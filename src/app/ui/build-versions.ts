@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { uiConfig } from '../config';
 
 /** What `/version.json` (written by the image at start) and `GET /api/cryptobot/health` say about the build. */
@@ -32,6 +32,7 @@ async function getJson<T>(url: string): Promise<T | null> {
  */
 @Component({
   selector: 'app-build-versions',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `<p class="build-versions" data-testid="build-versions" [title]="detail()">{{ line() }}</p>`,
   styles: `

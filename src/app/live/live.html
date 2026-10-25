@@ -1,61 +1,58 @@
 <main class="live">
   <app-top-nav />
-  <header class="live__header">
-    <div>
-      <h1>Live execution <span class="muted small">· one proposal, every stage</span></h1>
-      <p class="muted"><span class="mono">INTENT → POLICY → APPROVAL → SIGN → EXECUTE → FINALIZE → RECONCILE → PROVE</span>. Each stage as the service recorded it: state, duration and evidence.</p>
-    </div>
-    <div class="live__status" aria-live="polite">
+  <app-page-bar title="Live execution" subtitle="· one proposal, every stage" [stats]="barStats()">
+    <span class="live__status" aria-live="polite">
       @if (publicDemo) {
         <span class="badge badge--ok">replay · read-only</span>
-        <span class="muted small mono">recorded on Solana devnet · nothing here can be changed</span>
+        <span class="muted small mono" title="recorded on Solana devnet · nothing here can be changed">recorded on devnet</span>
       } @else {
-      @if (paused()) {
-        <span class="badge badge--warn">paused</span>
-      } @else {
-        <span class="badge badge--ok pulse">● live</span>
+        @if (paused()) {
+          <span class="badge badge--warn">paused</span>
+        } @else {
+          <span class="badge badge--ok pulse">● live</span>
+        }
+        <span class="muted small mono" title="the service has no SSE">polling 2 s · {{ fmtTime(lastTick()) }}</span>
+        <button type="button" class="ghost" (click)="togglePause()">{{ paused() ? 'Resume' : 'Pause' }}</button>
       }
-      <span class="muted small mono">polling 2 s (the service has no SSE) · {{ fmtTime(lastTick()) }}</span>
-      <button type="button" class="ghost" (click)="togglePause()">{{ paused() ? 'Resume' : 'Pause' }}</button>
-      }
-    </div>
-  </header>
+    </span>
+  </app-page-bar>
 
   @if (loadError()) {
     <p class="err" role="alert">{{ loadError() }}</p>
   }
 
-  <!-- ── proposal picker ─────────────────────────────────────────────────────────────── -->
-  <section class="panel">
-    <div class="panel__head">
-      <h2>Proposal</h2>
-      <span class="muted small">{{ proposals().length }} of this operator · newest first</span>
-    </div>
+  <!-- ── proposal picker: one row ─────────────────────────────────────────────────────── -->
+  <section class="panel picker" aria-label="Proposal">
     @if (!proposals().length && publicDemo) {
       <p class="muted">The recorded run is loading.</p>
     } @else if (!proposals().length) {
       <p class="muted">No proposals yet. Create one from the <a routerLink="/console">console</a>, with <a routerLink="/demo">Demo Mode</a> or with <code>scripts/demo/e2e-devnet.sh --keep</code>.</p>
-    }
-    <div class="chips">
-      @for (p of proposals(); track p.id) {
-        <button type="button" class="chip" [class.chip--active]="proposal()?.id === p.id" (click)="onPick(p)">
-          {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol || p.kind }} {{ p.plan.legs[0]?.weightPctBefore?.toFixed(0) }}→{{ p.plan.legs[0]?.weightPctAfter?.toFixed(0) }}%
-          <span class="muted">· {{ p.cluster }}</span>
-          <span class="badge badge--{{ statusClass(p.status) }}">{{ p.status }}</span>
-        </button>
+    } @else {
+      <label class="picker__label" for="live-proposal">Proposal</label>
+      <select id="live-proposal" class="field picker__select" (change)="onPickId($any($event.target).value)" title="{{ proposals().length }} of this operator · newest first">
+        @for (p of proposals(); track p.id) {
+          <option [value]="p.id" [selected]="proposal()?.id === p.id">
+            {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol || p.kind }} {{ p.plan.legs[0]?.weightPctBefore?.toFixed(0) }}→{{ p.plan.legs[0]?.weightPctAfter?.toFixed(0) }}% · {{ p.cluster }} · {{ p.status }}
+          </option>
+        }
+      </select>
+      @if (proposal(); as p) {
+        <span class="badge badge--{{ statusClass(p.status) }} badge--lg">{{ p.status }}</span>
+        <strong class="picker__summary" [title]="p.plan.summary">{{ p.plan.summary }}</strong>
       }
-    </div>
+    }
   </section>
 
+  <app-tabs tabsId="live" label="Execution sections" [tabs]="tabs()" [active]="activeTab()" (activeChange)="onTab($event)" />
+
+  @if (activeTab() === 'execution') {
+  <div role="tabpanel" id="live-panel-execution" aria-labelledby="live-tab-execution">
   @if (proposal(); as p) {
     <div class="grid">
       <!-- ── timeline ──────────────────────────────────────────────────────────────── -->
       <section class="panel">
         <div class="panel__head">
-          <h2>
-            <span class="badge badge--{{ statusClass(p.status) }} badge--lg">{{ p.status }}</span>
-            {{ p.plan.summary }}
-          </h2>
+          <h2>Stages</h2>
           <span class="muted small mono">{{ doneStages() }}/{{ stages().length }} etapas · {{ timeline().length }} pasos · total {{ totalTime() }} · id {{ shortId(p.id) }} · {{ p.walletAddress | slice: 0 : 4 }}…{{ p.walletAddress | slice: -4 }} · {{ p.cluster }}</span>
         </div>
 
@@ -145,7 +142,8 @@
               </div>
             }
           }
-          <h4>Reglas aplicadas ({{ policyRows().length }})</h4>
+          <details class="rules-more" [open]="failedRules() > 0">
+          <summary class="small">Reglas aplicadas ({{ policyRows().length }}) @if (failedRules()) { <span class="badge badge--warn">{{ failedRules() }} sin pasar</span> } @else { <span class="badge badge--ok">todas pasan</span> }</summary>
           <ul class="rulelist">
             @for (r of policyRows(); track r.rule) {
               <li class="rule-row rule-row--{{ r.state }}">
@@ -155,6 +153,7 @@
               </li>
             }
           </ul>
+          </details>
           @if (p.riskBefore || p.riskAfter) {
             <p class="muted small">Risk (deterministic engine): {{ p.riskBefore?.overall ?? '—' }} → {{ p.riskAfter?.overall ?? '—' }} · score {{ p.riskBefore?.score ?? '—' }} → {{ p.riskAfter?.score ?? '—' }}</p>
           }
@@ -208,7 +207,15 @@
         </section>
       </div>
     </div>
+  } @else {
+    <p class="muted small">Pick a proposal to follow its stages.</p>
+  }
+  </div>
+  }
 
+  @if (activeTab() === 'receipts') {
+  <div role="tabpanel" id="live-panel-receipts" aria-labelledby="live-tab-receipts">
+  @if (proposal(); as p) {
     <!-- ── receipts + lineage (reused as-is) ────────────────────── -->
     <section class="panel">
       <div class="panel__head">
@@ -222,13 +229,18 @@
         <p class="muted small">Lineage (receipt DAG): this service does not expose <code>GET /proposals/{{ '{' }}id{{ '}' }}/lineage</code>; the receipts and their <code>verify</code> are enough for the demo.</p>
       }
     </section>
+  }
+  </div>
+  }
 
+  @if (activeTab() === 'events') {
+  <div role="tabpanel" id="live-panel-events" aria-labelledby="live-tab-events">
     <!-- ── outbox + dead letters of this proposal ─────────────────────────────────── -->
     @if (events(); as ev) {
       <section class="panel">
         <div class="panel__head">
           <h2>Durable events</h2>
-          <span class="muted small">outbox transaccional · <code>GET /proposals/{{ shortId(p.id) }}…/events</code></span>
+          <span class="muted small">outbox transaccional · <code>GET /proposals/{{ shortId(ev.proposalId) }}…/events</code></span>
         </div>
         @if (!ev.events.length) { <p class="muted small">No outbox events yet.</p> }
         <ul class="outbox">
@@ -242,12 +254,17 @@
           }
         </ul>
         @if (ev.deadLetters.length) {
-          <p class="small"><strong>{{ ev.deadLetters.length }}</strong> dead letter(s) for this proposal — decided in the DLQ below or in <a routerLink="/recovery">Recovery</a>.</p>
+          <p class="small"><strong>{{ ev.deadLetters.length }}</strong> dead letter(s) for this proposal — decided in the <button type="button" class="link" (click)="onTab('dlq')">Dead letters</button> tab or in <a routerLink="/recovery">Recovery</a>.</p>
         }
       </section>
+    } @else {
+      <p class="muted small">No outbox events read yet.</p>
     }
+  </div>
   }
 
+  @if (activeTab() === 'dlq') {
+  <div role="tabpanel" id="live-panel-dlq" aria-labelledby="live-tab-dlq">
   <!-- ── DLQ (global, admin) ─────────────────────────────────────────────────────────── -->
   <section class="panel">
     <div class="panel__head">
@@ -269,7 +286,7 @@
       }
       @if (!openLetters().length) { <p class="muted small">Nada abierto.</p> }
       <ul class="dlq">
-        @for (d of openLetters(); track d.id) {
+        @for (d of openLettersPage(); track d.id) {
           <li class="dlq__item">
             <div class="dlq__head">
               <span class="badge badge--warn">{{ deadLetterKind(d) }}</span>
@@ -303,6 +320,7 @@
           </li>
         }
       </ul>
+      <app-pager [total]="openLetters().length" [size]="dlqPageSize" [(page)]="dlqPage" noun="open" label="Dead-letter pages" />
       @if (resolvedLetters().length) {
         <details>
           <summary class="muted small">Resueltas recientes ({{ resolvedLetters().length }})</summary>
@@ -319,9 +337,12 @@
       }
     }
   </section>
+  </div>
+  }
 
   <!-- ── chaos: only when the backend exposes /demo/chaos (demo stack) ─────────────── -->
-  @if (chaosAvailable() && !publicDemo) {
+  @if (activeTab() === 'chaos' && chaosAvailable() && !publicDemo) {
+  <div role="tabpanel" id="live-panel-chaos" aria-labelledby="live-tab-chaos">
     <section class="panel panel--chaos">
       <div class="panel__head">
         <h2>Chaos <span class="badge badge--{{ chaos()?.armed ? 'err' : 'ok' }}">{{ chaos()?.armed ? 'armed · ' + chaos()?.broadcast : 'disarmed' }}</span></h2>
@@ -348,5 +369,6 @@
         </ul>
       }
     </section>
+  </div>
   }
 </main>

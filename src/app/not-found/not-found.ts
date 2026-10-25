@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TopNav } from '../shell/top-nav';
 import { TPipe } from '../ui/i18n';
@@ -6,6 +6,7 @@ import { TPipe } from '../ui/i18n';
 /** Any path the replay does not have. Says so plainly and offers the two ways back in. */
 @Component({
   selector: 'app-not-found',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, TPipe],
   template: `

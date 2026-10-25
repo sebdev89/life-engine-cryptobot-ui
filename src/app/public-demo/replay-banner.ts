@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import type { ReplayRun } from './replay';
 import { DevnetPulse } from './devnet-pulse';
 import { TPipe } from '../ui/i18n';
@@ -10,6 +10,7 @@ import { TPipe } from '../ui/i18n';
  */
 @Component({
   selector: 'app-replay-banner',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [DevnetPulse, TPipe],
   template: `

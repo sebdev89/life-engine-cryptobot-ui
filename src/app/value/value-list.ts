@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthRequiredError } from '../cryptobot-api';
@@ -14,6 +14,7 @@ const LIST_LIMIT = 50;
 /** `/value`: the accepted outcomes recorded as ValueEvents, who contributed, and whether each is anchored on Solana. */
 @Component({
   selector: 'app-value-list',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, DatePipe, TopNav, TokenGate, ValueNav],
   templateUrl: './value-list.html',

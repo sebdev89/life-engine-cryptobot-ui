@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO } from '../public-demo/flag';
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TopNav } from '../shell/top-nav';
 import { ChainRail } from '../pov/chain-rail';
@@ -38,6 +38,7 @@ export function pickProofEvent(events: readonly ValueEvent[]): ValueEvent | null
  */
 @Component({
   selector: 'app-landing',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, TopNav, ChainRail, CountUp, ExtIcon, HashChip, TPipe, PovMap],
   templateUrl: './landing.html',

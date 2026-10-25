@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal, untracked } from '@angular/core';
 import { KeyValuePipe } from '@angular/common';
 import {
   LineageEdge,
@@ -27,6 +27,7 @@ import {
  */
 @Component({
   selector: 'app-lineage',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [KeyValuePipe],
   templateUrl: './lineage.html',

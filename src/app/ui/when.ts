@@ -1,9 +1,10 @@
-import { Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { localDateTime, slotLabel, utcStamp } from './format';
 
 /** A moment in the visitor's own time zone (UTC in the tooltip), with the Solana slot when there is one. */
 @Component({
   selector: 'app-when',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `<time class="when" [attr.datetime]="iso()" [title]="utc()">{{ local() }}</time
     >@if (slot() !== null && slot() !== undefined) {<span class="when__slot"> · slot <span class="mono">{{ slotText() }}</span></span>}`,

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, effect, inject, input, signal } from '@angular/core';
 import { prefersReducedMotion } from './format';
 
 /** ease-out cubic: fast start, gentle landing on the real value */
@@ -13,6 +13,7 @@ export function easeOut(t: number): number {
  */
 @Component({
   selector: 'app-count',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   template: `<span class="count" aria-hidden="true">{{ shown() }}</span><span class="sr-only">{{ final() }}</span>`,
   styles: `

@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Payout } from '../value-events-api';
 import { ExtIcon } from '../ui/hash';
@@ -7,6 +7,7 @@ import { explorerAddressUrl, lamportsToSol, payoutClass, short, shortWallet, txE
 /** Payouts table shared by the immediate distribution (V5) and the historical revenue distribution (V7). */
 @Component({
   selector: 'app-payouts-table',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [RouterLink, ExtIcon],
   template: `

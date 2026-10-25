@@ -1,4 +1,4 @@
-import { Component, effect, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angular/core';
 import { ProofPath, proofPath, webCryptoSha256 } from '../merkle';
 import { HashChip } from '../ui/hash';
 
@@ -9,6 +9,7 @@ import { HashChip } from '../ui/hash';
  */
 @Component({
   selector: 'app-merkle-viz',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
   imports: [HashChip],
   template: `
