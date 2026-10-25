@@ -22,10 +22,19 @@ FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY --chmod=0644 docker/public-demo/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chmod=0644 docker/public-demo/security-headers.inc /etc/nginx/le-security-headers.inc
 COPY --from=build /src/dist/cryptobot-ui-public-demo/browser/ /usr/share/nginx/html/cryptobot/
+# KAN-1342: the base image's Alpine userland includes GPL software (busybox). The notice lists every package and
+# license from the image's own apk database and points at their exact sources; it is not served by nginx.
+USER root
+COPY --chmod=0755 docker/public-demo/third-party-notices.sh /tmp/third-party-notices.sh
+RUN /tmp/third-party-notices.sh /usr/share/doc/cryptobot-public-demo/THIRD-PARTY-NOTICES.txt && rm /tmp/third-party-notices.sh
 ARG GIT_COMMIT=unknown
+# licenses: the application's. The base image's packages keep their own (see the notice and base.name).
 LABEL org.opencontainers.image.source="https://github.com/sebdev89/life-engine-cryptobot-ui" \
       org.opencontainers.image.description="CryptoBot public replay (read-only, Solana devnet)" \
       org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.base.name="docker.io/nginxinc/nginx-unprivileged:1.27-alpine" \
+      org.opencontainers.image.documentation="https://github.com/sebdev89/life-engine-cryptobot-ui/blob/main/docker/public-demo/third-party-notices.sh" \
+      life-engine.third-party-notices="/usr/share/doc/cryptobot-public-demo/THIRD-PARTY-NOTICES.txt" \
       life-engine.ui.app="cryptobot-public-demo" \
       life-engine.commit="${GIT_COMMIT}"
 USER 101
