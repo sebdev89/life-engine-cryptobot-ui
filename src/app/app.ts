@@ -7,6 +7,7 @@ import { TruthLegend } from './ui/truth';
 import { Onboarding } from './ui/onboarding';
 import { ShortcutsDialog } from './ui/shortcuts';
 import { TPipe } from './ui/i18n';
+import { BuildVersions } from './ui/build-versions';
 
 /**
  * Root shell: one `<router-outlet>`. `/` is the public landing, `/live[/:proposalId]` the
@@ -17,7 +18,7 @@ import { TPipe } from './ui/i18n';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ReplayBanner, ToastHost, TruthLegend, Onboarding, ShortcutsDialog, TPipe],
+  imports: [RouterOutlet, ReplayBanner, ToastHost, TruthLegend, Onboarding, ShortcutsDialog, TPipe, BuildVersions],
   template: `
     <a class="skip" href="#content">{{ 'skip' | t }}</a>
     @if (publicDemo) {
@@ -29,6 +30,9 @@ import { TPipe } from './ui/i18n';
     <footer class="site-foot" aria-labelledby="legend-title">
       <h2 id="legend-title" class="site-foot__title">{{ 'foot.legend' | t }}</h2>
       <app-truth-legend />
+      @if (!publicDemo) {
+        <app-build-versions />
+      }
     </footer>
     <app-toast-host />
     <app-shortcuts />
