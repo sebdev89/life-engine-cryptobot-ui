@@ -19,4 +19,4 @@ declare const __PUBLIC_DEMO__: boolean | undefined;
 export const PUBLIC_DEMO: boolean = typeof __PUBLIC_DEMO__ !== 'undefined' && __PUBLIC_DEMO__ === true;
 
 /** Routes that operate the system. They are not part of the public build at all. */
-export const OPERATOR_ONLY_PATHS: ReadonlySet<string> = new Set(['console', 'demo', 'recovery']);
+export const OPERATOR_ONLY_PATHS: ReadonlySet<string> = new Set(['console', 'demo', 'recovery', 'swaps']);
