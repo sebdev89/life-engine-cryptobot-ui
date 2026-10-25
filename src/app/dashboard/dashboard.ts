@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal
 import { SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Tabs, TabItem } from '../ui/tabs';
+import { PageBar, PageStat } from '../ui/page-bar';
 import { loginWithPassword } from '../auth-api';
 import { uiConfig } from '../config';
 import {
@@ -61,7 +63,7 @@ const QUICK_PROMPTS = [
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true,
-  imports: [FormsModule, SlicePipe, RouterLink, Glossary, Lineage, Receipts, TopNav],
+  imports: [FormsModule, SlicePipe, RouterLink, Glossary, Lineage, Receipts, TopNav, Tabs, PageBar],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -124,6 +126,51 @@ export class Dashboard implements OnInit, OnDestroy {
     const sol = this.portfolio()?.snapshot.positions.find((p) => p.symbol === 'SOL');
     return sol?.weightPct ?? null;
   });
+
+  // ---- sections (KAN-1362): the stacked lists of a panel become tabs, with counts ----
+  readonly portfolioTab = signal('positions');
+  readonly proposalTab = signal('plan');
+  readonly portfolioTabs = computed<TabItem[]>(() => {
+    const pf = this.portfolio();
+    const findings = pf?.risk.findings ?? [];
+    const failed = this.activity().filter((a) => a.failed).length;
+    return [
+      { id: 'positions', label: 'Positions', badge: this.pricedPositions().length },
+      { id: 'risk', label: 'Risk', badge: findings.length, tone: findings.some((f) => f.severity === 'HIGH') ? 'warn' : 'neutral' },
+      { id: 'changes', label: 'What changed', badge: pf?.changes?.changes?.length ?? 0 },
+      { id: 'activity', label: 'Activity', badge: this.activity().length, tone: failed ? 'warn' : 'neutral' },
+    ];
+  });
+  readonly proposalTabs = computed<TabItem[]>(() => {
+    const p = this.selected();
+    const violations = (p?.policy?.violations.length ?? 0) + (p?.policy?.executionViolations.length ?? 0);
+    return [
+      { id: 'plan', label: 'Plan · simulation · policy', badge: violations || null, tone: 'warn' },
+      { id: 'audit', label: 'Audit trail', badge: this.audit().length },
+      { id: 'lineage', label: 'Lineage' },
+      { id: 'receipts', label: 'Receipts' },
+    ];
+  });
+  readonly pendingCount = computed(() => this.proposals().filter((p) => this.canApprove(p)).length);
+  readonly barStats = computed<PageStat[]>(() => {
+    const pf = this.portfolio();
+    const stats: PageStat[] = [];
+    if (pf) {
+      stats.push({ label: pf.wallet.cluster, value: this.fmtUsd(pf.snapshot.totalUsd) });
+      const sev = this.severityClass(pf.risk.overall);
+      stats.push({ label: `risk · ${pf.risk.score}/100`, value: pf.risk.overall, tone: sev === 'err' ? 'bad' : sev === 'warn' ? 'warn' : 'ok' });
+    }
+    stats.push({ label: 'proposals', value: this.proposals().length });
+    const pending = this.pendingCount();
+    if (pending) stats.push({ label: 'to approve', value: pending, tone: 'warn' });
+    return stats;
+  });
+
+  /** The `<select>` of proposals: same path as a chip click. */
+  onPickProposal(id: string): void {
+    const p = this.proposals().find((x) => x.id === id);
+    if (p) void this.selectProposal(p);
+  }
 
   private es: EventSource | null = null;
 

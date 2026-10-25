@@ -164,6 +164,19 @@ async function mount(): Promise<ComponentFixture<LiveOperation>> {
   return fixture;
 }
 
+/** KAN-1362: the sections are tabs; a spec that reads one first opens it, as a user would. */
+async function showTab(fixture: ComponentFixture<LiveOperation>, id: string): Promise<HTMLElement> {
+  const el = fixture.nativeElement as HTMLElement;
+  const tab = el.querySelector(`[data-testid="live-tab-${id}"]`) as HTMLButtonElement | null;
+  expect(tab, `tab ${id}`).not.toBeNull();
+  tab!.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  await new Promise((r) => setTimeout(r, 0));
+  fixture.detectChanges();
+  return el;
+}
+
 describe('LiveOperation', () => {
   beforeEach(() => {
     clearCryptobotSession(); // also wipes localStorage, so the token goes in afterwards
@@ -188,6 +201,7 @@ describe('LiveOperation', () => {
     expect(el.textContent).toContain('ALLOW');
     expect(el.textContent).toContain('tier AUTONOMOUS');
     expect(el.textContent).toContain('EXECUTION_CLUSTER');
+    await showTab(fixture, 'events');
     expect(el.textContent).toContain('trade.approved');
     expect(el.textContent).toContain('polling 2 s');
   });
@@ -196,6 +210,7 @@ describe('LiveOperation', () => {
     fakeFetch(baseRoutes());
     let fixture = await mount();
     expect(fixture.nativeElement.querySelector('.panel--chaos')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="live-tab-chaos"]')).toBeNull();
     fixture.destroy();
     vi.restoreAllMocks();
     TestBed.resetTestingModule();
@@ -213,6 +228,7 @@ describe('LiveOperation', () => {
       },
     ]);
     fixture = await mount();
+    await showTab(fixture, 'chaos');
     const chaos = fixture.nativeElement.querySelector('.panel--chaos') as HTMLElement;
     expect(chaos).not.toBeNull();
     expect(chaos.textContent).toContain('armed · rpc-down');
@@ -227,8 +243,9 @@ describe('LiveOperation', () => {
     ]);
     const fixture = await mount();
     expect(fixture.componentInstance.dlqForbidden()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.step').length).toBe(12); // the page still renders
+    await showTab(fixture, 'dlq');
     expect(fixture.nativeElement.textContent).toContain('RUNTIME_ADMIN');
-    expect(fixture.nativeElement.querySelectorAll('.step').length).toBe(12);
   });
 
   it('lists open dead letters with Requeue/Resolve behind a confirmation, and posts the note', async () => {
@@ -261,7 +278,8 @@ describe('LiveOperation', () => {
       },
     ]);
     const fixture = await mount();
-    const el: HTMLElement = fixture.nativeElement;
+    const el = await showTab(fixture, 'dlq');
+    expect(el.querySelector('[data-testid="live-tab-dlq"] .tabs__badge--warn')?.textContent).toBe('1'); // the count is on the tab too
     expect(el.textContent).toContain('1 open');
     expect(el.textContent).toContain('ambiguous');
     expect(calls.some((c) => (c.init.method ?? 'GET') === 'POST')).toBe(false);
@@ -347,11 +365,26 @@ describe('LiveOperation', () => {
     expect(fixture.nativeElement.textContent).toContain('confirmed');
   });
 
+  it('opens the section named in ?tab= and falls back to the execution for an unknown one (KAN-1362)', async () => {
+    fakeFetch(baseRoutes());
+    const fixture = await mount();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('#live-panel-execution')).not.toBeNull();
+    fixture.componentRef.setInput('tab', 'events');
+    fixture.detectChanges();
+    expect(el.querySelector('#live-panel-execution')).toBeNull();
+    expect(el.querySelector('#live-panel-events')?.textContent).toContain('trade.approved');
+    fixture.componentRef.setInput('tab', 'nope');
+    fixture.detectChanges();
+    expect(el.querySelector('#live-panel-execution')).not.toBeNull();
+  });
+
   it('hides the lineage DAG when the service answers 404 on /lineage, and says so', async () => {
     fakeFetch(baseRoutes().filter((r) => !r.path.test(`/proposals/${PID}/lineage`)));
     const fixture = await mount();
     expect(fixture.componentInstance.lineageAvailable()).toBe(false);
     expect(fixture.nativeElement.querySelector('app-lineage')).toBeNull();
+    await showTab(fixture, 'receipts');
     expect(fixture.nativeElement.textContent).toContain('this service does not expose');
   });
 

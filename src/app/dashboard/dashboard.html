@@ -27,23 +27,15 @@
 } @else {
   <main class="page">
     <app-top-nav />
-    <header class="page__header">
-      <div class="page__title">
-        <div>
-          <h1>CryptoBot <span class="muted small">· AI control plane for Solana</span></h1>
-          <p class="muted">The agent proposes. You approve. An isolated signer executes — on devnet, under policy, with a full audit trail.</p>
-        </div>
-        <div class="page__tools">
-          <!-- The demo path as one live screen (timeline, policy, signature, receipts, DLQ) -->
-          <a class="live-link" [routerLink]="selected() ? ['/live', selected()!.id] : ['/live']" title="Operación en vivo: estados, política, firma, recibos y DLQ">● Operación en vivo</a>
-          <button type="button" class="ghost" (click)="glossaryOpen.set(true)" aria-haspopup="dialog" title="Glosario de términos (Solana, DeFi, cripto, bots)">📖 Glosario</button>
-          <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
-        </div>
-      </div>
-    </header>
+    <app-page-bar title="CryptoBot" subtitle="· AI control plane for Solana" [stats]="barStats()">
+      <!-- The demo path as one live screen (timeline, policy, signature, receipts, DLQ) -->
+      <a class="live-link" [routerLink]="selected() ? ['/live', selected()!.id] : ['/live']" title="Operación en vivo: estados, política, firma, recibos y DLQ">● Operación en vivo</a>
+      <button type="button" class="ghost" (click)="glossaryOpen.set(true)" aria-haspopup="dialog" title="Glosario de términos (Solana, DeFi, cripto, bots)">📖 Glosario</button>
+      <button type="button" class="logout" (click)="onLogout()" aria-label="Sign out">Sign out</button>
+    </app-page-bar>
 
     <!-- ── 1 · wallet ─────────────────────────────────────────────────────────────────── -->
-    <section class="panel">
+    <section class="panel wallet">
       <h2>1 · Wallet</h2>
       <form class="wallet__form" (submit)="$event.preventDefault(); onTrackWallet()">
         <input class="wallet__address" [value]="addressInput()" (input)="addressInput.set($any($event.target).value)" placeholder="Solana public key (base58)" aria-label="Wallet address" spellcheck="false" />
@@ -99,6 +91,10 @@
             }
           </div>
 
+          <app-tabs tabsId="portfolio" label="Portfolio sections" [tabs]="portfolioTabs()" [(active)]="portfolioTab" />
+          @switch (portfolioTab()) {
+          @case ('positions') {
+          <div role="tabpanel" id="portfolio-panel-positions" aria-labelledby="portfolio-tab-positions">
           <table class="positions">
             <thead>
               <tr><th>Asset</th><th class="num">Amount</th><th class="num">Price</th><th class="num">Value</th><th class="num">Weight</th></tr>
@@ -118,7 +114,10 @@
           @if (unpricedCount() > 0) {
             <p class="muted small">+ {{ unpricedCount() }} token(s) without a price — excluded from the valuation and flagged as a risk.</p>
           }
-
+          </div>
+          }
+          @case ('risk') {
+          <div role="tabpanel" id="portfolio-panel-risk" aria-labelledby="portfolio-tab-risk">
           <h3>Risk <span class="badge badge--{{ severityClass(pf.risk.overall) }}">{{ pf.risk.overall }}</span> <span class="muted small">score {{ pf.risk.score }}/100 · deterministic rules, not the model</span></h3>
           @if (!pf.risk.findings.length) {
             <p class="muted">No findings. Nothing to worry about right now.</p>
@@ -134,23 +133,36 @@
               </li>
             }
           </ul>
-
+          </div>
+          }
+          @case ('changes') {
+          <div role="tabpanel" id="portfolio-panel-changes" aria-labelledby="portfolio-tab-changes">
+          @if (!pf.changes?.changes?.length) {
+            <p class="muted small">Nothing changed since the previous snapshot.</p>
+          }
           @if (pf.changes?.changes?.length) {
-            <h3>What changed</h3>
             <ul class="changes">
               @for (c of pf.changes!.changes; track c.symbol) {
                 <li><strong>{{ c.symbol }}</strong> <span class="muted">{{ fmtAmount(c.amountBefore) }} → {{ fmtAmount(c.amountAfter) }}</span> <span [class.ok]="c.weightPctDelta >= 0" [class.err]="c.weightPctDelta < 0">{{ c.weightPctDelta >= 0 ? '+' : '' }}{{ fmtPct(c.weightPctDelta, 2) }} weight</span></li>
               }
             </ul>
           }
-
+          </div>
+          }
+          @case ('activity') {
+          <div role="tabpanel" id="portfolio-panel-activity" aria-labelledby="portfolio-tab-activity">
+          @if (!activity().length) {
+            <p class="muted small">No recent activity on this wallet.</p>
+          }
           @if (activity().length) {
-            <h3>Recent activity</h3>
             <ul class="activity">
               @for (a of activity(); track a.signature) {
                 <li><a [href]="a.explorerUrl" target="_blank" rel="noopener">{{ shortSig(a.signature) }}</a> <span class="muted small">{{ a.blockTime ? (a.blockTime | slice: 0 : 16) : 'slot ' + a.slot }}</span> @if (a.failed) { <span class="badge badge--err">failed</span> }</li>
               }
             </ul>
+          }
+          </div>
+          }
           }
         </section>
 
@@ -230,13 +242,16 @@
         }
 
         @if (proposals().length) {
-          <div class="chips">
-            @for (p of proposals(); track p.id) {
-              <button type="button" class="chip" [class.chip--active]="selected()?.id === p.id" (click)="selectProposal(p)">
-                {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol }} {{ fmtPct($safeNavigationMigration(p.plan.legs[0]?.weightPctBefore), 0) }}→{{ fmtPct($safeNavigationMigration(p.plan.legs[0]?.weightPctAfter), 0) }}
-                <span class="badge badge--{{ statusClass(p.status) }}">{{ p.status }}</span>
-              </button>
-            }
+          <div class="picker">
+            <label class="picker__label" for="console-proposal">Proposal</label>
+            <select id="console-proposal" class="picker__select" (change)="onPickProposal($any($event.target).value)" [title]="proposals().length + ' proposals of this wallet'">
+              @for (p of proposals(); track p.id) {
+                <option [value]="p.id" [selected]="selected()?.id === p.id">
+                  {{ p.createdAt | slice: 11 : 16 }} · {{ p.plan.legs[0]?.symbol }} {{ fmtPct($safeNavigationMigration(p.plan.legs[0]?.weightPctBefore), 0) }}→{{ fmtPct($safeNavigationMigration(p.plan.legs[0]?.weightPctAfter), 0) }} · {{ p.status }}
+                </option>
+              }
+            </select>
+            <span class="muted small">{{ proposals().length }} · newest first</span>
           </div>
         }
 
@@ -255,7 +270,10 @@
               </div>
             </header>
 
-            <div class="proposal__grid">
+            <app-tabs tabsId="proposal" label="Proposal sections" [tabs]="proposalTabs()" [(active)]="proposalTab" />
+            @switch (proposalTab()) {
+            @case ('plan') {
+            <div class="proposal__grid" role="tabpanel" id="proposal-panel-plan" aria-labelledby="proposal-tab-plan">
               <div class="card">
                 <h4>Plan</h4>
                 @for (leg of p.plan.legs; track $index) {
@@ -311,9 +329,9 @@
                 }
               </div>
             </div>
-
-            <h4>Audit trail</h4>
-            <ol class="timeline">
+            }
+            @case ('audit') {
+            <ol class="timeline" role="tabpanel" id="proposal-panel-audit" aria-labelledby="proposal-tab-audit">
               @for (e of audit(); track e.id) {
                 <li>
                   <span class="timeline__time muted small">{{ e.createdAt | slice: 11 : 19 }}</span>
@@ -322,13 +340,25 @@
                 </li>
               }
             </ol>
-
-            <!-- The decision receipts behind this proposal, as a DAG; click → verify live -->
-            <app-lineage [proposalId]="p.id" [version]="lineageVersion()" />
+            }
+            @case ('lineage') {
+            <div role="tabpanel" id="proposal-panel-lineage" aria-labelledby="proposal-tab-lineage">
+              <!-- The decision receipts behind this proposal, as a DAG; click → verify live -->
+              <app-lineage [proposalId]="p.id" [version]="lineageVersion()" />
+            </div>
+            }
+            @case ('receipts') {
+            <div role="tabpanel" id="proposal-panel-receipts" aria-labelledby="proposal-tab-receipts">
+              <!-- Signed receipts of the selected proposal, each with its devnet anchor and explorer link -->
+              <app-receipts [walletId]="wallet()?.id ?? null" [proposalId]="p.id" [version]="receiptsVersion()" />
+            </div>
+            }
+            }
           </article>
+        } @else {
+          <!-- No proposal selected: the signed receipts of the wallet -->
+          <app-receipts [walletId]="wallet()?.id ?? null" [proposalId]="null" [version]="receiptsVersion()" />
         }
-        <!-- Signed receipts of the selected proposal (or the wallet), each with its devnet anchor and explorer link -->
-        <app-receipts [walletId]="wallet()?.id ?? null" [proposalId]="selected()?.id ?? null" [version]="receiptsVersion()" />
       </section>
     }
   </main>

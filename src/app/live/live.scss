@@ -11,31 +11,7 @@
   gap: var(--sp-4);
 }
 
-// ---- header: title left, liveness right ---------------------------------------------------
-.live__header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  flex-wrap: wrap;
-  padding-bottom: var(--sp-4);
-  border-bottom: 1px solid var(--border);
-
-  h1 {
-    margin: var(--sp-2) 0 var(--sp-1);
-    font-size: var(--fs-xl);
-    font-weight: 650;
-    color: var(--text);
-  }
-
-  p {
-    margin: 0;
-    max-width: 780px;
-    font-size: var(--fs-sm);
-  }
-}
-
-
+// ---- header (KAN-1362): one row from app-page-bar; liveness sits in its actions ---------------
 .live__status {
   display: flex;
   align-items: center;
@@ -43,6 +19,60 @@
   flex-wrap: wrap; // Wraps at 390 px instead of widening the page
   min-width: 0;
   font-family: var(--font-mono);
+}
+
+// ---- proposal picker (KAN-1362): one row, a select instead of a wall of chips -------------------
+.panel.picker {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.picker__label {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.picker__select {
+  min-width: 0;
+  max-width: 420px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.picker__summary {
+  min-width: 0;
+  flex: 1 1 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[role='tabpanel'] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.rules-more > summary {
+  cursor: pointer;
+  margin: var(--sp-2) 0;
+  color: var(--text-2);
+}
+
+button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .pulse {
